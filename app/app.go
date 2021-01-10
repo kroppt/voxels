@@ -2,7 +2,7 @@ package app
 
 import (
 	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/kroppt/voxels/gfx"
+	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/log"
 	"github.com/veandco/go-sdl2/sdl"
 )
