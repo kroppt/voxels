@@ -50,11 +50,9 @@ func initWindow(title string, width, height int32) (*sdl.Window, error) {
 	if err = gl.Init(); err != nil {
 		return nil, err
 	}
-	gl.ClearColor(1.0, 1.0, 1.0, 1.0)
-	gl.Enable(gl.MULTISAMPLE)
 	gl.Enable(gl.BLEND)
+	gl.Enable(gl.DEPTH_TEST)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	gl.Hint(gl.LINE_SMOOTH_HINT, gl.NICEST)
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Debug("OpenGL version", version)
