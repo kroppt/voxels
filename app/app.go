@@ -2,19 +2,30 @@ package app
 
 import (
 	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/shapes"
+	"github.com/kroppt/voxels/voxgl"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Application struct {
 	win     *sdl.Window
-	cube    *sampleCube
+	cube    *voxgl.Object
 	running bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	cube, err := newSampleCube()
+	colors := [8][3]float32{
+		{0.0, 0.0, 1.0},
+		{1.0, 0.0, 1.0},
+		{0.0, 1.0, 1.0},
+		{1.0, 1.0, 1.0},
+		{0.0, 0.0, 0.0},
+		{1.0, 0.0, 0.0},
+		{0.0, 1.0, 0.0},
+		{1.0, 1.0, 0.0},
+	}
+	cube, err := shapes.NewColoredCube(colors)
 	if err != nil {
 		return nil, err
 	}
@@ -49,23 +60,41 @@ func (app *Application) HandleSdlEvent(e sdl.Event) {
 		//app.handleWindowEvent(evt)
 	case *sdl.SysWMEvent:
 		//app.handleSysWMEvent(evt)
+	case *sdl.KeyboardEvent:
+		app.handleKeyboardEvent(evt)
 	}
-}
-
-func (app *Application) Render() {
-	app.cube.Render()
 }
 
 func (app *Application) handleQuitEvent(evt *sdl.QuitEvent) {
 	app.running = false
 }
 
+func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
+	if evt.State != sdl.PRESSED {
+		return
+	}
+	deg := float32(2.0)
+	switch evt.Keysym.Sym {
+	case sdl.K_UP:
+		app.cube.Rotate(-deg, 0, 0)
+	case sdl.K_DOWN:
+		app.cube.Rotate(deg, 0, 0)
+	case sdl.K_LEFT:
+		app.cube.Rotate(0, -deg, 0)
+	case sdl.K_RIGHT:
+		app.cube.Rotate(0, deg, 0)
+	}
+}
+
 func (app *Application) PostEventActions() {
-	gl.ClearColor(0.0, 0.0, 0.0, 0.0)
+	w, h := app.win.GetSize()
+	gl.Viewport(0, 0, w, h)
+
 	// clear with black
+	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	app.Render()
+	app.cube.Render()
 
 	app.win.GLSwap()
 
@@ -80,93 +109,4 @@ func (app *Application) Quit() {
 	}
 	app.cube.Destroy()
 	sdl.Quit()
-}
-
-type sampleCube struct {
-	prog gfx.Program
-	buf  *gfx.VAO
-}
-
-// close / far (red)
-// top / bottom (blue)
-// left / right (green)
-var fbl = [6]float32{-0.5, -0.5, 0.7, 0.8, 0.8, 0.2}
-var fbr = [6]float32{0.5, -0.5, 0.7, 0.8, 0.8, 0.8}
-var ftl = [6]float32{-0.5, 0.5, 0.7, 0.8, 0.2, 0.2}
-var ftr = [6]float32{0.5, 0.5, 0.7, 0.8, 0.2, 0.8}
-
-var cbl = [6]float32{-0.7, -0.7, 0.3, 0.2, 0.8, 0.2}
-var cbr = [6]float32{0.3, -0.7, 0.3, 0.2, 0.8, 0.8}
-var ctl = [6]float32{-0.7, 0.3, 0.3, 0.2, 0.2, 0.2}
-var ctr = [6]float32{0.3, 0.3, 0.3, 0.2, 0.2, 0.8}
-
-func newSampleCube() (*sampleCube, error) {
-	var err error
-
-	v1, err := gfx.NewShader(gfx.SampleCubeVertex, gl.VERTEX_SHADER)
-	if err != nil {
-		return nil, err
-	}
-	f1, err := gfx.NewShader(gfx.SampleCubeFragment, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return nil, err
-	}
-	prog, err := gfx.NewProgram(v1, f1)
-	if err != nil {
-		return nil, err
-	}
-
-	buf := gfx.NewVAO(gl.TRIANGLES, []int32{3, 3})
-
-	vertices := [][6]float32{
-		// far face
-		fbl, ftl, fbr,
-		ftl, fbr, ftr,
-
-		// left face
-		ftl, ctl, fbl,
-		ctl, fbl, cbl,
-
-		// top face
-		ftl, ctl, ftr,
-		ctl, ftr, ctr,
-
-		// right face
-		fbr, ftr, cbr,
-		ftr, cbr, ctr,
-
-		// bottom face
-		cbl, cbr, fbl,
-		cbr, fbl, fbr,
-
-		// close face
-		ctl, ctr, cbr,
-		cbl, ctl, cbr,
-	}
-
-	points := []float32{}
-	for _, v := range vertices {
-		points = append(points, v[:]...)
-	}
-
-	err = buf.Load(points, gl.STATIC_DRAW)
-	if err != nil {
-		return nil, err
-	}
-
-	return &sampleCube{
-		prog: prog,
-		buf:  buf,
-	}, nil
-}
-
-func (sc *sampleCube) Render() {
-	sc.prog.Bind()
-	sc.buf.Draw()
-	sc.prog.Unbind()
-}
-
-func (sc *sampleCube) Destroy() {
-	sc.prog.Destroy()
-	sc.buf.Destroy()
 }
