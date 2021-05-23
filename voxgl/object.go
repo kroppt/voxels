@@ -86,7 +86,7 @@ func (o *Object) Translate(x, y, z float32) {
 // Scale scales up or down the object by the given amounts.
 // X, y, and z are the fraction to multiply the given scale by.
 func (o *Object) Scale(x, y, z float32) {
-	o.position = mgl.Vec3{o.position[0] * x, o.position[1] * y, o.position[2] * z}
+	o.scale = mgl.Vec3{o.scale[0] * x, o.scale[1] * y, o.scale[2] * z}
 }
 
 func (o *Object) CameraTranslate(x, y, z float32) {
