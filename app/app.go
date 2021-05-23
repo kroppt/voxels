@@ -1,38 +1,35 @@
 package app
 
 import (
+	"fmt"
+
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/log"
-	"github.com/kroppt/voxels/shapes"
-	"github.com/kroppt/voxels/voxgl"
+	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Application struct {
 	win     *sdl.Window
-	cube    *voxgl.Object
+	plane   *world.Plane
 	running bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	colors := [8][3]float32{
-		{0.0, 0.0, 1.0},
-		{1.0, 0.0, 1.0},
-		{0.0, 1.0, 1.0},
-		{1.0, 1.0, 1.0},
-		{0.0, 0.0, 0.0},
-		{1.0, 0.0, 0.0},
-		{0.0, 1.0, 0.0},
-		{1.0, 1.0, 0.0},
-	}
-	cube, err := shapes.NewColoredCube(colors)
+	planeRenderer := NewPlaneRenderer()
+
+	// 11 x 11 x 11
+	x := world.Range{Min: -5, Max: 5}
+	y := world.Range{Min: -5, Max: 5}
+	z := world.Range{Min: -5, Max: 5}
+	plane, err := world.NewPlane(planeRenderer, x, y, z)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not create plane: %v", err)
 	}
 
 	return &Application{
-		win:  win,
-		cube: cube,
+		win:   win,
+		plane: plane,
 	}, nil
 }
 
@@ -73,16 +70,7 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 	if evt.State != sdl.PRESSED {
 		return
 	}
-	deg := float32(2.0)
 	switch evt.Keysym.Sym {
-	case sdl.K_UP:
-		app.cube.Rotate(-deg, 0, 0)
-	case sdl.K_DOWN:
-		app.cube.Rotate(deg, 0, 0)
-	case sdl.K_LEFT:
-		app.cube.Rotate(0, -deg, 0)
-	case sdl.K_RIGHT:
-		app.cube.Rotate(0, deg, 0)
 	}
 }
 
@@ -94,7 +82,10 @@ func (app *Application) PostEventActions() {
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	app.cube.Render()
+	err := app.plane.Render()
+	if err != nil {
+		log.Warnf("plane render error: %v", err)
+	}
 
 	app.win.GLSwap()
 
@@ -107,6 +98,5 @@ func (app *Application) Quit() {
 	if err := app.win.Destroy(); err != nil {
 		log.Fatal(err)
 	}
-	app.cube.Destroy()
 	sdl.Quit()
 }
