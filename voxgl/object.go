@@ -51,7 +51,7 @@ func NewObject(vertShader string, fragShader string, vertices [][]float32, layou
 		position:  mgl.Vec3{0.0, 0.0, 0.0},
 		scale:     mgl.Vec3{1.0, 1.0, 1.0},
 		rotation:  mgl.QuatIdent(),
-		camerapos: mgl.Vec3{0.0, 0.0, -5.0},
+		camerapos: mgl.Vec3{0.0, 0.0, -25.0},
 	}, nil
 }
 
