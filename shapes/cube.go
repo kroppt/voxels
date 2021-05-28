@@ -13,15 +13,15 @@ func NewColoredCube(col [8][3]float32) (*voxgl.Object, error) {
 	// close / far
 	// top / bottom
 	// left / right
-	var fbl = [6]float32{-1, -1, 1, col[0][0], col[0][1], col[0][2]}
-	var fbr = [6]float32{1, -1, 1, col[1][0], col[1][1], col[1][2]}
-	var ftl = [6]float32{-1, 1, 1, col[2][0], col[2][1], col[2][2]}
-	var ftr = [6]float32{1, 1, 1, col[3][0], col[3][1], col[3][2]}
+	var fbl = [6]float32{-0.5, -0.5, 0.5, col[0][0], col[0][1], col[0][2]}
+	var fbr = [6]float32{0.5, -0.5, 0.5, col[1][0], col[1][1], col[1][2]}
+	var ftl = [6]float32{-0.5, 0.5, 0.5, col[2][0], col[2][1], col[2][2]}
+	var ftr = [6]float32{0.5, 0.5, 0.5, col[3][0], col[3][1], col[3][2]}
 
-	var cbl = [6]float32{-1, -1, -1, col[4][0], col[4][1], col[4][2]}
-	var cbr = [6]float32{1, -1, -1, col[5][0], col[5][1], col[5][2]}
-	var ctl = [6]float32{-1, 1, -1, col[6][0], col[6][1], col[6][2]}
-	var ctr = [6]float32{1, 1, -1, col[7][0], col[7][1], col[7][2]}
+	var cbl = [6]float32{-0.5, -0.5, -0.5, col[4][0], col[4][1], col[4][2]}
+	var cbr = [6]float32{0.5, -0.5, -0.5, col[5][0], col[5][1], col[5][2]}
+	var ctl = [6]float32{-0.5, 0.5, -0.5, col[6][0], col[6][1], col[6][2]}
+	var ctr = [6]float32{0.5, 0.5, -0.5, col[7][0], col[7][1], col[7][2]}
 
 	vertices := [][6]float32{
 		// far face

@@ -55,7 +55,7 @@ func initWindow(title string, width, height int32) (*sdl.Window, error) {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
-	log.Debug("OpenGL version", version)
+	log.Debug("OpenGL version ", version)
 
 	return window, nil
 }

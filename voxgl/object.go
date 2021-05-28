@@ -14,6 +14,7 @@ type Object struct {
 	scale     mgl.Vec3
 	rotation  mgl.Quat
 	camerapos mgl.Vec3
+	camerarot mgl.Quat
 }
 
 // NewObject returns a newly created Object with the given vertices.
@@ -51,7 +52,8 @@ func NewObject(vertShader string, fragShader string, vertices [][]float32, layou
 		position:  mgl.Vec3{0.0, 0.0, 0.0},
 		scale:     mgl.Vec3{1.0, 1.0, 1.0},
 		rotation:  mgl.QuatIdent(),
-		camerapos: mgl.Vec3{0.0, 0.0, -5.0},
+		camerapos: mgl.Vec3{0.0, 0.0, -25.0},
+		camerarot: mgl.QuatIdent(),
 	}, nil
 }
 
@@ -65,6 +67,7 @@ func (o *Object) Render() {
 
 	view := mgl.Ident4()
 	view = view.Mul4(mgl.Translate3D(o.camerapos[0], o.camerapos[1], o.camerapos[2]))
+	view = view.Mul4(o.camerarot.Mat4())
 	o.program.UploadUniformMat4("view", view)
 
 	proj := mgl.Ident4()
@@ -86,11 +89,19 @@ func (o *Object) Translate(x, y, z float32) {
 // Scale scales up or down the object by the given amounts.
 // X, y, and z are the fraction to multiply the given scale by.
 func (o *Object) Scale(x, y, z float32) {
-	o.position = mgl.Vec3{o.position[0] * x, o.position[1] * y, o.position[2] * z}
+	o.scale = mgl.Vec3{o.scale[0] * x, o.scale[1] * y, o.scale[2] * z}
 }
 
 func (o *Object) CameraTranslate(x, y, z float32) {
 	o.camerapos = o.camerapos.Add(mgl.Vec3{x, y, z})
+}
+
+func (o *Object) CameraRotate(x, y, z float32) {
+	xrot := mgl.HomogRotate3DX(mgl.DegToRad(x))
+	yrot := mgl.HomogRotate3DY(mgl.DegToRad(y))
+	zrot := mgl.HomogRotate3DZ(mgl.DegToRad(z))
+	rotquat := mgl.Mat4ToQuat(xrot.Mul4(yrot).Mul4(zrot))
+	o.camerarot = o.camerarot.Mul(rotquat)
 }
 
 // Rotate adds the given rotation to the object.
