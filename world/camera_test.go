@@ -128,7 +128,7 @@ func TestTableCameraTranslate(t *testing.T) {
 
 }
 
-func TestCameraGetRotation(t *testing.T) {
+func TestCameraGetRotationQuat(t *testing.T) {
 
 	t.Run("get camera rotation", func(t *testing.T) {
 		t.Parallel()
@@ -136,7 +136,7 @@ func TestCameraGetRotation(t *testing.T) {
 		if cam == nil {
 			t.Fatal("expected valid camera but got nil")
 		}
-		_ = cam.GetRotation()
+		_ = cam.GetRotationQuat()
 	})
 
 	t.Run("initial camera rotation is identity quat", func(t *testing.T) {
@@ -145,7 +145,7 @@ func TestCameraGetRotation(t *testing.T) {
 		if cam == nil {
 			t.Fatal("expected valid camera but got nil")
 		}
-		rot := cam.GetRotation()
+		rot := cam.GetRotationQuat()
 		expect := mgl.QuatIdent()
 
 		if rot != expect {
@@ -215,7 +215,7 @@ func TestTableCameraRotate(t *testing.T) {
 			cam.Rotate(mgl.Vec3{1.0, 0.0, 0.0}, tC.diff.X())
 			cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, tC.diff.Y())
 			cam.Rotate(mgl.Vec3{0.0, 0.0, 1.0}, tC.diff.Z())
-			quat := cam.GetRotation()
+			quat := cam.GetRotationQuat()
 
 			if quat != tC.expect {
 				t.Fatalf("expected %v but got %v", tC.expect, quat)
@@ -223,4 +223,74 @@ func TestTableCameraRotate(t *testing.T) {
 		})
 	}
 
+}
+
+func withinError(x, y float32, diff float32) bool {
+	if x+diff > y && x-diff < y {
+		return true
+	}
+	return false
+}
+
+func withinErrorVec3(a, b mgl.Vec3, diff float32) bool {
+	if withinError(a.X(), b.X(), diff) && withinError(a.Y(), b.Y(), diff) &&
+		withinError(a.Z(), b.Z(), diff) {
+		return true
+	}
+	return false
+}
+
+func TestCameraLookVector(t *testing.T) {
+	t.Run("roll doesn't change look forward", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		if cam == nil {
+			t.Fatal("expected valid camera but got nil")
+		}
+		cam.Rotate(mgl.Vec3{0, 0, 1}, 60)
+		look := cam.GetLookForward()
+		expect := mgl.Vec3{0.0, 0.0, -1.0}
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+	t.Run("back is 180 deg from forward", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		if cam == nil {
+			t.Fatal("expected valid camera but got nil")
+		}
+		expect := cam.GetLookBack()
+		cam.Rotate(mgl.Vec3{0, 1, 0}, 180)
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+	t.Run("right is +90 deg from forward", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		if cam == nil {
+			t.Fatal("expected valid camera but got nil")
+		}
+		expect := cam.GetLookRight()
+		cam.Rotate(mgl.Vec3{0, 1, 0}, 90)
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+	t.Run("left is -90 deg from forward", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		if cam == nil {
+			t.Fatal("expected valid camera but got nil")
+		}
+		expect := cam.GetLookLeft()
+		cam.Rotate(mgl.Vec3{0, 1, 0}, -90)
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
 }

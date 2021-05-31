@@ -21,7 +21,7 @@ func NewCamera() *Camera {
 
 // GetPosition returns the position of the camera.
 func (c *Camera) GetPosition() mgl.Vec3 {
-	return c.pos
+	return c.pos.Mul(-1.0)
 }
 
 // Translate adds the given translation to the position of the camera.
@@ -29,8 +29,8 @@ func (c *Camera) Translate(diff mgl.Vec3) {
 	c.pos = c.pos.Sub(diff)
 }
 
-// GetRotation returns the quaternion the camera is rotated with.
-func (c *Camera) GetRotation() mgl.Quat {
+// GetRotationQuat returns the quaternion the camera is rotated with.
+func (c *Camera) GetRotationQuat() mgl.Quat {
 	return c.rot
 }
 
