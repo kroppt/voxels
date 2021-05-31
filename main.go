@@ -35,7 +35,8 @@ func initWindow(title string, width, height int32) (*sdl.Window, error) {
 	}
 
 	var window *sdl.Window
-	if window, err = sdl.CreateWindow(title, 0, 0, width, height, sdl.WINDOW_HIDDEN|sdl.WINDOW_OPENGL|sdl.WINDOW_BORDERLESS); err != nil {
+	if window, err = sdl.CreateWindow(title, sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED,
+		width, height, sdl.WINDOW_HIDDEN|sdl.WINDOW_OPENGL); err != nil {
 		return nil, err
 	}
 	window.SetResizable(true)
