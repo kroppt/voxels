@@ -71,6 +71,7 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		cam:      NewCamera(),
 	}
 	plane.cam.Translate(mgl.Vec3{0, 0, 25})
+	plane.cam.UpdateView()
 
 	if renderer != nil {
 		err := renderer.Init(plane)

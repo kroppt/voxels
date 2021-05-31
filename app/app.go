@@ -89,6 +89,7 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 	default:
 		return
 	}
+	cam.UpdateView()
 }
 
 func (app *Application) PostEventActions() {

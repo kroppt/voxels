@@ -62,13 +62,6 @@ func (o *Object) Render(cam world.Camera) {
 	model = model.Mul4(o.rotation.Mat4())
 	o.program.UploadUniformMat4("model", model)
 
-	view := cam.GetViewMat()
-	o.program.UploadUniformMat4("view", view)
-
-	proj := mgl.Ident4()
-	proj = proj.Mul4(mgl.Perspective(mgl.DegToRad(45.0), 16.0/9.0, 0.1, 100.0))
-	o.program.UploadUniformMat4("projection", proj)
-
 	o.program.Bind()
 	o.vao.Draw()
 	o.program.Unbind()
