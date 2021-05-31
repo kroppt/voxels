@@ -4,15 +4,17 @@ import (
 	"fmt"
 
 	"github.com/go-gl/gl/v2.1/gl"
+	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Application struct {
-	win     *sdl.Window
-	plane   *world.Plane
-	running bool
+	win           *sdl.Window
+	plane         *world.Plane
+	planeRenderer *PlaneRenderer
+	running       bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
@@ -28,8 +30,9 @@ func New(win *sdl.Window) (*Application, error) {
 	}
 
 	return &Application{
-		win:   win,
-		plane: plane,
+		win:           win,
+		plane:         plane,
+		planeRenderer: planeRenderer,
 	}, nil
 }
 
@@ -70,8 +73,20 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 	if evt.State != sdl.PRESSED {
 		return
 	}
-	switch evt.Keysym.Sym {
+	trans := mgl.Vec3{}
+	switch evt.Keysym.Scancode {
+	case sdl.SCANCODE_W:
+		trans[2] = 1.0
+	case sdl.SCANCODE_A:
+		trans[0] = 1.0
+	case sdl.SCANCODE_S:
+		trans[2] = -1.0
+	case sdl.SCANCODE_D:
+		trans[0] = -1.0
+	default:
+		return
 	}
+	app.plane.GetCamera().Translate(trans)
 }
 
 func (app *Application) PostEventActions() {

@@ -29,7 +29,6 @@ func makeCube(plane *world.Plane, i, j, k int) (*voxgl.Object, error) {
 		return nil, fmt.Errorf("couldn't create colored cube at %v: %w", pos, err)
 	}
 	obj.Translate(float32(i), float32(j), float32(k))
-	obj.CameraRotate(45, 45, 0)
 	return obj, err
 }
 
@@ -109,7 +108,7 @@ func (vr *PlaneRenderer) Render(plane *world.Plane) error {
 	for _, xcubes := range vr.cubes {
 		for _, ycubes := range xcubes {
 			for _, cube := range ycubes {
-				cube.Render()
+				cube.Render(*plane.GetCamera())
 			}
 		}
 	}

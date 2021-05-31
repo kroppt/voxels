@@ -3,6 +3,8 @@ package world
 import (
 	"errors"
 	"fmt"
+
+	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 type Range struct {
@@ -21,6 +23,7 @@ type Plane struct {
 	y        Range
 	z        Range
 	voxels   [][][]Voxel
+	cam      *Camera
 }
 
 func makeVoxel(i, j, k int) Voxel {
@@ -65,7 +68,12 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		y:        y,
 		z:        z,
 		voxels:   voxels,
+		cam:      NewCamera(),
 	}
+	plane.cam.Translate(mgl.Vec3{0.0, 0.0, -25.0})
+	plane.cam.Rotate(mgl.Vec3{1.0, 0.0, 0.0}, 45.0)
+	plane.cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, 45.0)
+
 	if renderer != nil {
 		err := renderer.Init(plane)
 		if err != nil {
@@ -101,6 +109,10 @@ func (p *Plane) At(pos Position) (*Voxel, error) {
 
 func (p *Plane) Size() (x, y, z Range) {
 	return p.x, p.y, p.z
+}
+
+func (p *Plane) GetCamera() *Camera {
+	return p.cam
 }
 
 var ErrNilRenderer = errors.New("cannot render with nil renderer")
