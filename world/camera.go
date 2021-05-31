@@ -17,7 +17,7 @@ type Camera struct {
 }
 
 // NewCamera returns a new camera.
-func NewCamera() *Camera {
+func NewCamera() (*Camera, error) {
 	cam := Camera{
 		pos: [3]float32{},
 		rot: mgl.QuatIdent(),
@@ -30,13 +30,17 @@ func NewCamera() *Camera {
 	cam.ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
 
 	if err := cam.UpdateView(); err != nil {
-		return nil
+		return nil, err
 	}
 	if err := cam.UpdateProj(); err != nil {
-		return nil
+		return nil, err
 	}
 
-	return &cam
+	return &cam, nil
+}
+
+func (c *Camera) Destroy() {
+	c.ubo.Destroy()
 }
 
 // GetPosition returns the position of the camera.

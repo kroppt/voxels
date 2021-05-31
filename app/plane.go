@@ -88,24 +88,28 @@ func NewPlaneRenderer() *PlaneRenderer {
 	return &PlaneRenderer{}
 }
 
-func (vr *PlaneRenderer) Init(plane *world.Plane) error {
+func (pr *PlaneRenderer) Destroy() {
+	cleanupCubes(pr.cubes)
+}
+
+func (pr *PlaneRenderer) Init(plane *world.Plane) error {
 	x, y, z := plane.Size()
 	cubes, err := makeCubes(plane, x, y, z)
 	if err != nil {
 		return fmt.Errorf("failed to initialize cubes: %v", err)
 	}
-	vr.plane = plane
-	vr.cubes = cubes
+	pr.plane = plane
+	pr.cubes = cubes
 	return nil
 }
 
 var errWrongPlanePassed = errors.New("wrong Plane was passed into Render")
 
-func (vr *PlaneRenderer) Render(plane *world.Plane) error {
-	if vr.plane != plane {
+func (pr *PlaneRenderer) Render(plane *world.Plane) error {
+	if pr.plane != plane {
 		return errWrongPlanePassed
 	}
-	for _, xcubes := range vr.cubes {
+	for _, xcubes := range pr.cubes {
 		for _, ycubes := range xcubes {
 			for _, cube := range ycubes {
 				cube.Render(*plane.GetCamera())

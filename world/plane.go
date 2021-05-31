@@ -15,6 +15,7 @@ type Range struct {
 type PlaneRenderer interface {
 	Init(*Plane) error
 	Render(*Plane) error
+	Destroy()
 }
 
 type Plane struct {
@@ -62,13 +63,17 @@ func makeVoxels(x, y, z Range) [][][]Voxel {
 
 func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 	voxels := makeVoxels(x, y, z)
+	cam, err := NewCamera()
+	if err != nil {
+		return nil, err
+	}
 	plane := &Plane{
 		renderer: renderer,
 		x:        x,
 		y:        y,
 		z:        z,
 		voxels:   voxels,
-		cam:      NewCamera(),
+		cam:      cam,
 	}
 	plane.cam.Translate(mgl.Vec3{0, 0, 25})
 	plane.cam.UpdateView()
@@ -80,6 +85,11 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		}
 	}
 	return plane, nil
+}
+
+func (p *Plane) Destroy() {
+	p.cam.Destroy()
+	p.renderer.Destroy()
 }
 
 var ErrOutOfBounds = errors.New("position out of bounds of plane")

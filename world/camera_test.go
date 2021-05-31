@@ -13,7 +13,10 @@ func TestNewCamera(t *testing.T) {
 
 	t.Run("new camera not nil", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
 		if cam == nil {
 			t.Fatal("expected valid camera but got nil")
 		}
@@ -25,18 +28,18 @@ func TestCameraGetPosition(t *testing.T) {
 
 	t.Run("get camera position", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		_ = cam.GetPosition()
 	})
 
 	t.Run("initial camera position is 0, 0, 0", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		pos := cam.GetPosition()
 		expect := mgl.Vec3{0.0, 0.0, 0.0}
@@ -111,9 +114,9 @@ func TestTableCameraTranslate(t *testing.T) {
 		tC := tC
 		t.Run(fmt.Sprintf("translate %v by %v", tC.start, tC.diff), func(t *testing.T) {
 			t.Parallel()
-			cam := world.NewCamera()
-			if cam == nil {
-				t.Fatal("expected valid camera but got nil")
+			cam, err := world.NewCamera()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 			cam.Translate(tC.start)
 
@@ -132,18 +135,18 @@ func TestCameraGetRotationQuat(t *testing.T) {
 
 	t.Run("get camera rotation", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		_ = cam.GetRotationQuat()
 	})
 
 	t.Run("initial camera rotation is identity quat", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		rot := cam.GetRotationQuat()
 		expect := mgl.QuatIdent()
@@ -204,9 +207,9 @@ func TestTableCameraRotate(t *testing.T) {
 		tC := tC
 		t.Run(fmt.Sprintf("rotate %v by %v", tC.start, tC.diff), func(t *testing.T) {
 			t.Parallel()
-			cam := world.NewCamera()
-			if cam == nil {
-				t.Fatal("expected valid camera but got nil")
+			cam, err := world.NewCamera()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 			cam.Rotate(mgl.Vec3{1.0, 0.0, 0.0}, tC.start.X())
 			cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, tC.start.Y())
@@ -243,9 +246,9 @@ func withinErrorVec3(a, b mgl.Vec3, diff float32) bool {
 func TestCameraLookVector(t *testing.T) {
 	t.Run("roll doesn't change look forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		cam.Rotate(mgl.Vec3{0, 0, 1}, 60)
 		look := cam.GetLookForward()
@@ -256,9 +259,9 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("back is 180 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		expect := cam.GetLookBack()
 		cam.Rotate(mgl.Vec3{0, 1, 0}, 180)
@@ -269,9 +272,9 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("right is +90 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		expect := cam.GetLookRight()
 		cam.Rotate(mgl.Vec3{0, 1, 0}, 90)
@@ -282,9 +285,9 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("left is -90 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		expect := cam.GetLookLeft()
 		cam.Rotate(mgl.Vec3{0, 1, 0}, -90)
@@ -296,9 +299,9 @@ func TestCameraLookVector(t *testing.T) {
 
 	t.Run("up is -90 deg pitch from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		expect := cam.GetLookUp()
 		cam.Rotate(mgl.Vec3{1, 0, 0}, -90)
@@ -310,9 +313,9 @@ func TestCameraLookVector(t *testing.T) {
 
 	t.Run("fancy rotation", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		// Use the right hand rule:
 		// Point thumb in direction of axis, fingers curl towards
@@ -331,9 +334,9 @@ func TestCameraLookVector(t *testing.T) {
 
 	t.Run("rotate about negative axis", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
-		if cam == nil {
-			t.Fatal("expected valid camera but got nil")
+		cam, err := world.NewCamera()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
 		}
 		// Right hand rule works for negative axes too
 		expect := cam.GetLookDown()

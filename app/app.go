@@ -10,10 +10,9 @@ import (
 )
 
 type Application struct {
-	win           *sdl.Window
-	plane         *world.Plane
-	planeRenderer *PlaneRenderer
-	running       bool
+	win     *sdl.Window
+	plane   *world.Plane
+	running bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
@@ -29,9 +28,8 @@ func New(win *sdl.Window) (*Application, error) {
 	}
 
 	return &Application{
-		win:           win,
-		plane:         plane,
-		planeRenderer: planeRenderer,
+		win:   win,
+		plane: plane,
 	}, nil
 }
 
@@ -113,6 +111,7 @@ func (app *Application) PostEventActions() {
 }
 
 func (app *Application) Quit() {
+	app.plane.Destroy()
 	if err := app.win.Destroy(); err != nil {
 		log.Fatal(err)
 	}
