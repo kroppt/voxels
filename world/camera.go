@@ -50,18 +50,22 @@ func (c *Camera) GetViewMat() mgl.Mat4 {
 	return view
 }
 
+// GetLookForward returns the forward-looking direction vector
 func (c *Camera) GetLookForward() mgl.Vec3 {
 	return c.rot.Inverse().Rotate(mgl.Vec3{0.0, 0.0, -1.0})
 }
 
+// GetLookBack returns the backwards-looking direction vector
 func (c *Camera) GetLookBack() mgl.Vec3 {
 	return c.rot.Inverse().Rotate(mgl.Vec3{0.0, 0.0, 1.0})
 }
 
+// GetLookRight returns the right-looking direction vector
 func (c *Camera) GetLookRight() mgl.Vec3 {
 	return c.rot.Inverse().Rotate(mgl.Vec3{1.0, 0.0, 0.0})
 }
 
+// GetLookLeft returns the left-looking direction vector
 func (c *Camera) GetLookLeft() mgl.Vec3 {
 	return c.rot.Inverse().Rotate(mgl.Vec3{-1.0, 0.0, 0.0})
 }
