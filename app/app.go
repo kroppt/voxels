@@ -61,10 +61,7 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 	case *sdl.SysWMEvent:
 		//app.handleSysWMEvent(evt)
 	case *sdl.KeyboardEvent:
-		err := app.handleKeyboardEvent(evt)
-		if err != nil {
-			return err
-		}
+		app.handleKeyboardEvent(evt)
 	}
 	return nil
 }
@@ -98,27 +95,33 @@ func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error 
 	return nil
 }
 
-func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) error {
-	// TODO check/handle multiple keys pressed simultaneously for keyboards
-	// that don't rapidly spam both keys
-	if evt.State != sdl.PRESSED {
-		return nil
-	}
+func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
+}
+
+func (app *Application) pollKeyboard() error {
 	cam := app.plane.GetCamera()
-	switch evt.Keysym.Scancode {
-	case sdl.SCANCODE_W:
-		cam.Translate(cam.GetLookForward())
-	case sdl.SCANCODE_A:
-		cam.Translate(cam.GetLookLeft())
-	case sdl.SCANCODE_S:
-		cam.Translate(cam.GetLookBack())
-	case sdl.SCANCODE_D:
-		cam.Translate(cam.GetLookRight())
-	case sdl.SCANCODE_SPACE:
-		cam.Translate(mgl.Vec3{0.0, 1.0, 0.0})
-	case sdl.SCANCODE_LSHIFT:
-		cam.Translate(mgl.Vec3{0.0, -1.0, 0.0})
-	default:
+	initPos := cam.GetPosition()
+	keys := sdl.GetKeyboardState()
+	speed := float32(0.5)
+	if keys[sdl.SCANCODE_W] == sdl.PRESSED {
+		cam.Translate(cam.GetLookForward().Mul(speed))
+	}
+	if keys[sdl.SCANCODE_S] == sdl.PRESSED {
+		cam.Translate(cam.GetLookBack().Mul(speed))
+	}
+	if keys[sdl.SCANCODE_A] == sdl.PRESSED {
+		cam.Translate(cam.GetLookLeft().Mul(speed))
+	}
+	if keys[sdl.SCANCODE_D] == sdl.PRESSED {
+		cam.Translate(cam.GetLookRight().Mul(speed))
+	}
+	if keys[sdl.SCANCODE_SPACE] == sdl.PRESSED {
+		cam.Translate(mgl.Vec3{0.0, 1.0, 0.0}.Mul(speed))
+	}
+	if keys[sdl.SCANCODE_LSHIFT] == sdl.PRESSED {
+		cam.Translate(mgl.Vec3{0.0, -1.0, 0.0}.Mul(speed))
+	}
+	if cam.GetPosition() == initPos {
 		return nil
 	}
 	err := app.plane.GetRenderer().UpdateView()
@@ -129,6 +132,8 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) error {
 }
 
 func (app *Application) PostEventActions() {
+	app.pollKeyboard()
+
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
 
