@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/go-gl/gl/v2.1/gl"
-	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
@@ -73,20 +72,19 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 	if evt.State != sdl.PRESSED {
 		return
 	}
-	trans := mgl.Vec3{}
+	cam := app.plane.GetCamera()
 	switch evt.Keysym.Scancode {
 	case sdl.SCANCODE_W:
-		trans[2] = 1.0
+		cam.Translate(cam.GetLookForward())
 	case sdl.SCANCODE_A:
-		trans[0] = 1.0
+		cam.Translate(cam.GetLookLeft())
 	case sdl.SCANCODE_S:
-		trans[2] = -1.0
+		cam.Translate(cam.GetLookBack())
 	case sdl.SCANCODE_D:
-		trans[0] = -1.0
+		cam.Translate(cam.GetLookRight())
 	default:
 		return
 	}
-	app.plane.GetCamera().Translate(trans)
 }
 
 func (app *Application) PostEventActions() {

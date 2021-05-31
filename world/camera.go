@@ -1,8 +1,6 @@
 package world
 
 import (
-	"math"
-
 	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
@@ -28,7 +26,7 @@ func (c *Camera) GetPosition() mgl.Vec3 {
 
 // Translate adds the given translation to the position of the camera.
 func (c *Camera) Translate(diff mgl.Vec3) {
-	c.pos = c.pos.Add(diff)
+	c.pos = c.pos.Sub(diff)
 }
 
 // GetRotation returns the quaternion the camera is rotated with.
@@ -38,10 +36,8 @@ func (c *Camera) GetRotation() mgl.Quat {
 
 // Rotate rotates the camera by degrees about the given axis.
 func (c *Camera) Rotate(axis mgl.Vec3, deg float32) {
-	rad := mgl.DegToRad(deg / 2)
-	cos := float32(math.Cos(float64(rad)))
-	sin := float32(math.Sin(float64(rad)))
-	quat := mgl.Quat{W: cos, V: axis.Mul(sin)}
+	rad := mgl.DegToRad(deg)
+	quat := mgl.QuatRotate(rad, axis)
 	c.rot = c.rot.Mul(quat)
 }
 
@@ -52,4 +48,20 @@ func (c *Camera) GetViewMat() mgl.Mat4 {
 	view = view.Mul4(c.rot.Mat4())
 	view = view.Mul4(mgl.Translate3D(c.pos.X(), c.pos.Y(), c.pos.Z()))
 	return view
+}
+
+func (c *Camera) GetLookForward() mgl.Vec3 {
+	return c.rot.Inverse().Rotate(mgl.Vec3{0.0, 0.0, -1.0})
+}
+
+func (c *Camera) GetLookBack() mgl.Vec3 {
+	return c.rot.Inverse().Rotate(mgl.Vec3{0.0, 0.0, 1.0})
+}
+
+func (c *Camera) GetLookRight() mgl.Vec3 {
+	return c.rot.Inverse().Rotate(mgl.Vec3{1.0, 0.0, 0.0})
+}
+
+func (c *Camera) GetLookLeft() mgl.Vec3 {
+	return c.rot.Inverse().Rotate(mgl.Vec3{-1.0, 0.0, 0.0})
 }

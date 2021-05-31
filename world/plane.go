@@ -70,9 +70,7 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		voxels:   voxels,
 		cam:      NewCamera(),
 	}
-	plane.cam.Translate(mgl.Vec3{0.0, 0.0, -25.0})
-	plane.cam.Rotate(mgl.Vec3{1.0, 0.0, 0.0}, 45.0)
-	plane.cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, 45.0)
+	plane.cam.Translate(mgl.Vec3{0, 0, 25})
 
 	if renderer != nil {
 		err := renderer.Init(plane)
