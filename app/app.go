@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/go-gl/gl/v2.1/gl"
+	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
@@ -13,6 +14,7 @@ type Application struct {
 	win     *sdl.Window
 	plane   *world.Plane
 	running bool
+	m1held  bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
@@ -46,9 +48,12 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 	case *sdl.QuitEvent:
 		app.handleQuitEvent(evt)
 	case *sdl.MouseButtonEvent:
-		//app.handleMouseButtonEvent(evt)
+		app.handleMouseButtonEvent(evt)
 	case *sdl.MouseMotionEvent:
-		//app.handleMouseMotionEvent(evt)
+		err := app.handleMouseMotionEvent(evt)
+		if err != nil {
+			return err
+		}
 	case *sdl.MouseWheelEvent:
 		//app.handleMouseWheelEvent(evt)
 	case *sdl.WindowEvent:
@@ -68,7 +73,34 @@ func (app *Application) handleQuitEvent(evt *sdl.QuitEvent) {
 	app.running = false
 }
 
+func (app *Application) handleMouseButtonEvent(evt *sdl.MouseButtonEvent) {
+	if evt.State == sdl.PRESSED && !app.m1held {
+		app.m1held = true
+	} else if evt.State == sdl.RELEASED {
+		app.m1held = false
+	}
+}
+
+func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error {
+	if !app.m1held {
+		return nil
+	}
+	cam := app.plane.GetCamera()
+	speed := float32(0.1)
+	// use x component to rotate around Y axis
+	cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, speed*float32(evt.XRel))
+	// use y component to rotate around the axis that goes through your ears
+	cam.Rotate(cam.GetLookRight(), speed*float32(evt.YRel))
+	err := app.plane.GetRenderer().UpdateView()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) error {
+	// TODO check/handle multiple keys pressed simultaneously for keyboards
+	// that don't rapidly spam both keys
 	if evt.State != sdl.PRESSED {
 		return nil
 	}
@@ -83,9 +115,9 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) error {
 	case sdl.SCANCODE_D:
 		cam.Translate(cam.GetLookRight())
 	case sdl.SCANCODE_SPACE:
-		cam.Translate(cam.GetLookUp())
+		cam.Translate(mgl.Vec3{0.0, 1.0, 0.0})
 	case sdl.SCANCODE_LSHIFT:
-		cam.Translate(cam.GetLookDown())
+		cam.Translate(mgl.Vec3{0.0, -1.0, 0.0})
 	default:
 		return nil
 	}
