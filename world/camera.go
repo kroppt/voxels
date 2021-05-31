@@ -69,3 +69,13 @@ func (c *Camera) GetLookRight() mgl.Vec3 {
 func (c *Camera) GetLookLeft() mgl.Vec3 {
 	return c.rot.Inverse().Rotate(mgl.Vec3{-1.0, 0.0, 0.0})
 }
+
+// GetLookUp returns the up-looking direction vector
+func (c *Camera) GetLookUp() mgl.Vec3 {
+	return c.rot.Inverse().Rotate(mgl.Vec3{0.0, 1.0, 0.0})
+}
+
+// GetLookDown returns the up-looking direction vector
+func (c *Camera) GetLookDown() mgl.Vec3 {
+	return c.rot.Inverse().Rotate(mgl.Vec3{0.0, -1.0, 0.0})
+}

@@ -254,7 +254,7 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
-	t.Run("back is 180 deg from forward", func(t *testing.T) {
+	t.Run("back is 180 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		if cam == nil {
@@ -267,7 +267,7 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
-	t.Run("right is +90 deg from forward", func(t *testing.T) {
+	t.Run("right is +90 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		if cam == nil {
@@ -280,7 +280,7 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
-	t.Run("left is -90 deg from forward", func(t *testing.T) {
+	t.Run("left is -90 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		if cam == nil {
@@ -293,4 +293,55 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
+
+	t.Run("up is -90 deg pitch from forward", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		if cam == nil {
+			t.Fatal("expected valid camera but got nil")
+		}
+		expect := cam.GetLookUp()
+		cam.Rotate(mgl.Vec3{1, 0, 0}, -90)
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+
+	t.Run("fancy rotation", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		if cam == nil {
+			t.Fatal("expected valid camera but got nil")
+		}
+		// Use the right hand rule:
+		// Point thumb in direction of axis, fingers curl towards
+		// negative degree rotation
+		expect := cam.GetLookUp()
+		cam.Rotate(mgl.Vec3{1, 0, 0}, 90)  // look down
+		cam.Rotate(mgl.Vec3{0, 1, 0}, 90)  // roll 90 toward right
+		cam.Rotate(mgl.Vec3{0, 0, 1}, -90) // look up (facing right)
+		cam.Rotate(mgl.Vec3{1, 0, 0}, 180) // roll upsidedown
+		cam.Rotate(mgl.Vec3{0, 0, 1}, 270) // lean back 270 degrees (now facing up)
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+
+	t.Run("rotate about negative axis", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		if cam == nil {
+			t.Fatal("expected valid camera but got nil")
+		}
+		// Right hand rule works for negative axes too
+		expect := cam.GetLookDown()
+		cam.Rotate(mgl.Vec3{-1, 0, 0}, -90)
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+
 }

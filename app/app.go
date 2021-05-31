@@ -82,6 +82,10 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 		cam.Translate(cam.GetLookBack())
 	case sdl.SCANCODE_D:
 		cam.Translate(cam.GetLookRight())
+	case sdl.SCANCODE_SPACE:
+		cam.Translate(cam.GetLookUp())
+	case sdl.SCANCODE_LSHIFT:
+		cam.Translate(cam.GetLookDown())
 	default:
 		return
 	}
