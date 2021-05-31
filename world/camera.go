@@ -49,7 +49,7 @@ func (c *Camera) Rotate(axis mgl.Vec3, deg float32) {
 // camera.
 func (c *Camera) GetViewMat() mgl.Mat4 {
 	view := mgl.Ident4()
-	view = view.Mul4(mgl.Translate3D(c.pos.X(), c.pos.Y(), c.pos.Z()))
 	view = view.Mul4(c.rot.Mat4())
+	view = view.Mul4(mgl.Translate3D(c.pos.X(), c.pos.Y(), c.pos.Z()))
 	return view
 }
