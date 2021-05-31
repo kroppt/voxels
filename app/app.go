@@ -16,13 +16,11 @@ type Application struct {
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	planeRenderer := NewPlaneRenderer()
-
 	// 11 x 11 x 11
 	x := world.Range{Min: -5, Max: 5}
 	y := world.Range{Min: -5, Max: 5}
 	z := world.Range{Min: -5, Max: 5}
-	plane, err := world.NewPlane(planeRenderer, x, y, z)
+	plane, err := world.NewPlane(NewPlaneRenderer(), x, y, z)
 	if err != nil {
 		return nil, fmt.Errorf("could not create plane: %v", err)
 	}
@@ -43,7 +41,7 @@ func (app *Application) Running() bool {
 }
 
 // HandleSdlEvent checks the type of a given SDL event and runs the method associated with that event
-func (app *Application) HandleSdlEvent(e sdl.Event) {
+func (app *Application) HandleSdlEvent(e sdl.Event) error {
 	switch evt := e.(type) {
 	case *sdl.QuitEvent:
 		app.handleQuitEvent(evt)
@@ -58,17 +56,21 @@ func (app *Application) HandleSdlEvent(e sdl.Event) {
 	case *sdl.SysWMEvent:
 		//app.handleSysWMEvent(evt)
 	case *sdl.KeyboardEvent:
-		app.handleKeyboardEvent(evt)
+		err := app.handleKeyboardEvent(evt)
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 func (app *Application) handleQuitEvent(evt *sdl.QuitEvent) {
 	app.running = false
 }
 
-func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
+func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) error {
 	if evt.State != sdl.PRESSED {
-		return
+		return nil
 	}
 	cam := app.plane.GetCamera()
 	switch evt.Keysym.Scancode {
@@ -85,9 +87,13 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 	case sdl.SCANCODE_LSHIFT:
 		cam.Translate(cam.GetLookDown())
 	default:
-		return
+		return nil
 	}
-	cam.UpdateView()
+	err := app.plane.GetRenderer().UpdateView()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (app *Application) PostEventActions() {

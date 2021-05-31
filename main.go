@@ -86,7 +86,10 @@ func main() {
 
 	for app.Running() {
 		for evt := sdl.PollEvent(); evt != nil; evt = sdl.PollEvent() {
-			app.HandleSdlEvent(evt)
+			err := app.HandleSdlEvent(evt)
+			if err != nil {
+				log.Fatalf("error handling sdl events: %v", err)
+			}
 		}
 
 		app.PostEventActions()

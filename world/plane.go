@@ -14,6 +14,8 @@ type Range struct {
 
 type PlaneRenderer interface {
 	Init(*Plane) error
+	UpdateView() error
+	UpdateProj() error
 	Render(*Plane) error
 	Destroy()
 }
@@ -63,10 +65,7 @@ func makeVoxels(x, y, z Range) [][][]Voxel {
 
 func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 	voxels := makeVoxels(x, y, z)
-	cam, err := NewCamera()
-	if err != nil {
-		return nil, err
-	}
+	cam := NewCamera()
 	plane := &Plane{
 		renderer: renderer,
 		x:        x,
@@ -76,7 +75,6 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		cam:      cam,
 	}
 	plane.cam.Translate(mgl.Vec3{0, 0, 25})
-	plane.cam.UpdateView()
 
 	if renderer != nil {
 		err := renderer.Init(plane)
@@ -88,7 +86,6 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 }
 
 func (p *Plane) Destroy() {
-	p.cam.Destroy()
 	p.renderer.Destroy()
 }
 
@@ -122,6 +119,10 @@ func (p *Plane) Size() (x, y, z Range) {
 
 func (p *Plane) GetCamera() *Camera {
 	return p.cam
+}
+
+func (p *Plane) GetRenderer() PlaneRenderer {
+	return p.renderer
 }
 
 var ErrNilRenderer = errors.New("cannot render with nil renderer")
