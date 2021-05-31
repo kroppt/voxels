@@ -1,8 +1,8 @@
 package voxgl
 
 import (
+	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
-	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/world"
 )
@@ -11,9 +11,9 @@ import (
 type Object struct {
 	program  gfx.Program
 	vao      gfx.VAO
-	position mgl.Vec3
-	scale    mgl.Vec3
-	rotation mgl.Quat
+	position glm.Vec3
+	scale    glm.Vec3
+	rotation glm.Quat
 }
 
 // NewObject returns a newly created Object with the given vertices.
@@ -48,18 +48,21 @@ func NewObject(vertShader string, fragShader string, vertices [][]float32, layou
 	return &Object{
 		program:  prog,
 		vao:      *vao,
-		position: mgl.Vec3{0.0, 0.0, 0.0},
-		scale:    mgl.Vec3{1.0, 1.0, 1.0},
-		rotation: mgl.QuatIdent(),
+		position: glm.Vec3{0.0, 0.0, 0.0},
+		scale:    glm.Vec3{1.0, 1.0, 1.0},
+		rotation: glm.QuatIdent(),
 	}, nil
 }
 
 // Render generates an image of the object with OpenGL.
 func (o *Object) Render(cam world.Camera) {
-	model := mgl.Ident4()
-	model = model.Mul4(mgl.Translate3D(o.position[0], o.position[1], o.position[2]))
-	model = model.Mul4(mgl.Scale3D(o.scale[0], o.scale[1], o.scale[2]))
-	model = model.Mul4(o.rotation.Mat4())
+	model := glm.Ident4()
+	trans := glm.Translate3D(o.position[0], o.position[1], o.position[2])
+	model = model.Mul4(&trans)
+	scale := glm.Scale3D(o.scale[0], o.scale[1], o.scale[2])
+	model = model.Mul4(&scale)
+	rot := o.rotation.Mat4()
+	model = model.Mul4(&rot)
 	o.program.UploadUniformMat4("model", model)
 
 	o.program.Bind()
@@ -71,23 +74,25 @@ func (o *Object) Render(cam world.Camera) {
 // X, y, and z are the OpenGL coordinates to add to each of their respective
 // dimensions.
 func (o *Object) Translate(x, y, z float32) {
-	o.position = o.position.Add(mgl.Vec3{x, y, z})
+	o.position = o.position.Add(&glm.Vec3{x, y, z})
 }
 
 // Scale scales up or down the object by the given amounts.
 // X, y, and z are the fraction to multiply the given scale by.
 func (o *Object) Scale(x, y, z float32) {
-	o.scale = mgl.Vec3{o.scale[0] * x, o.scale[1] * y, o.scale[2] * z}
+	o.scale = glm.Vec3{o.scale[0] * x, o.scale[1] * y, o.scale[2] * z}
 }
 
 // Rotate adds the given rotation to the object.
 // X, y, and z are the angles to rotate about each of their respective axis.
 func (o *Object) Rotate(x, y, z float32) {
-	xrot := mgl.HomogRotate3DX(mgl.DegToRad(x))
-	yrot := mgl.HomogRotate3DY(mgl.DegToRad(y))
-	zrot := mgl.HomogRotate3DZ(mgl.DegToRad(z))
-	rotquat := mgl.Mat4ToQuat(xrot.Mul4(yrot).Mul4(zrot))
-	o.rotation = o.rotation.Mul(rotquat)
+	xrot := glm.HomogRotate3DX(glm.DegToRad(x))
+	yrot := glm.HomogRotate3DY(glm.DegToRad(y))
+	zrot := glm.HomogRotate3DZ(glm.DegToRad(z))
+	xyrot := xrot.Mul4(&yrot)
+	xyzrot := xyrot.Mul4(&zrot)
+	rotquat := glm.Mat4ToQuat(&xyzrot)
+	o.rotation = o.rotation.Mul(&rotquat)
 }
 
 // Destroy frees external resources.

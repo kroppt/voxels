@@ -5,7 +5,7 @@ import (
 	"math"
 	"testing"
 
-	mgl "github.com/go-gl/mathgl/mgl32"
+	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/world"
 )
 
@@ -33,7 +33,7 @@ func TestCameraGetPosition(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		pos := cam.GetPosition()
-		expect := mgl.Vec3{0.0, 0.0, 0.0}
+		expect := glm.Vec3{0.0, 0.0, 0.0}
 
 		if pos != expect {
 			t.Fatalf("expected %v but got %v", expect, pos)
@@ -45,59 +45,59 @@ func TestCameraGetPosition(t *testing.T) {
 func TestTableCameraTranslate(t *testing.T) {
 
 	testCases := []struct {
-		start  mgl.Vec3
-		diff   mgl.Vec3
-		expect mgl.Vec3
+		start  glm.Vec3
+		diff   glm.Vec3
+		expect glm.Vec3
 	}{
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{0.0, 0.0, 0.0},
-			expect: mgl.Vec3{0.0, 0.0, 0.0},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{0.0, 0.0, 0.0},
+			expect: glm.Vec3{0.0, 0.0, 0.0},
 		},
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{1.0, 0.0, 0.0},
-			expect: mgl.Vec3{1.0, 0.0, 0.0},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{1.0, 0.0, 0.0},
+			expect: glm.Vec3{1.0, 0.0, 0.0},
 		},
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{1.0, 1.0, 0.0},
-			expect: mgl.Vec3{1.0, 1.0, 0.0},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{1.0, 1.0, 0.0},
+			expect: glm.Vec3{1.0, 1.0, 0.0},
 		},
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{1.0, 1.0, 1.0},
-			expect: mgl.Vec3{1.0, 1.0, 1.0},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{1.0, 1.0, 1.0},
+			expect: glm.Vec3{1.0, 1.0, 1.0},
 		},
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{-1.0, 0.0, 0.0},
-			expect: mgl.Vec3{-1.0, 0.0, 0.0},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{-1.0, 0.0, 0.0},
+			expect: glm.Vec3{-1.0, 0.0, 0.0},
 		},
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{-1.0, -1.0, 0.0},
-			expect: mgl.Vec3{-1.0, -1.0, 0.0},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{-1.0, -1.0, 0.0},
+			expect: glm.Vec3{-1.0, -1.0, 0.0},
 		},
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{-1.0, -1.0, -1.0},
-			expect: mgl.Vec3{-1.0, -1.0, -1.0},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{-1.0, -1.0, -1.0},
+			expect: glm.Vec3{-1.0, -1.0, -1.0},
 		},
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{25.0, 12.3, 0.1},
-			expect: mgl.Vec3{25.0, 12.3, 0.1},
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{25.0, 12.3, 0.1},
+			expect: glm.Vec3{25.0, 12.3, 0.1},
 		},
 		{
-			start:  mgl.Vec3{10.0, 15.0, 20.0},
-			diff:   mgl.Vec3{-10.0, -15.0, -20.0},
-			expect: mgl.Vec3{0.0, 0.0, 0.0},
+			start:  glm.Vec3{10.0, 15.0, 20.0},
+			diff:   glm.Vec3{-10.0, -15.0, -20.0},
+			expect: glm.Vec3{0.0, 0.0, 0.0},
 		},
 		{
-			start:  mgl.Vec3{5.0, 5.0, 5.0},
-			diff:   mgl.Vec3{-10.0, -10.0, -10.0},
-			expect: mgl.Vec3{-5.0, -5.0, -5.0},
+			start:  glm.Vec3{5.0, 5.0, 5.0},
+			diff:   glm.Vec3{-10.0, -10.0, -10.0},
+			expect: glm.Vec3{-5.0, -5.0, -5.0},
 		},
 	}
 
@@ -106,9 +106,9 @@ func TestTableCameraTranslate(t *testing.T) {
 		t.Run(fmt.Sprintf("translate %v by %v", tC.start, tC.diff), func(t *testing.T) {
 			t.Parallel()
 			cam := world.NewCamera()
-			cam.Translate(tC.start)
+			cam.Translate(&tC.start)
 
-			cam.Translate(tC.diff)
+			cam.Translate(&tC.diff)
 			pos := cam.GetPosition()
 
 			if pos != tC.expect {
@@ -131,7 +131,7 @@ func TestCameraGetRotationQuat(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		rot := cam.GetRotationQuat()
-		expect := mgl.QuatIdent()
+		expect := glm.QuatIdent()
 
 		if rot != expect {
 			t.Fatalf("expected %v but got %v", expect, rot)
@@ -143,42 +143,42 @@ func TestCameraGetRotationQuat(t *testing.T) {
 func TestTableCameraRotate(t *testing.T) {
 
 	testCases := []struct {
-		start  mgl.Vec3
-		diff   mgl.Vec3
-		expect mgl.Quat
+		start  glm.Vec3
+		diff   glm.Vec3
+		expect glm.Quat
 	}{
 		{
-			start:  mgl.Vec3{0.0, 0.0, 0.0},
-			diff:   mgl.Vec3{0.0, 0.0, 0.0},
-			expect: mgl.QuatIdent(),
+			start:  glm.Vec3{0.0, 0.0, 0.0},
+			diff:   glm.Vec3{0.0, 0.0, 0.0},
+			expect: glm.QuatIdent(),
 		},
 		{
-			start: mgl.Vec3{0.0, 0.0, 0.0},
-			diff:  mgl.Vec3{90.0, 0.0, 0.0},
-			expect: mgl.Quat{
-				W: float32(math.Cos(float64(mgl.DegToRad(90.0 / 2)))),
-				V: mgl.Vec3{
-					float32(math.Sin(float64(mgl.DegToRad(90.0 / 2)))),
+			start: glm.Vec3{0.0, 0.0, 0.0},
+			diff:  glm.Vec3{90.0, 0.0, 0.0},
+			expect: glm.Quat{
+				W: float32(math.Cos(float64(glm.DegToRad(90.0 / 2)))),
+				V: glm.Vec3{
+					float32(math.Sin(float64(glm.DegToRad(90.0 / 2)))),
 					0.0,
 					0.0,
 				},
 			},
 		},
 		{
-			start: mgl.Vec3{90.0, 0.0, 0.0},
-			diff:  mgl.Vec3{0.0, 90.0, 0.0},
-			expect: mgl.Quat{
-				W: float32(math.Cos(float64(mgl.DegToRad(90.0 / 2)))),
-				V: mgl.Vec3{
-					float32(math.Sin(float64(mgl.DegToRad(90.0 / 2)))),
+			start: glm.Vec3{90.0, 0.0, 0.0},
+			diff:  glm.Vec3{0.0, 90.0, 0.0},
+			expect: (&glm.Quat{
+				W: float32(math.Cos(float64(glm.DegToRad(90.0 / 2)))),
+				V: glm.Vec3{
+					float32(math.Sin(float64(glm.DegToRad(90.0 / 2)))),
 					0.0,
 					0.0,
 				},
-			}.Mul(mgl.Quat{
-				W: float32(math.Cos(float64(mgl.DegToRad(90.0 / 2)))),
-				V: mgl.Vec3{
+			}).Mul(&glm.Quat{
+				W: float32(math.Cos(float64(glm.DegToRad(90.0 / 2)))),
+				V: glm.Vec3{
 					0.0,
-					float32(math.Sin(float64(mgl.DegToRad(90.0 / 2)))),
+					float32(math.Sin(float64(glm.DegToRad(90.0 / 2)))),
 					0.0,
 				},
 			}),
@@ -190,16 +190,19 @@ func TestTableCameraRotate(t *testing.T) {
 		t.Run(fmt.Sprintf("rotate %v by %v", tC.start, tC.diff), func(t *testing.T) {
 			t.Parallel()
 			cam := world.NewCamera()
-			cam.Rotate(mgl.Vec3{1.0, 0.0, 0.0}, tC.start.X())
-			cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, tC.start.Y())
-			cam.Rotate(mgl.Vec3{0.0, 0.0, 1.0}, tC.start.Z())
+			cam.Rotate(&glm.Vec3{1.0, 0.0, 0.0}, tC.start.X())
+			cam.Rotate(&glm.Vec3{0.0, 1.0, 0.0}, tC.start.Y())
+			cam.Rotate(&glm.Vec3{0.0, 0.0, 1.0}, tC.start.Z())
 
-			cam.Rotate(mgl.Vec3{1.0, 0.0, 0.0}, tC.diff.X())
-			cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, tC.diff.Y())
-			cam.Rotate(mgl.Vec3{0.0, 0.0, 1.0}, tC.diff.Z())
+			cam.Rotate(&glm.Vec3{1.0, 0.0, 0.0}, tC.diff.X())
+			cam.Rotate(&glm.Vec3{0.0, 1.0, 0.0}, tC.diff.Y())
+			cam.Rotate(&glm.Vec3{0.0, 0.0, 1.0}, tC.diff.Z())
 			quat := cam.GetRotationQuat()
 
-			if quat != tC.expect {
+			if !withinErrorVec3(quat.V, tC.expect.V, 0.000001) {
+				t.Fatalf("expected %v but got %v", tC.expect, quat)
+			}
+			if !withinError(quat.W, tC.expect.W, 0.000001) {
 				t.Fatalf("expected %v but got %v", tC.expect, quat)
 			}
 		})
@@ -214,7 +217,7 @@ func withinError(x, y float32, diff float32) bool {
 	return false
 }
 
-func withinErrorVec3(a, b mgl.Vec3, diff float32) bool {
+func withinErrorVec3(a, b glm.Vec3, diff float32) bool {
 	if withinError(a.X(), b.X(), diff) && withinError(a.Y(), b.Y(), diff) &&
 		withinError(a.Z(), b.Z(), diff) {
 		return true
@@ -226,9 +229,9 @@ func TestCameraLookVector(t *testing.T) {
 	t.Run("roll doesn't change look forward", func(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
-		cam.Rotate(mgl.Vec3{0, 0, 1}, 60)
+		cam.Rotate(&glm.Vec3{0, 0, 1}, 60)
 		look := cam.GetLookForward()
-		expect := mgl.Vec3{0.0, 0.0, -1.0}
+		expect := glm.Vec3{0.0, 0.0, -1.0}
 		if !withinErrorVec3(look, expect, 0.0001) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
@@ -237,7 +240,7 @@ func TestCameraLookVector(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		expect := cam.GetLookBack()
-		cam.Rotate(mgl.Vec3{0, 1, 0}, 180)
+		cam.Rotate(&glm.Vec3{0, 1, 0}, 180)
 		look := cam.GetLookForward()
 		if !withinErrorVec3(look, expect, 0.0001) {
 			t.Fatalf("expected %v but got %v", expect, look)
@@ -247,7 +250,7 @@ func TestCameraLookVector(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		expect := cam.GetLookRight()
-		cam.Rotate(mgl.Vec3{0, 1, 0}, 90)
+		cam.Rotate(&glm.Vec3{0, 1, 0}, 90)
 		look := cam.GetLookForward()
 		if !withinErrorVec3(look, expect, 0.0001) {
 			t.Fatalf("expected %v but got %v", expect, look)
@@ -257,7 +260,7 @@ func TestCameraLookVector(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		expect := cam.GetLookLeft()
-		cam.Rotate(mgl.Vec3{0, 1, 0}, -90)
+		cam.Rotate(&glm.Vec3{0, 1, 0}, -90)
 		look := cam.GetLookForward()
 		if !withinErrorVec3(look, expect, 0.0001) {
 			t.Fatalf("expected %v but got %v", expect, look)
@@ -268,7 +271,7 @@ func TestCameraLookVector(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
 		expect := cam.GetLookUp()
-		cam.Rotate(mgl.Vec3{1, 0, 0}, -90)
+		cam.Rotate(&glm.Vec3{1, 0, 0}, -90)
 		look := cam.GetLookForward()
 		if !withinErrorVec3(look, expect, 0.0001) {
 			t.Fatalf("expected %v but got %v", expect, look)
@@ -282,11 +285,11 @@ func TestCameraLookVector(t *testing.T) {
 		// Point thumb in direction of axis, fingers curl towards
 		// negative degree rotation
 		expect := cam.GetLookUp()
-		cam.Rotate(mgl.Vec3{1, 0, 0}, 90)  // look down
-		cam.Rotate(mgl.Vec3{0, 1, 0}, 90)  // roll 90 toward right
-		cam.Rotate(mgl.Vec3{0, 0, 1}, -90) // look up (facing right)
-		cam.Rotate(mgl.Vec3{1, 0, 0}, 180) // roll upsidedown
-		cam.Rotate(mgl.Vec3{0, 0, 1}, 270) // lean back 270 degrees (now facing up)
+		cam.Rotate(&glm.Vec3{1, 0, 0}, 90)  // look down
+		cam.Rotate(&glm.Vec3{0, 1, 0}, 90)  // roll 90 toward right
+		cam.Rotate(&glm.Vec3{0, 0, 1}, -90) // look up (facing right)
+		cam.Rotate(&glm.Vec3{1, 0, 0}, 180) // roll upsidedown
+		cam.Rotate(&glm.Vec3{0, 0, 1}, 270) // lean back 270 degrees (now facing up)
 		look := cam.GetLookForward()
 		if !withinErrorVec3(look, expect, 0.0001) {
 			t.Fatalf("expected %v but got %v", expect, look)
@@ -298,7 +301,7 @@ func TestCameraLookVector(t *testing.T) {
 		cam := world.NewCamera()
 		// Right hand rule works for negative axes too
 		expect := cam.GetLookDown()
-		cam.Rotate(mgl.Vec3{-1, 0, 0}, -90)
+		cam.Rotate(&glm.Vec3{-1, 0, 0}, -90)
 		look := cam.GetLookForward()
 		if !withinErrorVec3(look, expect, 0.0001) {
 			t.Fatalf("expected %v but got %v", expect, look)

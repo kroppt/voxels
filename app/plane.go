@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"unsafe"
 
+	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
-	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/shapes"
 	"github.com/kroppt/voxels/voxgl"
@@ -91,7 +91,7 @@ type PlaneRenderer struct {
 
 func NewPlaneRenderer() *PlaneRenderer {
 	ubo := gfx.NewBufferObject()
-	var mat mgl.Mat4
+	var mat glm.Mat4
 	// opengl memory allocation, 2x mat4 = 1 for proj + 1 for view
 	ubo.BufferData(gl.UNIFORM_BUFFER, uint32(2*unsafe.Sizeof(mat)), gl.Ptr(nil), gl.STATIC_DRAW)
 	// use binding = 0

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	mgl "github.com/go-gl/mathgl/mgl32"
+	"github.com/engoengine/glm"
 )
 
 type Range struct {
@@ -74,7 +74,7 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		voxels:   voxels,
 		cam:      cam,
 	}
-	plane.cam.Translate(mgl.Vec3{0, 0, 25})
+	plane.cam.Translate(&glm.Vec3{0, 0, 25})
 
 	if renderer != nil {
 		err := renderer.Init(plane)

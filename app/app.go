@@ -3,8 +3,8 @@ package app
 import (
 	"fmt"
 
+	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
-	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
@@ -85,9 +85,10 @@ func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error 
 	cam := app.plane.GetCamera()
 	speed := float32(0.1)
 	// use x component to rotate around Y axis
-	cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, speed*float32(evt.XRel))
+	cam.Rotate(&glm.Vec3{0.0, 1.0, 0.0}, speed*float32(evt.XRel))
 	// use y component to rotate around the axis that goes through your ears
-	cam.Rotate(cam.GetLookRight(), speed*float32(evt.YRel))
+	lookRight := cam.GetLookRight()
+	cam.Rotate(&lookRight, speed*float32(evt.YRel))
 	err := app.plane.GetRenderer().UpdateView()
 	if err != nil {
 		return err
@@ -104,22 +105,34 @@ func (app *Application) pollKeyboard() error {
 	keys := sdl.GetKeyboardState()
 	speed := float32(0.5)
 	if keys[sdl.SCANCODE_W] == sdl.PRESSED {
-		cam.Translate(cam.GetLookForward().Mul(speed))
+		look := cam.GetLookForward()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_S] == sdl.PRESSED {
-		cam.Translate(cam.GetLookBack().Mul(speed))
+		look := cam.GetLookBack()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_A] == sdl.PRESSED {
-		cam.Translate(cam.GetLookLeft().Mul(speed))
+		look := cam.GetLookLeft()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_D] == sdl.PRESSED {
-		cam.Translate(cam.GetLookRight().Mul(speed))
+		look := cam.GetLookRight()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_SPACE] == sdl.PRESSED {
-		cam.Translate(mgl.Vec3{0.0, 1.0, 0.0}.Mul(speed))
+		look := glm.Vec3{0.0, 1.0, 0.0}
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_LSHIFT] == sdl.PRESSED {
-		cam.Translate(mgl.Vec3{0.0, -1.0, 0.0}.Mul(speed))
+		look := glm.Vec3{0.0, -1.0, 0.0}
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if cam.GetPosition() == initPos {
 		return nil
