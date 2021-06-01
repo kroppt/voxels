@@ -24,8 +24,8 @@ func makeCube(plane *world.Plane, i, j, k int) (*voxgl.Object, error) {
 	vox.Color.G = float32(j-y.Min) / float32(y.Max-y.Min)
 	vox.Color.B = float32(k-z.Min) / float32(z.Max-z.Min)
 	vox.Color.A = 1.0
-	col := [3]float32{vox.Color.R, vox.Color.G, vox.Color.B}
-	colors := [8][3]float32{
+	col := [4]float32{vox.Color.R, vox.Color.G, vox.Color.B, vox.Color.A}
+	colors := [8][4]float32{
 		col, col, col, col, col, col, col, col,
 	}
 	obj, err := shapes.NewColoredCube(colors)
