@@ -74,8 +74,8 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		voxels:   voxels,
 		cam:      cam,
 	}
-	plane.cam.Translate(&glm.Vec3{0, 0, 25})
-
+	plane.cam.SetPosition(&glm.Vec3{0, 0, 25})
+	plane.cam.LookAt(&glm.Vec3{0, 0, 0})
 	if renderer != nil {
 		err := renderer.Init(plane)
 		if err != nil {

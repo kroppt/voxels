@@ -24,9 +24,51 @@ func (c *Camera) GetPosition() glm.Vec3 {
 	return c.pos.Mul(-1.0)
 }
 
+// SetPosition sets the position of the camera to pos
+func (c *Camera) SetPosition(pos *glm.Vec3) {
+	c.pos = pos.Mul(-1)
+}
+
 // Translate adds the given translation to the position of the camera.
 func (c *Camera) Translate(diff *glm.Vec3) {
 	c.pos = c.pos.Sub(diff)
+}
+
+// quatLookAtV is a fixed version of GLM's QuatLookAtV that accounts for Y direction
+func quatLookAtV(eye, center, up *glm.Vec3) glm.Quat {
+	// glm bug fix
+	if *eye == *center {
+		return glm.QuatIdent()
+	}
+	// Copied from GLM and uncommented 2 lines below
+	cme := center.Sub(eye)
+	direction := cme.Normalized()
+
+	min1 := glm.Vec3{0, 0, -1}
+	rotDir := glm.QuatBetweenVectors(&min1, &direction)
+
+	// Uncommented these 2 lines
+	right := direction.Cross(up)
+	upp := right.Cross(&direction)
+
+	dup := glm.Vec3{0, 1, 0}
+	upCur := rotDir.Rotate(&dup)
+	rotUp := glm.QuatBetweenVectors(&upCur, &upp)
+
+	rotTarget := rotUp.Mul(&rotDir)
+	return rotTarget.Inverse()
+}
+
+// LookAt rotates the camera to look at a specified point
+func (c *Camera) LookAt(center *glm.Vec3) {
+	// do nothing if target is current position
+	negatedPos := c.pos.Mul(-1)
+	if negatedPos == *center {
+		return
+	}
+	up := c.GetLookUp()
+	quat := quatLookAtV(&negatedPos, center, &up)
+	c.rot = quat
 }
 
 // GetRotationQuat returns the quaternion the camera is rotated with.

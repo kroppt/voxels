@@ -309,3 +309,22 @@ func TestCameraLookVector(t *testing.T) {
 	})
 
 }
+
+func TestLookSamePos(t *testing.T) {
+	t.Run("camera can't look at its own position", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		cam.SetPosition(&glm.Vec3{1, 2, 3})
+		cam.LookAt(&glm.Vec3{0, 0, 0})
+
+		expect := cam.GetRotationQuat()
+
+		currentPos := cam.GetPosition()
+		cam.LookAt(&currentPos)
+		result := cam.GetRotationQuat()
+
+		if result != expect {
+			t.Fatalf("expected %v rotation quat, but got %v", expect, result)
+		}
+	})
+}
