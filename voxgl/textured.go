@@ -2,7 +2,6 @@ package voxgl
 
 import (
 	"github.com/kroppt/gfx"
-	"github.com/kroppt/voxels/world"
 )
 
 // TexturedObject is a renderable set of vertices.
@@ -32,9 +31,9 @@ func NewTexturedObject(vertices [][5]float32, texture gfx.Texture) (*TexturedObj
 }
 
 // Render generates an image of the object with OpenGL.
-func (to *TexturedObject) Render(cam world.Camera) {
+func (to *TexturedObject) Render() {
 	to.tex.Bind()
-	to.Object.Render(cam)
+	to.Object.Render()
 	to.tex.Unbind()
 }
 

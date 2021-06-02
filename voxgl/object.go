@@ -1,10 +1,11 @@
 package voxgl
 
 import (
+	"fmt"
+
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
-	"github.com/kroppt/voxels/world"
 )
 
 // Object is a renderable set of vertices.
@@ -55,7 +56,7 @@ func NewObject(vertShader string, fragShader string, vertices [][]float32, layou
 }
 
 // Render generates an image of the object with OpenGL.
-func (o *Object) Render(cam world.Camera) {
+func (o *Object) Render() {
 	model := glm.Ident4()
 	trans := glm.Translate3D(o.position[0], o.position[1], o.position[2])
 	model = model.Mul4(&trans)
@@ -63,7 +64,10 @@ func (o *Object) Render(cam world.Camera) {
 	model = model.Mul4(&scale)
 	rot := o.rotation.Mat4()
 	model = model.Mul4(&rot)
-	o.program.UploadUniformMat4("model", model)
+	err := o.program.UploadUniformMat4("model", model)
+	if err != nil {
+		panic(fmt.Errorf("error uploading uniform \"model\": %w", err))
+	}
 
 	o.program.Bind()
 	o.vao.Draw()

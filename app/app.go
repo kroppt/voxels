@@ -23,7 +23,7 @@ func New(win *sdl.Window) (*Application, error) {
 	x := world.Range{Min: -5, Max: 5}
 	y := world.Range{Min: -5, Max: 5}
 	z := world.Range{Min: -5, Max: 5}
-	plane, err := world.NewPlane(NewPlaneRenderer(), x, y, z)
+	plane, err := world.NewPlane(x, y, z)
 	if err != nil {
 		return nil, fmt.Errorf("could not create plane: %v", err)
 	}
@@ -90,7 +90,7 @@ func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error 
 	// use y component to rotate around the axis that goes through your ears
 	lookRight := cam.GetLookRight()
 	cam.Rotate(&lookRight, speed*float32(evt.YRel))
-	err := app.plane.GetRenderer().UpdateView()
+	err := app.plane.UpdateView()
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (app *Application) pollKeyboard() error {
 	if cam.GetPosition() == initPos {
 		return nil
 	}
-	err := app.plane.GetRenderer().UpdateView()
+	err := app.plane.UpdateView()
 	if err != nil {
 		return err
 	}
@@ -188,10 +188,7 @@ func (app *Application) PostEventActions() {
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	err := app.plane.Render()
-	if err != nil {
-		log.Warnf("plane render error: %v", err)
-	}
+	app.plane.Render()
 
 	app.win.GLSwap()
 
