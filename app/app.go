@@ -13,7 +13,7 @@ import (
 
 type Application struct {
 	win     *sdl.Window
-	plane   *world.Plane
+	world   *world.World
 	running bool
 	m1held  bool
 }
@@ -23,14 +23,14 @@ func New(win *sdl.Window) (*Application, error) {
 	x := world.Range{Min: -5, Max: 5}
 	y := world.Range{Min: -5, Max: 5}
 	z := world.Range{Min: -5, Max: 5}
-	plane, err := world.NewPlane(x, y, z)
+	wld, err := world.New(x, y, z)
 	if err != nil {
-		return nil, fmt.Errorf("could not create plane: %v", err)
+		return nil, fmt.Errorf("could not create world: %v", err)
 	}
 
 	return &Application{
 		win:   win,
-		plane: plane,
+		world: wld,
 	}, nil
 }
 
@@ -83,14 +83,14 @@ func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error 
 	if !app.m1held {
 		return nil
 	}
-	cam := app.plane.GetCamera()
+	cam := app.world.GetCamera()
 	speed := float32(0.1)
 	// use x component to rotate around Y axis
 	cam.Rotate(&glm.Vec3{0.0, 1.0, 0.0}, speed*float32(evt.XRel))
 	// use y component to rotate around the axis that goes through your ears
 	lookRight := cam.GetLookRight()
 	cam.Rotate(&lookRight, speed*float32(evt.YRel))
-	err := app.plane.UpdateView()
+	err := app.world.UpdateView()
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 }
 
 func (app *Application) pollKeyboard() error {
-	cam := app.plane.GetCamera()
+	cam := app.world.GetCamera()
 	initPos := cam.GetPosition()
 	keys := sdl.GetKeyboardState()
 	speed := float32(0.5)
@@ -138,7 +138,7 @@ func (app *Application) pollKeyboard() error {
 	if cam.GetPosition() == initPos {
 		return nil
 	}
-	err := app.plane.UpdateView()
+	err := app.world.UpdateView()
 	if err != nil {
 		return err
 	}
@@ -146,10 +146,10 @@ func (app *Application) pollKeyboard() error {
 }
 
 func (app *Application) findLookatVoxel() (block glm.Vec3, dist float32, found bool) {
-	cam := *app.plane.GetCamera()
+	cam := *app.world.GetCamera()
 	pos := cam.GetPosition()
 	dir := cam.GetLookForward()
-	xrng, yrng, zrng := app.plane.Size()
+	xrng, yrng, zrng := app.world.Size()
 	intersects := 0
 	for i := xrng.Min; i <= xrng.Max; i++ {
 		for j := yrng.Min; j <= yrng.Max; j++ {
@@ -188,7 +188,7 @@ func (app *Application) PostEventActions() {
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	app.plane.Render()
+	app.world.Render()
 
 	app.win.GLSwap()
 
@@ -198,7 +198,7 @@ func (app *Application) PostEventActions() {
 }
 
 func (app *Application) Quit() {
-	app.plane.Destroy()
+	app.world.Destroy()
 	if err := app.win.Destroy(); err != nil {
 		log.Fatal(err)
 	}

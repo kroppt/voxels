@@ -16,7 +16,7 @@ type Range struct {
 	Max int
 }
 
-type Plane struct {
+type World struct {
 	x      Range
 	y      Range
 	z      Range
@@ -91,7 +91,7 @@ func cleanupCubes(objs [][][]*Voxel) {
 	}
 }
 
-func NewPlane(x, y, z Range) (*Plane, error) {
+func New(x, y, z Range) (*World, error) {
 	voxels, err := makeVoxels(x, y, z)
 	if err != nil {
 		cleanupCubes(voxels)
@@ -107,7 +107,7 @@ func NewPlane(x, y, z Range) (*Plane, error) {
 
 	cam := NewCamera()
 
-	plane := &Plane{
+	world := &World{
 		x:      x,
 		y:      y,
 		z:      z,
@@ -115,24 +115,24 @@ func NewPlane(x, y, z Range) (*Plane, error) {
 		ubo:    ubo,
 		cam:    cam,
 	}
-	plane.cam.SetPosition(&glm.Vec3{0, 0, 25})
-	plane.cam.LookAt(&glm.Vec3{0, 0, 0})
-	err = plane.UpdateView()
+	world.cam.SetPosition(&glm.Vec3{0, 0, 25})
+	world.cam.LookAt(&glm.Vec3{0, 0, 0})
+	err = world.UpdateView()
 	if err != nil {
 		return nil, err
 	}
-	err = plane.UpdateProj()
+	err = world.UpdateProj()
 	if err != nil {
 		return nil, err
 	}
-	return plane, nil
+	return world, nil
 }
 
-func (p *Plane) Destroy() {
+func (p *World) Destroy() {
 	p.ubo.Destroy()
 }
 
-var ErrOutOfBounds = errors.New("position out of bounds of plane")
+var ErrOutOfBounds = errors.New("position out of bounds")
 
 func getRangeOffsets(pos Position, x, y, z Range) (i int, j int, k int) {
 	i = pos.X - x.Min
@@ -141,53 +141,51 @@ func getRangeOffsets(pos Position, x, y, z Range) (i int, j int, k int) {
 	return i, j, k
 }
 
-func (p *Plane) At(pos Position) (*Voxel, error) {
+func (w *World) At(pos Position) (*Voxel, error) {
 	switch {
-	case pos.X < p.x.Min:
-	case pos.X > p.x.Max:
-	case pos.Y < p.y.Min:
-	case pos.Y > p.y.Max:
-	case pos.Z < p.z.Min:
-	case pos.Z > p.z.Max:
+	case pos.X < w.x.Min:
+	case pos.X > w.x.Max:
+	case pos.Y < w.y.Min:
+	case pos.Y > w.y.Max:
+	case pos.Z < w.z.Min:
+	case pos.Z > w.z.Max:
 	default:
-		i, j, k := getRangeOffsets(pos, p.x, p.y, p.z)
-		return p.voxels[i][j][k], nil
+		i, j, k := getRangeOffsets(pos, w.x, w.y, w.z)
+		return w.voxels[i][j][k], nil
 	}
 	return nil, ErrOutOfBounds
 }
 
-func (p *Plane) Size() (x, y, z Range) {
-	return p.x, p.y, p.z
+func (w *World) Size() (x, y, z Range) {
+	return w.x, w.y, w.z
 }
 
-func (p *Plane) GetCamera() *Camera {
-	return p.cam
+func (w *World) GetCamera() *Camera {
+	return w.cam
 }
 
-func (p *Plane) UpdateView() error {
-	cam := *p.GetCamera()
+func (w *World) UpdateView() error {
+	cam := *w.GetCamera()
 	view := cam.GetViewMat()
-	err := p.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
+	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (p *Plane) UpdateProj() error {
-	cam := *p.GetCamera()
+func (w *World) UpdateProj() error {
+	cam := *w.GetCamera()
 	proj := cam.GetProjMat()
-	err := p.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(proj)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
+	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(proj)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-var ErrNilRenderer = errors.New("cannot render with nil renderer")
-
-func (p *Plane) Render() {
-	for _, xcubes := range p.voxels {
+func (w *World) Render() {
+	for _, xcubes := range w.voxels {
 		for _, ycubes := range xcubes {
 			for _, cube := range ycubes {
 				cube.Render()
