@@ -4,17 +4,16 @@ import (
 	"github.com/go-gl/gl/v2.1/gl"
 	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/gfx"
+	"github.com/kroppt/voxels/world"
 )
 
 // Object is a renderable set of vertices.
 type Object struct {
-	program   gfx.Program
-	vao       gfx.VAO
-	position  mgl.Vec3
-	scale     mgl.Vec3
-	rotation  mgl.Quat
-	camerapos mgl.Vec3
-	camerarot mgl.Quat
+	program  gfx.Program
+	vao      gfx.VAO
+	position mgl.Vec3
+	scale    mgl.Vec3
+	rotation mgl.Quat
 }
 
 // NewObject returns a newly created Object with the given vertices.
@@ -47,32 +46,21 @@ func NewObject(vertShader string, fragShader string, vertices [][]float32, layou
 	}
 
 	return &Object{
-		program:   prog,
-		vao:       *vao,
-		position:  mgl.Vec3{0.0, 0.0, 0.0},
-		scale:     mgl.Vec3{1.0, 1.0, 1.0},
-		rotation:  mgl.QuatIdent(),
-		camerapos: mgl.Vec3{0.0, 0.0, -25.0},
-		camerarot: mgl.QuatIdent(),
+		program:  prog,
+		vao:      *vao,
+		position: mgl.Vec3{0.0, 0.0, 0.0},
+		scale:    mgl.Vec3{1.0, 1.0, 1.0},
+		rotation: mgl.QuatIdent(),
 	}, nil
 }
 
 // Render generates an image of the object with OpenGL.
-func (o *Object) Render() {
+func (o *Object) Render(cam world.Camera) {
 	model := mgl.Ident4()
 	model = model.Mul4(mgl.Translate3D(o.position[0], o.position[1], o.position[2]))
 	model = model.Mul4(mgl.Scale3D(o.scale[0], o.scale[1], o.scale[2]))
 	model = model.Mul4(o.rotation.Mat4())
 	o.program.UploadUniformMat4("model", model)
-
-	view := mgl.Ident4()
-	view = view.Mul4(mgl.Translate3D(o.camerapos[0], o.camerapos[1], o.camerapos[2]))
-	view = view.Mul4(o.camerarot.Mat4())
-	o.program.UploadUniformMat4("view", view)
-
-	proj := mgl.Ident4()
-	proj = proj.Mul4(mgl.Perspective(mgl.DegToRad(45.0), 16.0/9.0, 0.1, 100.0))
-	o.program.UploadUniformMat4("projection", proj)
 
 	o.program.Bind()
 	o.vao.Draw()
@@ -90,18 +78,6 @@ func (o *Object) Translate(x, y, z float32) {
 // X, y, and z are the fraction to multiply the given scale by.
 func (o *Object) Scale(x, y, z float32) {
 	o.scale = mgl.Vec3{o.scale[0] * x, o.scale[1] * y, o.scale[2] * z}
-}
-
-func (o *Object) CameraTranslate(x, y, z float32) {
-	o.camerapos = o.camerapos.Add(mgl.Vec3{x, y, z})
-}
-
-func (o *Object) CameraRotate(x, y, z float32) {
-	xrot := mgl.HomogRotate3DX(mgl.DegToRad(x))
-	yrot := mgl.HomogRotate3DY(mgl.DegToRad(y))
-	zrot := mgl.HomogRotate3DZ(mgl.DegToRad(z))
-	rotquat := mgl.Mat4ToQuat(xrot.Mul4(yrot).Mul4(zrot))
-	o.camerarot = o.camerarot.Mul(rotquat)
 }
 
 // Rotate adds the given rotation to the object.

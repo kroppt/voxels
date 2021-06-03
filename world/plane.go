@@ -3,6 +3,8 @@ package world
 import (
 	"errors"
 	"fmt"
+
+	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
 type Range struct {
@@ -12,7 +14,10 @@ type Range struct {
 
 type PlaneRenderer interface {
 	Init(*Plane) error
+	UpdateView() error
+	UpdateProj() error
 	Render(*Plane) error
+	Destroy()
 }
 
 type Plane struct {
@@ -21,6 +26,7 @@ type Plane struct {
 	y        Range
 	z        Range
 	voxels   [][][]Voxel
+	cam      *Camera
 }
 
 func makeVoxel(i, j, k int) Voxel {
@@ -59,13 +65,17 @@ func makeVoxels(x, y, z Range) [][][]Voxel {
 
 func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 	voxels := makeVoxels(x, y, z)
+	cam := NewCamera()
 	plane := &Plane{
 		renderer: renderer,
 		x:        x,
 		y:        y,
 		z:        z,
 		voxels:   voxels,
+		cam:      cam,
 	}
+	plane.cam.Translate(mgl.Vec3{0, 0, 25})
+
 	if renderer != nil {
 		err := renderer.Init(plane)
 		if err != nil {
@@ -73,6 +83,10 @@ func NewPlane(renderer PlaneRenderer, x, y, z Range) (*Plane, error) {
 		}
 	}
 	return plane, nil
+}
+
+func (p *Plane) Destroy() {
+	p.renderer.Destroy()
 }
 
 var ErrOutOfBounds = errors.New("position out of bounds of plane")
@@ -101,6 +115,14 @@ func (p *Plane) At(pos Position) (*Voxel, error) {
 
 func (p *Plane) Size() (x, y, z Range) {
 	return p.x, p.y, p.z
+}
+
+func (p *Plane) GetCamera() *Camera {
+	return p.cam
+}
+
+func (p *Plane) GetRenderer() PlaneRenderer {
+	return p.renderer
 }
 
 var ErrNilRenderer = errors.New("cannot render with nil renderer")

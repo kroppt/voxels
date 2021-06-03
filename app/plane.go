@@ -3,7 +3,11 @@ package app
 import (
 	"errors"
 	"fmt"
+	"unsafe"
 
+	"github.com/go-gl/gl/v2.1/gl"
+	mgl "github.com/go-gl/mathgl/mgl32"
+	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/shapes"
 	"github.com/kroppt/voxels/voxgl"
 	"github.com/kroppt/voxels/world"
@@ -29,7 +33,6 @@ func makeCube(plane *world.Plane, i, j, k int) (*voxgl.Object, error) {
 		return nil, fmt.Errorf("couldn't create colored cube at %v: %w", pos, err)
 	}
 	obj.Translate(float32(i), float32(j), float32(k))
-	obj.CameraRotate(45, 45, 0)
 	return obj, err
 }
 
@@ -83,33 +86,79 @@ func makeCubes(plane *world.Plane, x, y, z world.Range) ([][][]*voxgl.Object, er
 type PlaneRenderer struct {
 	plane *world.Plane
 	cubes [][][]*voxgl.Object
+	ubo   *gfx.BufferObject
 }
 
 func NewPlaneRenderer() *PlaneRenderer {
-	return &PlaneRenderer{}
+	ubo := gfx.NewBufferObject()
+	var mat mgl.Mat4
+	// opengl memory allocation, 2x mat4 = 1 for proj + 1 for view
+	ubo.BufferData(gl.UNIFORM_BUFFER, uint32(2*unsafe.Sizeof(mat)), gl.Ptr(nil), gl.STATIC_DRAW)
+	// use binding = 0
+	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
+	return &PlaneRenderer{
+		plane: nil,
+		cubes: nil,
+		ubo:   ubo,
+	}
 }
 
-func (vr *PlaneRenderer) Init(plane *world.Plane) error {
+func (pr *PlaneRenderer) Destroy() {
+	cleanupCubes(pr.cubes)
+	pr.ubo.Destroy()
+}
+
+func (pr *PlaneRenderer) Init(plane *world.Plane) error {
 	x, y, z := plane.Size()
 	cubes, err := makeCubes(plane, x, y, z)
 	if err != nil {
 		return fmt.Errorf("failed to initialize cubes: %v", err)
 	}
-	vr.plane = plane
-	vr.cubes = cubes
+	pr.plane = plane
+	pr.cubes = cubes
+	err = pr.UpdateView()
+	if err != nil {
+		return err
+	}
+	err = pr.UpdateProj()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pr *PlaneRenderer) UpdateView() error {
+	cam := *pr.plane.GetCamera()
+	view := cam.GetViewMat()
+	err := pr.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (pr *PlaneRenderer) UpdateProj() error {
+	cam := *pr.plane.GetCamera()
+	proj := cam.GetProjMat()
+	err := pr.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(proj)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 var errWrongPlanePassed = errors.New("wrong Plane was passed into Render")
 
-func (vr *PlaneRenderer) Render(plane *world.Plane) error {
-	if vr.plane != plane {
+func (pr *PlaneRenderer) Render(plane *world.Plane) error {
+	if pr.plane != plane {
 		return errWrongPlanePassed
 	}
-	for _, xcubes := range vr.cubes {
+
+	cam := *plane.GetCamera()
+	for _, xcubes := range pr.cubes {
 		for _, ycubes := range xcubes {
 			for _, cube := range ycubes {
-				cube.Render()
+				cube.Render(cam)
 			}
 		}
 	}

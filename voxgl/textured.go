@@ -2,6 +2,7 @@ package voxgl
 
 import (
 	"github.com/kroppt/gfx"
+	"github.com/kroppt/voxels/world"
 )
 
 // TexturedObject is a renderable set of vertices.
@@ -31,9 +32,9 @@ func NewTexturedObject(vertices [][5]float32, texture gfx.Texture) (*TexturedObj
 }
 
 // Render generates an image of the object with OpenGL.
-func (to *TexturedObject) Render() {
+func (to *TexturedObject) Render(cam world.Camera) {
 	to.tex.Bind()
-	to.Object.Render()
+	to.Object.Render(cam)
 	to.tex.Unbind()
 }
 
@@ -44,11 +45,14 @@ func (to *TexturedObject) Destroy() {
 }
 
 const vertTexShader = `
-	#version 330 core
+	#version 420 core
 
+	layout (std140, binding = 0) uniform Matrices
+	{
+		mat4 view;
+		mat4 projection;
+	};
 	uniform mat4 model;
-	uniform mat4 view;
-	uniform mat4 projection;
 
 	layout (location = 0) in vec3 pos;
 	layout (location = 1) in vec2 tex_coord;

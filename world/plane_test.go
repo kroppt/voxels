@@ -425,6 +425,16 @@ func (tr *testRenderer) Render(plane *world.Plane) error {
 	return nil
 }
 
+func (tr *testRenderer) Destroy() {}
+
+func (tr *testRenderer) UpdateView() error {
+	return nil
+}
+
+func (tr *testRenderer) UpdateProj() error {
+	return nil
+}
+
 func TestNewPlane(t *testing.T) {
 
 	t.Run("stub renderer gets initialized creating plane", func(t *testing.T) {
