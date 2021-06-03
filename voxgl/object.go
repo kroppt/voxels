@@ -18,39 +18,16 @@ type Object struct {
 }
 
 // NewObject returns a newly created Object with the given vertices.
-func NewObject(vertShader string, fragShader string, vertices []float32, layout []int32) (*Object, error) {
-	vshad, err := gfx.NewShader(vertShader, gl.VERTEX_SHADER)
-	if err != nil {
-		return nil, err
-	}
-
-	fshad, err := gfx.NewShader(fragShader, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return nil, err
-	}
-
-	gshad, err := gfx.NewShader(geoColShader, gl.GEOMETRY_SHADER_ARB)
-	if err != nil {
-		return nil, err
-	}
-
-	prog, err := gfx.NewProgram(vshad, fshad, gshad)
-	if err != nil {
-		return nil, err
-	}
-	// prog, err := gfx.NewProgram(vshad, fshad)
-	// if err != nil {
-	// 	return nil, err
-	// }
+func NewObject(program gfx.Program, vertices []float32, layout []int32) (*Object, error) {
 	vao := gfx.NewVAO(gl.POINTS, layout)
 
-	err = vao.Load(vertices, gl.STATIC_DRAW)
+	err := vao.Load(vertices, gl.STATIC_DRAW)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Object{
-		program:  prog,
+		program:  program,
 		vao:      *vao,
 		position: glm.Vec3{0.0, 0.0, 0.0},
 		scale:    glm.Vec3{1.0, 1.0, 1.0},

@@ -1,13 +1,37 @@
 package voxgl
 
+import (
+	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/kroppt/gfx"
+)
+
 // NewColoredObject returns a newly created Object with the given colors.
 //
 // Vertices should be vertices of format X, Y, Z, R, G, B, A.
 // X, Y, and Z options should be in the range -1.0 to 1.0.
 // R, G, B, and A should be in the range 0.0 to 1.0.
 func NewColoredObject(vertices [7]float32) (*Object, error) {
+	vshad, err := gfx.NewShader(vertColShader, gl.VERTEX_SHADER)
+	if err != nil {
+		return nil, err
+	}
 
-	obj, err := NewObject(vertColShader, fragColShader, vertices[:], []int32{3, 4})
+	fshad, err := gfx.NewShader(fragColShader, gl.FRAGMENT_SHADER)
+	if err != nil {
+		return nil, err
+	}
+
+	gshad, err := gfx.NewShader(geoColShader, gl.GEOMETRY_SHADER_ARB)
+	if err != nil {
+		return nil, err
+	}
+
+	prog, err := gfx.NewProgram(vshad, fshad, gshad)
+	if err != nil {
+		return nil, err
+	}
+
+	obj, err := NewObject(prog, vertices[:], []int32{3, 4})
 	if err != nil {
 		return nil, err
 	}

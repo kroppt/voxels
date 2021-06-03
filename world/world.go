@@ -8,7 +8,7 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
-	"github.com/kroppt/voxels/shapes"
+	"github.com/kroppt/voxels/voxgl"
 )
 
 type Range struct {
@@ -31,10 +31,10 @@ func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
 	g := float32(j-y.Min) / float32(y.Max-y.Min)
 	b := float32(k-z.Min) / float32(z.Max-z.Min)
 	a := float32(1.0)
-
-	obj, err := shapes.NewColoredCube(float32(i), float32(j), float32(k), r, g, b, a)
+	point := [7]float32{float32(i), float32(j), float32(k), r, g, b, a}
+	obj, err := voxgl.NewColoredObject(point)
 	if err != nil {
-		return nil, fmt.Errorf("couldn't create colored cube at %v: %w", pos, err)
+		return nil, fmt.Errorf("couldn't create colored object at %v: %w", pos, err)
 	}
 
 	return &Voxel{
