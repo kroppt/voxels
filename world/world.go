@@ -17,12 +17,12 @@ type Range struct {
 }
 
 type World struct {
-	x      Range
-	y      Range
-	z      Range
-	voxels [][][]*Voxel
-	ubo    *gfx.BufferObject
-	cam    *Camera
+	x    Range
+	y    Range
+	z    Range
+	ubo  *gfx.BufferObject
+	cam  *Camera
+	root *Octree
 }
 
 func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
@@ -38,60 +38,87 @@ func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
 	}
 
 	return &Voxel{
-		Object: obj,
+		Object:      obj,
+		coordinates: glm.Vec3{float32(i), float32(j), float32(k)},
 	}, nil
 }
 
-func makeYVoxels(x, y, z Range, i, j int) ([]*Voxel, error) {
-	yvox := []*Voxel{}
-	for k := z.Min; k <= z.Max; k++ {
-		zvox, err := makeVoxel(x, y, z, i, j, k)
-		if err != nil {
-			return yvox, err
-		}
-		yvox = append(yvox, zvox)
-	}
-	return yvox, nil
-}
+// func makeYVoxels(x, y, z Range, i, j int) ([]*Voxel, error) {
+// 	yvox := []*Voxel{}
+// 	for k := z.Min; k <= z.Max; k++ {
+// 		zvox, err := makeVoxel(x, y, z, i, j, k)
+// 		if err != nil {
+// 			return yvox, err
+// 		}
+// 		yvox = append(yvox, zvox)
+// 	}
+// 	return yvox, nil
+// }
 
-func makeXVoxels(x, y, z Range, i int) ([][]*Voxel, error) {
-	xvox := [][]*Voxel{}
-	for j := y.Min; j <= y.Max; j++ {
-		yvox, err := makeYVoxels(x, y, z, i, j)
-		if err != nil {
-			return xvox, err
-		}
-		xvox = append(xvox, yvox)
-	}
-	return xvox, nil
-}
+// func makeXVoxels(x, y, z Range, i int) ([][]*Voxel, error) {
+// 	xvox := [][]*Voxel{}
+// 	for j := y.Min; j <= y.Max; j++ {
+// 		yvox, err := makeYVoxels(x, y, z, i, j)
+// 		if err != nil {
+// 			return xvox, err
+// 		}
+// 		xvox = append(xvox, yvox)
+// 	}
+// 	return xvox, nil
+// }
 
-func makeVoxels(x, y, z Range) ([][][]*Voxel, error) {
-	voxels := [][][]*Voxel{}
+// func makeVoxels(x, y, z Range) ([][][]*Voxel, error) {
+// 	voxels := [][][]*Voxel{}
+// 	for i := x.Min; i <= x.Max; i++ {
+// 		xvox, err := makeXVoxels(x, y, z, i)
+// 		if err != nil {
+// 			return voxels, err
+// 		}
+// 		voxels = append(voxels, xvox)
+// 	}
+// 	return voxels, nil
+// }
+
+// func cleanupCubes(objs [][][]*Voxel) {
+// 	for _, objs1 := range objs {
+// 		for _, objs2 := range objs1 {
+// 			for _, obj := range objs2 {
+// 				obj.Destroy()
+// 			}
+// 		}
+// 	}
+// }
+
+func makeOctree(x, y, z Range) (tree *Octree, err error) {
 	for i := x.Min; i <= x.Max; i++ {
-		xvox, err := makeXVoxels(x, y, z, i)
-		if err != nil {
-			return voxels, err
-		}
-		voxels = append(voxels, xvox)
-	}
-	return voxels, nil
-}
-
-func cleanupCubes(objs [][][]*Voxel) {
-	for _, objs1 := range objs {
-		for _, objs2 := range objs1 {
-			for _, obj := range objs2 {
-				obj.Destroy()
+		for j := y.Min; j <= y.Max; j++ {
+			for k := z.Min; k <= z.Max; k++ {
+				voxel, err := makeVoxel(x, y, z, i, j, k)
+				if err != nil {
+					return tree, err
+				}
+				tree.addLeaf(voxel)
 			}
 		}
+	}
+	return tree, nil
+}
+
+func cleanupOctree(tree *Octree) {
+	curr := tree.children
+	for curr != nil {
+		curr.node.voxel.Destroy()
+		curr = curr.next
+	}
+	if tree.voxel != nil {
+		tree.voxel.Destroy()
 	}
 }
 
 func New(x, y, z Range) (*World, error) {
-	voxels, err := makeVoxels(x, y, z)
+	octree, err := makeOctree(x, y, z)
 	if err != nil {
-		cleanupCubes(voxels)
+		cleanupOctree(octree)
 		return nil, err
 	}
 
@@ -105,21 +132,23 @@ func New(x, y, z Range) (*World, error) {
 	cam := NewCamera()
 
 	world := &World{
-		x:      x,
-		y:      y,
-		z:      z,
-		voxels: voxels,
-		ubo:    ubo,
-		cam:    cam,
+		x:    x,
+		y:    y,
+		z:    z,
+		ubo:  ubo,
+		cam:  cam,
+		root: octree,
 	}
 	world.cam.SetPosition(&glm.Vec3{0, 0, 25})
 	world.cam.LookAt(&glm.Vec3{0, 0, 0})
 	err = world.UpdateView()
 	if err != nil {
+		cleanupOctree(octree)
 		return nil, err
 	}
 	err = world.UpdateProj()
 	if err != nil {
+		cleanupOctree(octree)
 		return nil, err
 	}
 	return world, nil
