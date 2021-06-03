@@ -19,10 +19,10 @@ type Application struct {
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	// 11 x 11 x 11
-	x := world.Range{Min: -5, Max: 5}
-	y := world.Range{Min: -5, Max: 5}
-	z := world.Range{Min: -5, Max: 5}
+	// 10 x 10 x 10
+	x := world.Range{Min: -5, Max: 4}
+	y := world.Range{Min: -5, Max: 4}
+	z := world.Range{Min: -5, Max: 4}
 	wld, err := world.New(x, y, z)
 	if err != nil {
 		return nil, fmt.Errorf("could not create world: %v", err)
@@ -155,7 +155,7 @@ func (app *Application) findLookatVoxel() (block glm.Vec3, dist float32, found b
 		for j := yrng.Min; j <= yrng.Max; j++ {
 			for k := zrng.Min; k <= zrng.Max; k++ {
 				aabb := geo.AABB{
-					Center:     glm.Vec3{float32(i), float32(j), float32(k)},
+					Center:     glm.Vec3{float32(i) + 0.5, float32(j) + 0.5, float32(k) + 0.5},
 					HalfExtend: glm.Vec3{0.5, 0.5, 0.5},
 				}
 				t, overlap := world.Intersect(aabb, pos, dir)
@@ -166,7 +166,7 @@ func (app *Application) findLookatVoxel() (block glm.Vec3, dist float32, found b
 				if t < dist || !found {
 					found = true
 					dist = t
-					block = aabb.Center
+					block = glm.Vec3{float32(i), float32(j), float32(k)}
 				}
 			}
 		}

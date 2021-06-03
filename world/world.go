@@ -31,15 +31,12 @@ func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
 	g := float32(j-y.Min) / float32(y.Max-y.Min)
 	b := float32(k-z.Min) / float32(z.Max-z.Min)
 	a := float32(1.0)
-	col := [4]float32{r, g, b, a}
-	colors := [8][4]float32{
-		col, col, col, col, col, col, col, col,
-	}
-	obj, err := shapes.NewColoredCube(colors)
+
+	obj, err := shapes.NewColoredCube(float32(i), float32(j), float32(k), r, g, b, a)
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create colored cube at %v: %w", pos, err)
 	}
-	obj.Translate(float32(i), float32(j), float32(k))
+
 	return &Voxel{
 		Object: obj,
 	}, nil

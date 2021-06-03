@@ -18,7 +18,7 @@ type Object struct {
 }
 
 // NewObject returns a newly created Object with the given vertices.
-func NewObject(vertShader string, fragShader string, vertices [][]float32, layout []int32) (*Object, error) {
+func NewObject(vertShader string, fragShader string, vertices []float32, layout []int32) (*Object, error) {
 	vshad, err := gfx.NewShader(vertShader, gl.VERTEX_SHADER)
 	if err != nil {
 		return nil, err
@@ -29,19 +29,22 @@ func NewObject(vertShader string, fragShader string, vertices [][]float32, layou
 		return nil, err
 	}
 
-	prog, err := gfx.NewProgram(vshad, fshad)
+	gshad, err := gfx.NewShader(geoColShader, gl.GEOMETRY_SHADER_ARB)
 	if err != nil {
 		return nil, err
 	}
 
-	vao := gfx.NewVAO(gl.TRIANGLES, layout)
-
-	points := []float32{}
-	for _, v := range vertices {
-		points = append(points, v[:]...)
+	prog, err := gfx.NewProgram(vshad, fshad, gshad)
+	if err != nil {
+		return nil, err
 	}
+	// prog, err := gfx.NewProgram(vshad, fshad)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	vao := gfx.NewVAO(gl.POINTS, layout)
 
-	err = vao.Load(points, gl.STATIC_DRAW)
+	err = vao.Load(vertices, gl.STATIC_DRAW)
 	if err != nil {
 		return nil, err
 	}
