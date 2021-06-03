@@ -2,16 +2,16 @@ package voxgl
 
 // NewColoredObject returns a newly created Object with the given colors.
 //
-// Vertices should be vertices of format X, Y, Z, R, G, B.
+// Vertices should be vertices of format X, Y, Z, R, G, B, A.
 // X, Y, and Z options should be in the range -1.0 to 1.0.
-// R, G, and B should be in the range 0.0 to 1.0.
-func NewColoredObject(vertices [][6]float32) (*Object, error) {
+// R, G, B, and A should be in the range 0.0 to 1.0.
+func NewColoredObject(vertices [][7]float32) (*Object, error) {
 	verts := make([][]float32, 0, len(vertices))
 	for i := 0; i < len(vertices); i++ {
 		verts = append(verts, vertices[i][:])
 	}
 
-	obj, err := NewObject(vertColShader, fragColShader, verts, []int32{3, 3})
+	obj, err := NewObject(vertColShader, fragColShader, verts, []int32{3, 4})
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ const vertColShader = `
 	#version 420 core
 
 	layout (location = 0) in vec3 pos;
-	layout (location = 1) in vec3 col;
+	layout (location = 1) in vec4 col;
 	layout (std140, binding = 0) uniform Matrices
 	{
 		mat4 view;
@@ -32,7 +32,7 @@ const vertColShader = `
 
 	uniform mat4 model;
 
-	out vec3 color;
+	out vec4 color;
 
 	void main()
 	{
@@ -44,11 +44,11 @@ const vertColShader = `
 const fragColShader = `
 	#version 330
 
-	in vec3 color;
+	in vec4 color;
 
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = vec4(color, 1.0);
+		frag_color = color;
 	}
 `

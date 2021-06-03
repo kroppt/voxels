@@ -3,8 +3,9 @@ package app
 import (
 	"fmt"
 
+	"github.com/engoengine/glm"
+	"github.com/engoengine/glm/geo"
 	"github.com/go-gl/gl/v2.1/gl"
-	mgl "github.com/go-gl/mathgl/mgl32"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
@@ -12,7 +13,7 @@ import (
 
 type Application struct {
 	win     *sdl.Window
-	plane   *world.Plane
+	world   *world.World
 	running bool
 	m1held  bool
 }
@@ -22,14 +23,14 @@ func New(win *sdl.Window) (*Application, error) {
 	x := world.Range{Min: -5, Max: 5}
 	y := world.Range{Min: -5, Max: 5}
 	z := world.Range{Min: -5, Max: 5}
-	plane, err := world.NewPlane(NewPlaneRenderer(), x, y, z)
+	wld, err := world.New(x, y, z)
 	if err != nil {
-		return nil, fmt.Errorf("could not create plane: %v", err)
+		return nil, fmt.Errorf("could not create world: %v", err)
 	}
 
 	return &Application{
 		win:   win,
-		plane: plane,
+		world: wld,
 	}, nil
 }
 
@@ -82,13 +83,14 @@ func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error 
 	if !app.m1held {
 		return nil
 	}
-	cam := app.plane.GetCamera()
+	cam := app.world.GetCamera()
 	speed := float32(0.1)
 	// use x component to rotate around Y axis
-	cam.Rotate(mgl.Vec3{0.0, 1.0, 0.0}, speed*float32(evt.XRel))
+	cam.Rotate(&glm.Vec3{0.0, 1.0, 0.0}, speed*float32(evt.XRel))
 	// use y component to rotate around the axis that goes through your ears
-	cam.Rotate(cam.GetLookRight(), speed*float32(evt.YRel))
-	err := app.plane.GetRenderer().UpdateView()
+	lookRight := cam.GetLookRight()
+	cam.Rotate(&lookRight, speed*float32(evt.YRel))
+	err := app.world.UpdateView()
 	if err != nil {
 		return err
 	}
@@ -99,40 +101,85 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 }
 
 func (app *Application) pollKeyboard() error {
-	cam := app.plane.GetCamera()
+	cam := app.world.GetCamera()
 	initPos := cam.GetPosition()
 	keys := sdl.GetKeyboardState()
 	speed := float32(0.5)
 	if keys[sdl.SCANCODE_W] == sdl.PRESSED {
-		cam.Translate(cam.GetLookForward().Mul(speed))
+		look := cam.GetLookForward()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_S] == sdl.PRESSED {
-		cam.Translate(cam.GetLookBack().Mul(speed))
+		look := cam.GetLookBack()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_A] == sdl.PRESSED {
-		cam.Translate(cam.GetLookLeft().Mul(speed))
+		look := cam.GetLookLeft()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_D] == sdl.PRESSED {
-		cam.Translate(cam.GetLookRight().Mul(speed))
+		look := cam.GetLookRight()
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_SPACE] == sdl.PRESSED {
-		cam.Translate(mgl.Vec3{0.0, 1.0, 0.0}.Mul(speed))
+		look := glm.Vec3{0.0, 1.0, 0.0}
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if keys[sdl.SCANCODE_LSHIFT] == sdl.PRESSED {
-		cam.Translate(mgl.Vec3{0.0, -1.0, 0.0}.Mul(speed))
+		look := glm.Vec3{0.0, -1.0, 0.0}
+		lookSpeed := look.Mul(speed)
+		cam.Translate(&lookSpeed)
 	}
 	if cam.GetPosition() == initPos {
 		return nil
 	}
-	err := app.plane.GetRenderer().UpdateView()
+	err := app.world.UpdateView()
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+func (app *Application) findLookatVoxel() (block glm.Vec3, dist float32, found bool) {
+	cam := *app.world.GetCamera()
+	pos := cam.GetPosition()
+	dir := cam.GetLookForward()
+	xrng, yrng, zrng := app.world.Size()
+	intersects := 0
+	for i := xrng.Min; i <= xrng.Max; i++ {
+		for j := yrng.Min; j <= yrng.Max; j++ {
+			for k := zrng.Min; k <= zrng.Max; k++ {
+				aabb := geo.AABB{
+					Center:     glm.Vec3{float32(i), float32(j), float32(k)},
+					HalfExtend: glm.Vec3{0.5, 0.5, 0.5},
+				}
+				t, overlap := world.Intersect(aabb, pos, dir)
+				if !overlap {
+					continue
+				}
+				intersects++
+				if t < dist || !found {
+					found = true
+					dist = t
+					block = aabb.Center
+				}
+			}
+		}
+	}
+	return
+}
+
 func (app *Application) PostEventActions() {
 	app.pollKeyboard()
+	block, dist, found := app.findLookatVoxel()
+	if found {
+		log.Debugf("I see %v from %v away", block, dist)
+	}
 
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
@@ -141,10 +188,7 @@ func (app *Application) PostEventActions() {
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	err := app.plane.Render()
-	if err != nil {
-		log.Warnf("plane render error: %v", err)
-	}
+	app.world.Render()
 
 	app.win.GLSwap()
 
@@ -154,7 +198,7 @@ func (app *Application) PostEventActions() {
 }
 
 func (app *Application) Quit() {
-	app.plane.Destroy()
+	app.world.Destroy()
 	if err := app.win.Destroy(); err != nil {
 		log.Fatal(err)
 	}
