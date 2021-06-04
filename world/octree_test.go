@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
 	"github.com/kroppt/voxels/world"
 )
 
@@ -16,13 +15,13 @@ func TestOneVoxelOctree(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{0, 0, 0},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{0, 0, 0},
-			HalfExtend: [3]float32{0.5, 0.5, 0.5},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 1,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 		expectedVoxel := &world.Voxel{
 			Object: nil,
@@ -52,13 +51,13 @@ func TestAdjacentTwoVoxelOctree(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{1, 0, 0},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{0, 0, 0},
-			HalfExtend: [3]float32{1, 1, 1},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 2,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()
@@ -81,13 +80,13 @@ func TestCorneredTwoVoxelOctree(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{1, 1, 1},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{0, 0, 0},
-			HalfExtend: [3]float32{1, 1, 1},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 2,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()
@@ -110,13 +109,13 @@ func TestTwoDistantVoxelOctree(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{2, 0, 0},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{0, 0, 0},
-			HalfExtend: [3]float32{2, 2, 2},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 4,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()
@@ -140,13 +139,13 @@ func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{4, 0, 0},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{0, 0, 0},
-			HalfExtend: [3]float32{4, 4, 4},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 8,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()
@@ -173,13 +172,13 @@ func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{1, 0, 0},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{0, 0, 0},
-			HalfExtend: [3]float32{2, 2, 2},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 4,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()
@@ -207,13 +206,13 @@ func TestThreeVoxelOctree(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{2, 2, 2},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{0, 0, 0},
-			HalfExtend: [3]float32{2, 2, 2},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 4,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()
@@ -244,13 +243,13 @@ func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{-1, -1, -1},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{-4, -4, -4},
-			HalfExtend: [3]float32{4, 4, 4},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{-4, -4, -4},
+			Size: 8,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()
@@ -284,13 +283,13 @@ func TestOctreeFarCornerDoesntChange(t *testing.T) {
 			Object: nil,
 			Pos:    glm.Vec3{-4, 3, 3},
 		})
-		expectedAABB := &geo.AABB{
-			Center:     [3]float32{-4, -4, -4},
-			HalfExtend: [3]float32{4, 4, 4},
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{-4, -4, -4},
+			Size: 8,
 		}
-		resultAABB := root.GetAABB()
-		if *resultAABB != *expectedAABB {
-			t.Fatalf("expected AABB %v but got %v", *expectedAABB, *resultAABB)
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 
 		resultChildrenCount := root.CountChildren()

@@ -3,17 +3,16 @@ package world
 import (
 	"github.com/EngoEngine/math"
 	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
 )
 
 // Intersect returns whether the given ray intersects the given box and the
 // distance if it does.
-func Intersect(box geo.AABB, pos, dir glm.Vec3) (dist float32, hit bool) {
+func Intersect(box AABC, pos, dir glm.Vec3) (dist float32, hit bool) {
 	boxmin := func(d int) float32 {
-		return box.Center[d] - box.HalfExtend[d]
+		return box.Pos[d] - box.Size/2.0
 	}
 	boxmax := func(d int) float32 {
-		return box.Center[d] + box.HalfExtend[d]
+		return box.Pos[d] + box.Size/2.0
 	}
 
 	invx := float32(1.0) / dir[0]

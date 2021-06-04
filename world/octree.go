@@ -1,13 +1,8 @@
 package world
 
-import (
-	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
-)
-
 type Octree struct {
 	voxel    *Voxel
-	aabb     *geo.AABB
+	aabc     *AABC
 	children *octreeLinkedList
 }
 
@@ -72,8 +67,8 @@ func (tree *Octree) GetVoxel() *Voxel {
 	return tree.voxel
 }
 
-func (tree *Octree) GetAABB() *geo.AABB {
-	return tree.aabb
+func (tree *Octree) GetAABC() *AABC {
+	return tree.aabc
 }
 
 func (tree *Octree) GetChildren() *octreeLinkedList {
@@ -85,25 +80,25 @@ func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
 		panic("voxel in AddLeaf is nil")
 	}
 	if tree == nil {
-		aabb := &geo.AABB{
-			Center:     voxel.Pos,
-			HalfExtend: glm.Vec3{0.5, 0.5, 0.5},
+		aabc := &AABC{
+			Pos:  voxel.Pos,
+			Size: 1,
 		}
 		octree := &Octree{
 			voxel: voxel,
-			aabb:  aabb,
+			aabc:  aabc,
 		}
 		return octree
 	}
 	curr := tree
-	for !WithinAABB(curr.aabb, voxel.Pos) {
+	for !WithinAABC(curr.aabc, voxel.Pos) {
 		// create bigger bounding box to include the new voxel
-		aabb := ExpandAABB(curr.aabb, voxel.Pos)
+		aabc := ExpandAABC(curr.aabc, voxel.Pos)
 		ll := &octreeLinkedList{
 			node: curr,
 		}
 		curr = &Octree{
-			aabb:     aabb,
+			aabc:     aabc,
 			children: ll,
 		}
 	}
@@ -112,20 +107,20 @@ func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
 	return curr
 }
 
-// voxel is inside AABB of tree and the tree has at least one child
+// voxel is inside AABC of tree and the tree has at least one child
 func (tree *Octree) addLeafRecurse(voxel *Voxel) {
 	curr := tree.children
 	for curr != nil {
-		if WithinAABB(curr.node.aabb, voxel.Pos) {
+		if WithinAABC(curr.node.aabc, voxel.Pos) {
 			curr.node.addLeafRecurse(voxel)
 			return
 		}
 		curr = curr.next
 	}
 
-	aabb := GetChildAABB(tree.aabb, voxel.Pos)
+	aabc := GetChildAABC(tree.aabc, voxel.Pos)
 	newNode := &Octree{
-		aabb: aabb,
+		aabc: aabc,
 	}
 	newChild := &octreeLinkedList{
 		node: newNode,
@@ -139,7 +134,7 @@ func (tree *Octree) addLeafRecurse(voxel *Voxel) {
 		tree.children = newChild
 	}
 
-	if aabb.HalfExtend.X() == 0.5 {
+	if aabc.Size == 1.0 {
 		// node is a leaf
 		newNode.voxel = voxel
 	} else {

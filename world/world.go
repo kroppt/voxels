@@ -6,7 +6,6 @@ import (
 	"unsafe"
 
 	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/voxgl"
@@ -71,9 +70,6 @@ func New(x, y, z Range) (*World, error) {
 		cleanupOctree(octree)
 		return nil, err
 	}
-	if octree == nil {
-		fmt.Print("YIKES")
-	}
 
 	ubo := gfx.NewBufferObject()
 	var mat glm.Mat4
@@ -104,17 +100,17 @@ func New(x, y, z Range) (*World, error) {
 		cleanupOctree(octree)
 		return nil, err
 	}
-	// fmt.Printf("returning new world with root node aabb = %v", world.root.aabb)
 	return world, nil
 }
 
 func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 	candidates, ok := w.root.Find(func(node *Octree) bool {
-		aabb := geo.AABB{
-			Center:     (&node.GetAABB().Center).Add(&node.GetAABB().HalfExtend),
-			HalfExtend: node.GetAABB().HalfExtend,
+		half := node.GetAABC().Size / float32(2.0)
+		aabc := AABC{
+			Pos:  (&node.GetAABC().Pos).Add(&glm.Vec3{half, half, half}),
+			Size: node.GetAABC().Size,
 		}
-		_, hit := Intersect(aabb, w.cam.GetPosition(), w.cam.GetLookForward())
+		_, hit := Intersect(aabc, w.cam.GetPosition(), w.cam.GetLookForward())
 		return hit
 	})
 	closest, dist := GetClosest(w.cam.GetPosition(), candidates)
@@ -162,7 +158,6 @@ func (w *World) UpdateProj() error {
 }
 
 func (w *World) Render() {
-	// fmt.Printf("%v", w.root.aabb)
 	w.root.Apply(func(o *Octree) {
 		o.voxel.Render()
 	})

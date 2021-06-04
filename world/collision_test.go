@@ -4,17 +4,17 @@ import (
 	"testing"
 
 	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
 	"github.com/kroppt/voxels/world"
 )
 
 func getCamIntersectionPredicate(cam *world.Camera) func(*world.Octree) bool {
 	return func(node *world.Octree) bool {
-		aabb := geo.AABB{
-			Center:     (&node.GetAABB().Center).Add(&node.GetAABB().HalfExtend),
-			HalfExtend: node.GetAABB().HalfExtend,
+		half := node.GetAABC().Size / float32(2.0)
+		aabc := world.AABC{
+			Pos:  (&node.GetAABC().Pos).Add(&glm.Vec3{half, half, half}),
+			Size: node.GetAABC().Size,
 		}
-		_, hit := world.Intersect(aabb, cam.GetPosition(), cam.GetLookForward())
+		_, hit := world.Intersect(aabc, cam.GetPosition(), cam.GetLookForward())
 		return hit
 	}
 }
