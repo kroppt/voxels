@@ -8,6 +8,7 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
+	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -65,11 +66,18 @@ func cleanupOctree(tree *Octree) {
 }
 
 func New(x, y, z Range) (*World, error) {
+	sw := util.Start()
 	octree, err := fillOctree(x, y, z)
 	if err != nil {
 		cleanupOctree(octree)
 		return nil, err
 	}
+	sw.Stop("fillOctree")
+	// boxes := 0
+	// octree.ApplyAll(func(o *Octree) {
+	// 	boxes += 1
+	// })
+	// fmt.Printf("octree has %v bounding boxes", boxes)
 
 	ubo := gfx.NewBufferObject()
 	var mat glm.Mat4
@@ -158,7 +166,9 @@ func (w *World) UpdateProj() error {
 }
 
 func (w *World) Render() {
+	sw := util.Start()
 	w.root.Apply(func(o *Octree) {
 		o.voxel.Render()
 	})
+	sw.StopRecordAverage("world.Render")
 }

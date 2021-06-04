@@ -6,6 +6,7 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -34,6 +35,7 @@ func New(win *sdl.Window) (*Application, error) {
 }
 
 func (app *Application) Start() {
+	util.SetMetricsEnabled(true)
 	app.running = true
 	app.win.Show()
 }
@@ -67,6 +69,7 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 }
 
 func (app *Application) handleQuitEvent(evt *sdl.QuitEvent) {
+	util.LogMetrics()
 	app.running = false
 }
 
@@ -146,11 +149,12 @@ func (app *Application) pollKeyboard() error {
 
 func (app *Application) PostEventActions() {
 	app.pollKeyboard()
-	block, dist, found := app.world.FindLookAtVoxel()
-	if found {
-		log.Debugf("I see %v from %v away", block.Pos, dist)
-	}
-
+	// sw := util.Start()
+	// block, dist, found := app.world.FindLookAtVoxel()
+	// if found {
+	// 	log.Debugf("I see %v from %v away", block.Pos, dist)
+	// }
+	// sw.Stop("intersect")
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
 

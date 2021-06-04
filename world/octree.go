@@ -12,7 +12,8 @@ type octreeLinkedList struct {
 }
 
 // Find finds based on a predicate function, returning a list of
-// all candidate voxels and a boolean indicating if any were found
+// all candidate voxels and a boolean indicating if any were found,
+// in a depth-first search.
 func (tree *Octree) Find(fn func(*Octree) bool) ([]*Voxel, bool) {
 	if tree == nil {
 		return nil, false
@@ -34,6 +35,8 @@ func (tree *Octree) Find(fn func(*Octree) bool) ([]*Voxel, bool) {
 	return voxels, voxels != nil
 }
 
+// Apply applies the function to every Octree node that is a leaf
+// in a depth-first order.
 func (tree *Octree) Apply(fn func(*Octree)) {
 	if tree == nil {
 		return
@@ -49,6 +52,21 @@ func (tree *Octree) Apply(fn func(*Octree)) {
 	}
 }
 
+// Apply all applies the function to all Octree nodes in a
+// depth-first order.
+func (tree *Octree) ApplyAll(fn func(*Octree)) {
+	if tree == nil {
+		return
+	}
+	fn(tree)
+	head := tree.children
+	for head != nil {
+		head.node.ApplyAll(fn)
+		head = head.next
+	}
+}
+
+// CountChildren returns how many children an Octree node has
 func (tree *Octree) CountChildren() int {
 	ll := tree.children
 	if ll == nil {
@@ -75,6 +93,8 @@ func (tree *Octree) GetChildren() *octreeLinkedList {
 	return tree.children
 }
 
+// AddLeaf adds a leaf Octree node to an Octree an adds the
+// corresponding bouncing boxes in between.
 func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
 	if voxel == nil {
 		panic("voxel in AddLeaf is nil")

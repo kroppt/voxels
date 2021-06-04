@@ -1,8 +1,6 @@
 package voxgl
 
 import (
-	"fmt"
-
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
@@ -37,21 +35,12 @@ func NewObject(program gfx.Program, vertices []float32, layout []int32) (*Object
 
 // Render generates an image of the object with OpenGL.
 func (o *Object) Render() {
-	model := glm.Ident4()
-	trans := glm.Translate3D(o.position[0], o.position[1], o.position[2])
-	model = model.Mul4(&trans)
-	scale := glm.Scale3D(o.scale[0], o.scale[1], o.scale[2])
-	model = model.Mul4(&scale)
-	rot := o.rotation.Mat4()
-	model = model.Mul4(&rot)
-	err := o.program.UploadUniformMat4("model", model)
-	if err != nil {
-		panic(fmt.Errorf("error uploading uniform \"model\": %w", err))
-	}
-
+	// sw := util.Start()
 	o.program.Bind()
 	o.vao.Draw()
 	o.program.Unbind()
+	// gl.Finish()
+	// sw.StopRecordAverage("individual voxel render")
 }
 
 // Translate adds the given position to the object.

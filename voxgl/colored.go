@@ -68,8 +68,6 @@ const geoColShader = `
 		mat4 projection;
 	} cam;
 
-	uniform mat4 model;
-
 	in Vertex {
 		vec4 color;
 	} IN[];
@@ -79,7 +77,7 @@ const geoColShader = `
 	} OUT;
 
 	void createVertex(vec4 p) {
-		gl_Position = cam.projection * cam.view * model * p;
+		gl_Position = cam.projection * cam.view * p;
 		OUT.color = IN[0].color;
 		EmitVertex();
 	}
