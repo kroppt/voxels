@@ -38,8 +38,8 @@ func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
 	}
 
 	return &Voxel{
-		Object:      obj,
-		coordinates: glm.Vec3{float32(i), float32(j), float32(k)},
+		Object: obj,
+		Pos:    glm.Vec3{float32(i), float32(j), float32(k)},
 	}, nil
 }
 
@@ -97,7 +97,7 @@ func makeOctree(x, y, z Range) (tree *Octree, err error) {
 				if err != nil {
 					return tree, err
 				}
-				tree.addLeaf(voxel)
+				tree.AddLeaf(voxel)
 			}
 		}
 	}
@@ -168,17 +168,17 @@ func getRangeOffsets(pos Position, x, y, z Range) (i int, j int, k int) {
 }
 
 func (w *World) At(pos Position) (*Voxel, error) {
-	switch {
-	case pos.X < w.x.Min:
-	case pos.X > w.x.Max:
-	case pos.Y < w.y.Min:
-	case pos.Y > w.y.Max:
-	case pos.Z < w.z.Min:
-	case pos.Z > w.z.Max:
-	default:
-		i, j, k := getRangeOffsets(pos, w.x, w.y, w.z)
-		return w.voxels[i][j][k], nil
-	}
+	// switch {
+	// case pos.X < w.x.Min:
+	// case pos.X > w.x.Max:
+	// case pos.Y < w.y.Min:
+	// case pos.Y > w.y.Max:
+	// case pos.Z < w.z.Min:
+	// case pos.Z > w.z.Max:
+	// default:
+	// 	i, j, k := getRangeOffsets(pos, w.x, w.y, w.z)
+	// 	return w.voxels[i][j][k], nil
+	// }
 	return nil, ErrOutOfBounds
 }
 
@@ -211,11 +211,11 @@ func (w *World) UpdateProj() error {
 }
 
 func (w *World) Render() {
-	for _, xcubes := range w.voxels {
-		for _, ycubes := range xcubes {
-			for _, cube := range ycubes {
-				cube.Render()
-			}
-		}
-	}
+	// for _, xcubes := range w.voxels {
+	// 	for _, ycubes := range xcubes {
+	// 		for _, cube := range ycubes {
+	// 			cube.Render()
+	// 		}
+	// 	}
+	// }
 }

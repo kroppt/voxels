@@ -8,18 +8,44 @@ import (
 type Octree struct {
 	voxel    *Voxel
 	aabb     *geo.AABB
-	children *OctreeLinkedList
+	children *octreeLinkedList
 }
 
-type OctreeLinkedList struct {
+type octreeLinkedList struct {
 	node *Octree
-	next *OctreeLinkedList
+	next *octreeLinkedList
 }
 
-func (tree *Octree) addLeaf(voxel *Voxel) *Octree {
+func (tree *Octree) CountChildren() int {
+	ll := tree.children
+	if ll == nil {
+		return 0
+	}
+	curr := ll
+	len := 0
+	for curr != nil {
+		len += 1
+		curr = curr.next
+	}
+	return len
+}
+
+func (tree *Octree) GetVoxel() *Voxel {
+	return tree.voxel
+}
+
+func (tree *Octree) GetAABB() *geo.AABB {
+	return tree.aabb
+}
+
+func (tree *Octree) GetChildren() *octreeLinkedList {
+	return tree.children
+}
+
+func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
 	if tree == nil {
 		aabb := &geo.AABB{
-			Center:     voxel.coordinates,
+			Center:     voxel.Pos,
 			HalfExtend: glm.Vec3{0.5, 0.5, 0.5},
 		}
 		octree := &Octree{
@@ -29,10 +55,10 @@ func (tree *Octree) addLeaf(voxel *Voxel) *Octree {
 		return octree
 	}
 	curr := tree
-	for !withinAABB(tree.aabb, voxel.coordinates) {
+	for !WithinAABB(curr.aabb, voxel.Pos) {
 		// create bigger bounding box to include the new voxel
-		aabb := getNextBiggestAABB(tree.aabb, voxel.coordinates)
-		ll := &OctreeLinkedList{
+		aabb := ExpandAABB(curr.aabb, voxel.Pos)
+		ll := &octreeLinkedList{
 			node: curr,
 		}
 		curr = &Octree{
@@ -49,29 +75,28 @@ func (tree *Octree) addLeaf(voxel *Voxel) *Octree {
 func (tree *Octree) addLeafRecurse(voxel *Voxel) {
 	curr := tree.children
 	for curr != nil {
-		if withinAABB(curr.node.aabb, voxel.coordinates) {
+		if WithinAABB(curr.node.aabb, voxel.Pos) {
 			curr.node.addLeafRecurse(voxel)
 			return
 		}
 		curr = curr.next
 	}
-	aabb := getChildAABB(tree.aabb, voxel.coordinates)
-	next := tree.children
-	var prev *OctreeLinkedList
-	for next != nil {
-		prev = next
-		next = next.next
-	}
-	if prev == nil {
-		panic("inconsistent state: tree has no children")
-	}
+
+	aabb := GetChildAABB(tree.aabb, voxel.Pos)
 	newNode := &Octree{
 		aabb: aabb,
 	}
-	newChild := &OctreeLinkedList{
+	newChild := &octreeLinkedList{
 		node: newNode,
 	}
-	prev.next = newChild
+
+	head := tree.children
+	if head == nil {
+		tree.children = head
+	} else {
+		newChild.next = head
+		tree.children = newChild
+	}
 
 	if aabb.HalfExtend.X() == 0.5 {
 		// node is a leaf
@@ -79,70 +104,4 @@ func (tree *Octree) addLeafRecurse(voxel *Voxel) {
 	} else {
 		newNode.addLeafRecurse(voxel)
 	}
-}
-
-func getNextBiggestAABB(aabb *geo.AABB, coords glm.Vec3) *geo.AABB {
-	size := aabb.HalfExtend.X() * 2
-	newAabb := &geo.AABB{
-		Center:     glm.Vec3{aabb.Center.X(), aabb.Center.Y(), aabb.Center.Z()},
-		HalfExtend: glm.Vec3{size, size, size},
-	}
-	if coords.X() < aabb.Center.X() {
-		sub := &glm.Vec3{size, 0.0, 0.0}
-		newAabb.Center = newAabb.Center.Sub(sub)
-	}
-	if coords.Y() < aabb.Center.Y() {
-		sub := &glm.Vec3{0.0, size, 0.0}
-		newAabb.Center = newAabb.Center.Sub(sub)
-	}
-	if coords.Z() < aabb.Center.Z() {
-		sub := &glm.Vec3{0.0, 0.0, size}
-		newAabb.Center = newAabb.Center.Sub(sub)
-	}
-	return newAabb
-}
-
-func getChildAABB(aabb *geo.AABB, coords glm.Vec3) *geo.AABB {
-	size := aabb.HalfExtend.X()
-	offset := glm.Vec3{0.0, 0.0, 0.0}
-	if coords.X() >= aabb.Center.X()+aabb.HalfExtend.X() {
-		add := &glm.Vec3{size, 0.0, 0.0}
-		offset = offset.Add(add)
-	}
-	if coords.Y() >= aabb.Center.Y()+aabb.HalfExtend.Y() {
-		add := &glm.Vec3{0.0, size, 0.0}
-		offset = offset.Add(add)
-	}
-	if coords.Z() >= aabb.Center.Z()+aabb.HalfExtend.Z() {
-		add := &glm.Vec3{0.0, 0.0, size}
-		offset = offset.Add(add)
-	}
-	newSize := size / 2
-	newAabb := &geo.AABB{
-		Center:     aabb.Center.Add(&offset),
-		HalfExtend: glm.Vec3{newSize, newSize, newSize},
-	}
-	return newAabb
-}
-
-func withinAABB(aabb *geo.AABB, pos glm.Vec3) bool {
-	// the vertex associated with the bounding box is the bounding box's minimum coordinate vertex
-	minx := aabb.Center.X()
-	maxx := aabb.Center.X() + aabb.HalfExtend.X()*2
-	if pos.X() >= maxx || pos.X() < minx {
-		return false
-	}
-
-	miny := aabb.Center.Y()
-	maxy := aabb.Center.Y() + aabb.HalfExtend.Y()*2
-	if pos.Y() >= maxy || pos.Y() < miny {
-		return false
-	}
-
-	minz := aabb.Center.Z()
-	maxz := aabb.Center.Z() + aabb.HalfExtend.Z()*2
-	if pos.Z() >= maxz || pos.Z() < minz {
-		return false
-	}
-	return true
 }

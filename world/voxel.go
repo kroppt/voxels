@@ -7,5 +7,5 @@ import (
 
 type Voxel struct {
 	*voxgl.Object
-	coordinates glm.Vec3
+	Pos glm.Vec3
 }
