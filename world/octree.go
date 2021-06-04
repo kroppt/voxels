@@ -16,6 +16,29 @@ type octreeLinkedList struct {
 	next *octreeLinkedList
 }
 
+// Find finds based on a predicate function, returning a list of
+// all candidate voxels and a boolean indicating if any were found
+func (tree *Octree) Find(fn func(*Octree) bool) ([]*Voxel, bool) {
+	if tree == nil {
+		return nil, false
+	}
+	if !fn(tree) {
+		return nil, false
+	}
+	if tree.children == nil {
+		return []*Voxel{tree.voxel}, true
+	}
+	head := tree.children
+	var voxels []*Voxel
+	for head != nil {
+		if vox, ok := head.node.Find(fn); ok {
+			voxels = append(voxels, vox...)
+		}
+		head = head.next
+	}
+	return voxels, voxels != nil
+}
+
 func (tree *Octree) CountChildren() int {
 	ll := tree.children
 	if ll == nil {
@@ -43,6 +66,9 @@ func (tree *Octree) GetChildren() *octreeLinkedList {
 }
 
 func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
+	if voxel == nil {
+		panic("voxel in AddLeaf is nil")
+	}
 	if tree == nil {
 		aabb := &geo.AABB{
 			Center:     voxel.Pos,
@@ -92,7 +118,7 @@ func (tree *Octree) addLeafRecurse(voxel *Voxel) {
 
 	head := tree.children
 	if head == nil {
-		tree.children = head
+		tree.children = newChild
 	} else {
 		newChild.next = head
 		tree.children = newChild

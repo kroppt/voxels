@@ -46,3 +46,21 @@ func Intersect(box geo.AABB, pos, dir glm.Vec3) (dist float32, hit bool) {
 
 	return
 }
+
+// GetClosest returns the closest voxel in the list to the eye pos
+func GetClosest(eye glm.Vec3, positions []*Voxel) (*Voxel, float32) {
+	var closestDist float32
+	var found bool
+	var closestVoxel *Voxel
+	for i := 0; i < len(positions); i++ {
+		v := positions[i]
+		diff := positions[i].Pos.Sub(&eye)
+		dist := (&diff).Len()
+		if !found || dist < closestDist {
+			found = true
+			closestDist = dist
+			closestVoxel = v
+		}
+	}
+	return closestVoxel, closestDist
+}
