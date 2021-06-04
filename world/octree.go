@@ -39,6 +39,21 @@ func (tree *Octree) Find(fn func(*Octree) bool) ([]*Voxel, bool) {
 	return voxels, voxels != nil
 }
 
+func (tree *Octree) Apply(fn func(*Octree)) {
+	if tree == nil {
+		return
+	}
+	if tree.children == nil {
+		fn(tree)
+		return
+	}
+	head := tree.children
+	for head != nil {
+		head.node.Apply(fn)
+		head = head.next
+	}
+}
+
 func (tree *Octree) CountChildren() int {
 	ll := tree.children
 	if ll == nil {

@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/engoengine/glm"
+	"github.com/engoengine/glm/geo"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/voxgl"
@@ -43,53 +44,7 @@ func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
 	}, nil
 }
 
-// func makeYVoxels(x, y, z Range, i, j int) ([]*Voxel, error) {
-// 	yvox := []*Voxel{}
-// 	for k := z.Min; k <= z.Max; k++ {
-// 		zvox, err := makeVoxel(x, y, z, i, j, k)
-// 		if err != nil {
-// 			return yvox, err
-// 		}
-// 		yvox = append(yvox, zvox)
-// 	}
-// 	return yvox, nil
-// }
-
-// func makeXVoxels(x, y, z Range, i int) ([][]*Voxel, error) {
-// 	xvox := [][]*Voxel{}
-// 	for j := y.Min; j <= y.Max; j++ {
-// 		yvox, err := makeYVoxels(x, y, z, i, j)
-// 		if err != nil {
-// 			return xvox, err
-// 		}
-// 		xvox = append(xvox, yvox)
-// 	}
-// 	return xvox, nil
-// }
-
-// func makeVoxels(x, y, z Range) ([][][]*Voxel, error) {
-// 	voxels := [][][]*Voxel{}
-// 	for i := x.Min; i <= x.Max; i++ {
-// 		xvox, err := makeXVoxels(x, y, z, i)
-// 		if err != nil {
-// 			return voxels, err
-// 		}
-// 		voxels = append(voxels, xvox)
-// 	}
-// 	return voxels, nil
-// }
-
-// func cleanupCubes(objs [][][]*Voxel) {
-// 	for _, objs1 := range objs {
-// 		for _, objs2 := range objs1 {
-// 			for _, obj := range objs2 {
-// 				obj.Destroy()
-// 			}
-// 		}
-// 	}
-// }
-
-func makeOctree(x, y, z Range) (tree *Octree, err error) {
+func fillOctree(x, y, z Range) (tree *Octree, err error) {
 	for i := x.Min; i <= x.Max; i++ {
 		for j := y.Min; j <= y.Max; j++ {
 			for k := z.Min; k <= z.Max; k++ {
@@ -97,7 +52,7 @@ func makeOctree(x, y, z Range) (tree *Octree, err error) {
 				if err != nil {
 					return tree, err
 				}
-				tree.AddLeaf(voxel)
+				tree = tree.AddLeaf(voxel)
 			}
 		}
 	}
@@ -105,21 +60,19 @@ func makeOctree(x, y, z Range) (tree *Octree, err error) {
 }
 
 func cleanupOctree(tree *Octree) {
-	curr := tree.children
-	for curr != nil {
-		curr.node.voxel.Destroy()
-		curr = curr.next
-	}
-	if tree.voxel != nil {
-		tree.voxel.Destroy()
-	}
+	tree.Apply(func(o *Octree) {
+		o.voxel.Destroy()
+	})
 }
 
 func New(x, y, z Range) (*World, error) {
-	octree, err := makeOctree(x, y, z)
+	octree, err := fillOctree(x, y, z)
 	if err != nil {
 		cleanupOctree(octree)
 		return nil, err
+	}
+	if octree == nil {
+		fmt.Print("YIKES")
 	}
 
 	ubo := gfx.NewBufferObject()
@@ -151,34 +104,32 @@ func New(x, y, z Range) (*World, error) {
 		cleanupOctree(octree)
 		return nil, err
 	}
+	// fmt.Printf("returning new world with root node aabb = %v", world.root.aabb)
 	return world, nil
 }
 
-func (p *World) Destroy() {
-	p.ubo.Destroy()
+func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
+	candidates, ok := w.root.Find(func(node *Octree) bool {
+		aabb := geo.AABB{
+			Center:     (&node.GetAABB().Center).Add(&node.GetAABB().HalfExtend),
+			HalfExtend: node.GetAABB().HalfExtend,
+		}
+		_, hit := Intersect(aabb, w.cam.GetPosition(), w.cam.GetLookForward())
+		return hit
+	})
+	closest, dist := GetClosest(w.cam.GetPosition(), candidates)
+	return closest, dist, ok
+}
+
+func (w *World) Destroy() {
+	w.ubo.Destroy()
+	cleanupOctree(w.root)
 }
 
 var ErrOutOfBounds = errors.New("position out of bounds")
 
-func getRangeOffsets(pos Position, x, y, z Range) (i int, j int, k int) {
-	i = pos.X - x.Min
-	j = pos.Y - y.Min
-	k = pos.Z - z.Min
-	return i, j, k
-}
-
 func (w *World) At(pos Position) (*Voxel, error) {
-	// switch {
-	// case pos.X < w.x.Min:
-	// case pos.X > w.x.Max:
-	// case pos.Y < w.y.Min:
-	// case pos.Y > w.y.Max:
-	// case pos.Z < w.z.Min:
-	// case pos.Z > w.z.Max:
-	// default:
-	// 	i, j, k := getRangeOffsets(pos, w.x, w.y, w.z)
-	// 	return w.voxels[i][j][k], nil
-	// }
+	// TODO unimplemented, do we want this?
 	return nil, ErrOutOfBounds
 }
 
@@ -211,11 +162,8 @@ func (w *World) UpdateProj() error {
 }
 
 func (w *World) Render() {
-	// for _, xcubes := range w.voxels {
-	// 	for _, ycubes := range xcubes {
-	// 		for _, cube := range ycubes {
-	// 			cube.Render()
-	// 		}
-	// 	}
-	// }
+	// fmt.Printf("%v", w.root.aabb)
+	w.root.Apply(func(o *Octree) {
+		o.voxel.Render()
+	})
 }

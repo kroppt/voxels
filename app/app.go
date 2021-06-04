@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/world"
@@ -145,40 +144,11 @@ func (app *Application) pollKeyboard() error {
 	return nil
 }
 
-func (app *Application) findLookatVoxel() (block glm.Vec3, dist float32, found bool) {
-	cam := *app.world.GetCamera()
-	pos := cam.GetPosition()
-	dir := cam.GetLookForward()
-	xrng, yrng, zrng := app.world.Size()
-	intersects := 0
-	for i := xrng.Min; i <= xrng.Max; i++ {
-		for j := yrng.Min; j <= yrng.Max; j++ {
-			for k := zrng.Min; k <= zrng.Max; k++ {
-				aabb := geo.AABB{
-					Center:     glm.Vec3{float32(i) + 0.5, float32(j) + 0.5, float32(k) + 0.5},
-					HalfExtend: glm.Vec3{0.5, 0.5, 0.5},
-				}
-				t, overlap := world.Intersect(aabb, pos, dir)
-				if !overlap {
-					continue
-				}
-				intersects++
-				if t < dist || !found {
-					found = true
-					dist = t
-					block = glm.Vec3{float32(i), float32(j), float32(k)}
-				}
-			}
-		}
-	}
-	return
-}
-
 func (app *Application) PostEventActions() {
 	app.pollKeyboard()
-	block, dist, found := app.findLookatVoxel()
+	block, dist, found := app.world.FindLookAtVoxel()
 	if found {
-		log.Debugf("I see %v from %v away", block, dist)
+		log.Debugf("I see %v from %v away", block.Pos, dist)
 	}
 
 	w, h := app.win.GetSize()
