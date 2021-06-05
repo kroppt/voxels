@@ -13,13 +13,13 @@ import (
 
 type Application struct {
 	win     *sdl.Window
-	world   *world.ChunkWorld
+	world   *world.World
 	running bool
 	m1held  bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	wld, err := world.NewChunkWorld()
+	wld, err := world.NewWorld()
 	if err != nil {
 		return nil, fmt.Errorf("could not create world: %v", err)
 	}

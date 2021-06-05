@@ -8,7 +8,7 @@ import (
 	"github.com/kroppt/gfx"
 )
 
-type ChunkWorld struct {
+type World struct {
 	ubo        *gfx.BufferObject
 	cam        *Camera
 	chunks     map[glm.Vec2]*Chunk
@@ -69,7 +69,7 @@ const chunkSize = 10
 const chunkHeight = 1
 const chunkRenderDist = 2
 
-func NewChunkWorld() (*ChunkWorld, error) {
+func NewWorld() (*World, error) {
 	ubo := gfx.NewBufferObject()
 	var mat glm.Mat4
 	// opengl memory allocation, 2x mat4 = 1 for proj + 1 for view
@@ -77,7 +77,7 @@ func NewChunkWorld() (*ChunkWorld, error) {
 	// use binding = 0
 	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
 	cam := NewCamera()
-	world := &ChunkWorld{
+	world := &World{
 		ubo: ubo,
 		cam: cam,
 	}
@@ -100,7 +100,7 @@ func NewChunkWorld() (*ChunkWorld, error) {
 	return world, nil
 }
 
-func (w *ChunkWorld) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
+func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 	var hits []*Voxel
 	for _, chunk := range w.chunks {
 		chunkHits, _ := chunk.root.Find(func(node *Octree) bool {
@@ -119,15 +119,15 @@ func (w *ChunkWorld) FindLookAtVoxel() (block *Voxel, dist float32, found bool) 
 	return closest, dist, len(hits) != 0
 }
 
-func (w *ChunkWorld) Destroy() {
+func (w *World) Destroy() {
 	w.ubo.Destroy()
 }
 
-func (w *ChunkWorld) GetCamera() *Camera {
+func (w *World) GetCamera() *Camera {
 	return w.cam
 }
 
-func (w *ChunkWorld) updateView() error {
+func (w *World) updateView() error {
 	cam := *w.GetCamera()
 	view := cam.GetViewMat()
 	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
@@ -138,7 +138,7 @@ func (w *ChunkWorld) updateView() error {
 	return nil
 }
 
-func (w *ChunkWorld) updateProj() error {
+func (w *World) updateProj() error {
 	cam := *w.GetCamera()
 	proj := cam.GetProjMat()
 	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(proj)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
@@ -149,7 +149,7 @@ func (w *ChunkWorld) updateProj() error {
 	return nil
 }
 
-func (w *ChunkWorld) Render() error {
+func (w *World) Render() error {
 	if w.cam.IsDirty() {
 		err := w.updateView()
 		if err != nil {
