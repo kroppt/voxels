@@ -1,25 +1,25 @@
-package appchunk
+package app
 
 import (
 	"fmt"
 
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/util"
+	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Application struct {
 	win     *sdl.Window
-	world   *chunk.ChunkWorld
+	world   *world.ChunkWorld
 	running bool
 	m1held  bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	wld, err := chunk.NewChunkWorld()
+	wld, err := world.NewChunkWorld()
 	if err != nil {
 		return nil, fmt.Errorf("could not create world: %v", err)
 	}
@@ -135,7 +135,7 @@ func (app *Application) pollKeyboard() error {
 	return nil
 }
 
-var Block *chunk.Voxel
+var Block *world.Voxel
 
 func (app *Application) PostEventActions() {
 	app.pollKeyboard()

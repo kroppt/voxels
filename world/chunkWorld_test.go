@@ -1,10 +1,10 @@
-package chunk_test
+package world_test
 
 import (
 	"testing"
 
 	"github.com/engoengine/glm"
-	"github.com/kroppt/voxels/chunk"
+	"github.com/kroppt/voxels/world"
 )
 
 func TestGetCurrentChunk(t *testing.T) {
@@ -79,7 +79,7 @@ func TestGetCurrentChunk(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			actual := chunk.GetChunkAt(tC.chunkSize, tC.pos)
+			actual := world.GetChunkAt(tC.chunkSize, tC.pos)
 			if tC.expect != actual {
 				t.Fatalf("expected %v but got %v", tC.expect, actual)
 			}
@@ -92,43 +92,43 @@ func TestGetChunkBounds(t *testing.T) {
 		desc      string
 		worldSize int
 		currChunk glm.Vec2
-		expectX   chunk.Range
-		expectZ   chunk.Range
+		expectX   world.Range
+		expectZ   world.Range
 	}{
 		{
 			desc:      "3x3 around 0,0",
 			worldSize: 3,
 			currChunk: glm.Vec2{0, 0},
-			expectX:   chunk.Range{-1, 1},
-			expectZ:   chunk.Range{-1, 1},
+			expectX:   world.Range{-1, 1},
+			expectZ:   world.Range{-1, 1},
 		},
 		{
 			desc:      "5x5 around -1,-1",
 			worldSize: 5,
 			currChunk: glm.Vec2{-1, -1},
-			expectX:   chunk.Range{-3, 1},
-			expectZ:   chunk.Range{-3, 1},
+			expectX:   world.Range{-3, 1},
+			expectZ:   world.Range{-3, 1},
 		},
 		{
 			desc:      "1x1 around 3,5",
 			worldSize: 1,
 			currChunk: glm.Vec2{3, 5},
-			expectX:   chunk.Range{3, 3},
-			expectZ:   chunk.Range{5, 5},
+			expectX:   world.Range{3, 3},
+			expectZ:   world.Range{5, 5},
 		},
 		{
 			desc:      "3x3 around -1,2",
 			worldSize: 3,
 			currChunk: glm.Vec2{-1, 2},
-			expectX:   chunk.Range{-2, 0},
-			expectZ:   chunk.Range{1, 3},
+			expectX:   world.Range{-2, 0},
+			expectZ:   world.Range{1, 3},
 		},
 	}
 	for _, tC := range testCases {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			actualX, actualZ := chunk.GetChunkBounds(tC.worldSize, tC.currChunk)
+			actualX, actualZ := world.GetChunkBounds(tC.worldSize, tC.currChunk)
 			if tC.expectX != actualX {
 				t.Fatalf("expected %v but got %v", tC.expectX, actualX)
 			}

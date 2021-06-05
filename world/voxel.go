@@ -1,4 +1,4 @@
-package chunk
+package world
 
 import (
 	"github.com/engoengine/glm"

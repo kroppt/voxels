@@ -1,20 +1,20 @@
-package chunk_test
+package world_test
 
 import (
 	"testing"
 
 	"github.com/engoengine/glm"
-	"github.com/kroppt/voxels/chunk"
+	"github.com/kroppt/voxels/world"
 )
 
 func TestOneVoxelOctree(t *testing.T) {
 	t.Run("build a tree with only 1 voxel", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{0, 0, 0},
 			Size: 1,
 		}
@@ -22,7 +22,7 @@ func TestOneVoxelOctree(t *testing.T) {
 		if *resultAABC != *expectedAABC {
 			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
-		expectedVoxel := &chunk.Voxel{
+		expectedVoxel := &world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		}
 		resultVoxel := root.GetVoxel()
@@ -40,14 +40,14 @@ func TestOneVoxelOctree(t *testing.T) {
 func TestAdjacentTwoVoxelOctree(t *testing.T) {
 	t.Run("make a tree with 2 adjacent voxels", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{1, 0, 0},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{0, 0, 0},
 			Size: 2,
 		}
@@ -67,14 +67,14 @@ func TestAdjacentTwoVoxelOctree(t *testing.T) {
 func TestCorneredTwoVoxelOctree(t *testing.T) {
 	t.Run("make a tree with 2 kitty-corner voxels", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{1, 1, 1},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{0, 0, 0},
 			Size: 2,
 		}
@@ -94,14 +94,14 @@ func TestCorneredTwoVoxelOctree(t *testing.T) {
 func TestTwoDistantVoxelOctree(t *testing.T) {
 	t.Run("make a tree with 2 distant voxels", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 0, 0},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{0, 0, 0},
 			Size: 4,
 		}
@@ -122,14 +122,14 @@ func TestTwoDistantVoxelOctree(t *testing.T) {
 func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 	t.Run("make a tree with 2 distant voxels", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{4, 0, 0},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{0, 0, 0},
 			Size: 8,
 		}
@@ -149,17 +149,17 @@ func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 	t.Run("make a tree with 2 distance voxels plus a close one", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{1, 0, 0},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{0, 0, 0},
 			Size: 4,
 		}
@@ -180,17 +180,17 @@ func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 func TestThreeVoxelOctree(t *testing.T) {
 	t.Run("make a tree with 3 adjacent voxels", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 2, 2},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{0, 0, 0},
 			Size: 4,
 		}
@@ -210,20 +210,20 @@ func TestThreeVoxelOctree(t *testing.T) {
 func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 	t.Run("make a tree with 3 adjacent voxels", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 2, 2},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{-1, -1, -1},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{-4, -4, -4},
 			Size: 8,
 		}
@@ -242,23 +242,23 @@ func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 func TestOctreeFarCornerDoesntChange(t *testing.T) {
 	t.Run("make a tree with 3 adjacent voxels", func(t *testing.T) {
 		t.Parallel()
-		var root *chunk.Octree
-		root = root.AddLeaf(&chunk.Voxel{
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{0, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 0, 0},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{2, 2, 2},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{-1, -1, -1},
 		})
-		root = root.AddLeaf(&chunk.Voxel{
+		root = root.AddLeaf(&world.Voxel{
 			Pos: glm.Vec3{-4, 3, 3},
 		})
-		expectedAABC := &chunk.AABC{
+		expectedAABC := &world.AABC{
 			Pos:  [3]float32{-4, -4, -4},
 			Size: 8,
 		}
