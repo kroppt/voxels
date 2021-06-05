@@ -38,10 +38,13 @@ func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
 		return nil, fmt.Errorf("couldn't create colored object at %v: %w", pos, err)
 	}
 
-	return &Voxel{
+	v := &Voxel{
 		Object: obj,
 		Pos:    glm.Vec3{float32(i), float32(j), float32(k)},
-	}, nil
+		Col:    glm.Vec4{r, g, b, a},
+	}
+
+	return v, nil
 }
 
 func fillOctree(x, y, z Range) (tree *Octree, err error) {
