@@ -32,7 +32,7 @@ func TestOneVoxelOctree(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 0
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 }
@@ -59,7 +59,7 @@ func TestAdjacentTwoVoxelOctree(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 2
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 }
@@ -86,7 +86,7 @@ func TestCorneredTwoVoxelOctree(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 2
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 }
@@ -113,7 +113,7 @@ func TestTwoDistantVoxelOctree(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 2
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 
@@ -141,7 +141,7 @@ func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 2
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 
@@ -171,7 +171,83 @@ func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 2
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
+		}
+	})
+
+}
+
+func TestOctreeReassignment(t *testing.T) {
+	t.Run("adding duplicate voxel in same position should overwrite", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: glm.Vec3{0, 0, 0},
+			Col: glm.Vec4{0.5, 0.5, 0.5, 0.5},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: glm.Vec3{0, 0, 0},
+			Col: glm.Vec4{1.0, 1.0, 1.0, 1.0},
+		})
+		expectedAABC := &world.AABC{
+			Pos:  [3]float32{0, 0, 0},
+			Size: 1,
+		}
+		resultAABC := root.GetAABC()
+		if *resultAABC != *expectedAABC {
+			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
+		}
+
+		resultChildrenCount := root.CountChildren()
+		expectedChildrenCount := 0
+		if resultChildrenCount != expectedChildrenCount {
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
+		}
+
+		resultCol := root.GetVoxel().Col
+		expectCol := glm.Vec4{1.0, 1.0, 1.0, 1.0}
+		if expectCol != resultCol {
+			t.Fatalf("expected reassigned voxel color to be %v but got %v", expectCol, resultCol)
+		}
+	})
+
+}
+
+func TestOctreeRecursionReassignment(t *testing.T) {
+	t.Run("adding duplicate voxel in same position should overwrite", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: glm.Vec3{0, 0, 0},
+			Col: glm.Vec4{0.5, 0.5, 0.5, 0.5},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: glm.Vec3{4, 0, 0},
+			Col: glm.Vec4{0.2, 0.5, 0.5, 0.5},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: glm.Vec3{2, 0, 0},
+			Col: glm.Vec4{0.5, 0.5, 0.5, 0.4},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: glm.Vec3{2, 0, 0},
+			Col: glm.Vec4{1.0, 1.0, 1.0, 1.0},
+		})
+		list, _ := root.Find(func(o *world.Octree) bool {
+			return true
+		})
+
+		var answer *world.Voxel
+		for _, v := range list {
+			if v.Pos.X() == float32(2.0) {
+				answer = v
+			}
+		}
+
+		resultCol := answer.Col
+		expectCol := glm.Vec4{1.0, 1.0, 1.0, 1.0}
+		if expectCol != resultCol {
+			t.Fatalf("expected reassigned voxel color to be %v but got %v", expectCol, resultCol)
 		}
 	})
 
@@ -202,7 +278,7 @@ func TestThreeVoxelOctree(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 3
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 
@@ -235,7 +311,7 @@ func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 2
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 }
@@ -270,7 +346,7 @@ func TestOctreeFarCornerDoesntChange(t *testing.T) {
 		resultChildrenCount := root.CountChildren()
 		expectedChildrenCount := 3
 		if resultChildrenCount != expectedChildrenCount {
-			t.Fatalf("expected %v children but counted %v", resultChildrenCount, expectedChildrenCount)
+			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 	})
 }

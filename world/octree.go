@@ -129,6 +129,11 @@ func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
 
 // voxel is inside AABC of tree and the tree has at least one child
 func (tree *Octree) addLeafRecurse(voxel *Voxel) {
+	// reassignment case
+	if tree.voxel != nil && tree.voxel.Pos == voxel.Pos {
+		tree.voxel = voxel
+		return
+	}
 	curr := tree.children
 	for curr != nil {
 		if WithinAABC(curr.node.aabc, voxel.Pos) {
