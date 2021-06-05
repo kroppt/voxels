@@ -46,6 +46,14 @@ func withinRanges(xrng, yrng Range, x, z int) bool {
 	return true
 }
 
+func applyWithinRanges(xrng, zrng Range, fn func(i, j int)) {
+	for x := xrng.Min; x <= xrng.Max; x++ {
+		for z := zrng.Min; z <= zrng.Max; z++ {
+			fn(x, z)
+		}
+	}
+}
+
 // GetChunkBounds returns the minimum and maximum chunks indices that should be
 // in view around a camera at the given chunk.
 func GetChunkBounds(worldSize int, currChunk glm.Vec2) (x Range, z Range) {
@@ -57,10 +65,9 @@ func GetChunkBounds(worldSize int, currChunk glm.Vec2) (x Range, z Range) {
 	return Range{minx, maxx}, Range{minj, maxj}
 }
 
-// chunkWorldSize must be odd.
-const chunkSize = 6
+const chunkSize = 10
 const chunkHeight = 1
-const chunkRenderDist = 10
+const chunkRenderDist = 2
 
 func NewChunkWorld() (*ChunkWorld, error) {
 	ubo := gfx.NewBufferObject()
@@ -81,12 +88,11 @@ func NewChunkWorld() (*ChunkWorld, error) {
 	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
 
 	chunks := make(map[glm.Vec2]*Chunk)
-	for i := xrng.Min; i <= xrng.Max; i++ {
-		for k := zrng.Min; k <= zrng.Max; k++ {
-			ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(k)})
-			chunks[glm.Vec2{float32(i), float32(k)}] = ch
-		}
-	}
+	applyWithinRanges(xrng, zrng, func(i, j int) {
+		ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(j)})
+		chunks[glm.Vec2{float32(i), float32(j)}] = ch
+	})
+
 	world.chunks = chunks
 	world.lastChunk = currChunk
 	world.lastXRange = xrng
@@ -158,28 +164,24 @@ func (w *ChunkWorld) Render() error {
 			// the camera position has moved chunks
 			// load new chunks
 			xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
-			for i := xrng.Min; i <= xrng.Max; i++ {
-				for j := zrng.Min; j <= zrng.Max; j++ {
-					key := glm.Vec2{float32(i), float32(j)}
-					if _, ok := w.chunks[key]; !ok {
-						// chunk i,j is not in map and should be added
-						ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(j)})
-						w.chunks[key] = ch
-					}
+			applyWithinRanges(xrng, zrng, func(i, j int) {
+				key := glm.Vec2{float32(i), float32(j)}
+				if _, ok := w.chunks[key]; !ok {
+					// chunk i,j is not in map and should be added
+					ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(j)})
+					w.chunks[key] = ch
 				}
-			}
+			})
 			// delete old chunks
-			for x := w.lastXRange.Min; x <= w.lastXRange.Max; x++ {
-				for z := w.lastZRange.Min; z <= w.lastZRange.Max; z++ {
-					oldKey := glm.Vec2{float32(x), float32(z)}
-					inOld := withinRanges(w.lastXRange, w.lastZRange, x, z)
-					inNew := withinRanges(xrng, zrng, x, z)
-					if inOld && !inNew {
-						w.chunks[oldKey].Destroy()
-						delete(w.chunks, oldKey)
-					}
+			applyWithinRanges(w.lastXRange, w.lastZRange, func(i, j int) {
+				oldKey := glm.Vec2{float32(i), float32(j)}
+				inOld := withinRanges(w.lastXRange, w.lastZRange, i, j)
+				inNew := withinRanges(xrng, zrng, i, j)
+				if inOld && !inNew {
+					w.chunks[oldKey].Destroy()
+					delete(w.chunks, oldKey)
 				}
-			}
+			})
 			w.lastChunk = currChunk
 			w.lastXRange = xrng
 			w.lastZRange = zrng
