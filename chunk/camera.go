@@ -111,7 +111,7 @@ func (c *Camera) GetViewMat() glm.Mat4 {
 // by the camera.
 func (c *Camera) GetProjMat() glm.Mat4 {
 	proj := glm.Ident4()
-	persp := glm.Perspective(glm.DegToRad(45.0), 16.0/9.0, 0.1, 100.0)
+	persp := glm.Perspective(glm.DegToRad(60.0), 16.0/9.0, 0.1, 100.0)
 	proj = proj.Mul4(&persp)
 	return proj
 }
