@@ -1,0 +1,4 @@
+{
+    "go.testOnSave": true,
+    "go.testFlags": ["-tags", "test"]
+}
