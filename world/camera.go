@@ -45,6 +45,25 @@ func (c *Camera) Translate(diff *glm.Vec3) {
 	c.dirty = true
 }
 
+func (c *Camera) GetVoxelCoord() glm.Vec3 {
+	// negated
+	pos := c.GetPosition()
+	if pos.X() < 0 {
+		pos[0] -= 1
+	}
+	if pos.Y() < 0 {
+		pos[1] -= 1
+	}
+	if pos.Z() < 0 {
+		pos[2] -= 1
+	}
+	return glm.Vec3{
+		float32(int(pos.X())),
+		float32(int(pos.Y())),
+		float32(int(pos.Z())),
+	}
+}
+
 // quatLookAtV is a fixed version of GLM's QuatLookAtV that accounts for Y direction
 func quatLookAtV(eye, center, up *glm.Vec3) glm.Quat {
 	// glm bug fix

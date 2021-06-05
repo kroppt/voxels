@@ -306,3 +306,52 @@ func TestCameraLookVector(t *testing.T) {
 	})
 
 }
+
+func TestCameraVoxelCoords(t *testing.T) {
+	testCases := []struct {
+		desc   string
+		cPos   glm.Vec3
+		expect glm.Vec3
+	}{
+		{
+			desc:   "pos pos works",
+			cPos:   glm.Vec3{0.5, 0.5, 0.5},
+			expect: glm.Vec3{0, 0, 0},
+		},
+		{
+			desc:   "pos neg works",
+			cPos:   glm.Vec3{0.5, 0.5, -0.5},
+			expect: glm.Vec3{0, 0, -1},
+		},
+		{
+			desc:   "neg pos works",
+			cPos:   glm.Vec3{-0.5, 0.5, 0.5},
+			expect: glm.Vec3{-1, 0, 0},
+		},
+		{
+			desc:   "neg neg works",
+			cPos:   glm.Vec3{-0.5, 0.5, -0.5},
+			expect: glm.Vec3{-1, 0, -1},
+		},
+		{
+			desc:   "far neg neg works",
+			cPos:   glm.Vec3{-1.5, -2.5, -1.5},
+			expect: glm.Vec3{-2, -3, -2},
+		},
+		{
+			desc:   "far pos pos works",
+			cPos:   glm.Vec3{1.5, 2.5, 1.5},
+			expect: glm.Vec3{1, 2, 1},
+		},
+	}
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			cam := world.NewCamera()
+			cam.SetPosition(&tC.cPos)
+			result := cam.GetVoxelCoord()
+			if result != tC.expect {
+				t.Fatalf("expected cam voxel coord %v but got %v", tC.expect, result)
+			}
+		})
+	}
+}
