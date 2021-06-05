@@ -9,17 +9,15 @@ import (
 )
 
 type World struct {
-	ubo        *gfx.BufferObject
-	cam        *Camera
-	chunks     map[glm.Vec2]*Chunk
-	lastChunk  glm.Vec2
-	lastXRange Range
-	lastZRange Range
+	ubo       *gfx.BufferObject
+	cam       *Camera
+	chunks    map[glm.Vec2]*Chunk
+	lastChunk glm.Vec2
 }
 
-// GetChunkAt returns the chunk coordinate that the given position is in, given
-// the chunkSize.
-func GetChunkAt(chunkSize int, pos glm.Vec3) glm.Vec2 {
+// GetChunkIndex returns the chunk coordinate that the given position
+// is in, given the chunkSize.
+func GetChunkIndex(chunkSize int, pos glm.Vec3) glm.Vec2 {
 	x := int(pos.X()) / chunkSize
 	z := int(pos.Z()) / chunkSize
 	if pos.X() < 0 {
@@ -84,7 +82,7 @@ func NewWorld() (*World, error) {
 	cam.SetPosition(&glm.Vec3{3, 2, 3})
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
-	currChunk := GetChunkAt(chunkSize, cam.GetPosition())
+	currChunk := GetChunkIndex(chunkSize, cam.GetPosition())
 	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
 
 	chunks := make(map[glm.Vec2]*Chunk)
@@ -95,8 +93,6 @@ func NewWorld() (*World, error) {
 
 	world.chunks = chunks
 	world.lastChunk = currChunk
-	world.lastXRange = xrng
-	world.lastZRange = zrng
 	return world, nil
 }
 
@@ -158,6 +154,8 @@ func (w *World) Render() error {
 			return err
 		}
 		w.cam.Clean()
+
+		currChunk := GetChunkIndex(chunkSize, w.cam.GetPosition())
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks
@@ -171,9 +169,10 @@ func (w *World) Render() error {
 				}
 			})
 			// delete old chunks
-			applyWithinRanges(w.lastXRange, w.lastZRange, func(i, j int) {
+			lastXRange, lastZRange := GetChunkBounds(chunkRenderDist*2+1, w.lastChunk)
+			applyWithinRanges(lastXRange, lastZRange, func(i, j int) {
 				oldKey := glm.Vec2{float32(i), float32(j)}
-				inOld := withinRanges(w.lastXRange, w.lastZRange, i, j)
+				inOld := withinRanges(lastXRange, lastZRange, i, j)
 				inNew := withinRanges(xrng, zrng, i, j)
 				if inOld && !inNew {
 					w.chunks[oldKey].Destroy()
@@ -181,8 +180,6 @@ func (w *World) Render() error {
 				}
 			})
 			w.lastChunk = currChunk
-			w.lastXRange = xrng
-			w.lastZRange = zrng
 		}
 	}
 	for _, chunk := range w.chunks {

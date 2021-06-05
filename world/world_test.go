@@ -79,7 +79,7 @@ func TestGetCurrentChunk(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			actual := world.GetChunkAt(tC.chunkSize, tC.pos)
+			actual := world.GetChunkIndex(tC.chunkSize, tC.pos)
 			if tC.expect != actual {
 				t.Fatalf("expected %v but got %v", tC.expect, actual)
 			}
