@@ -74,6 +74,12 @@ func TestGetCurrentChunk(t *testing.T) {
 			chunkSize: 6,
 			expect:    glm.Vec2{0, 0},
 		},
+		{
+			desc:      "far negative edge is inclusive",
+			pos:       glm.Vec3{0, 0, -5},
+			chunkSize: 5,
+			expect:    glm.Vec2{0, -1},
+		},
 	}
 	for _, tC := range testCases {
 		tC := tC

@@ -18,8 +18,16 @@ type World struct {
 // GetChunkIndex returns the chunk coordinate that the given position
 // is in, given the chunkSize.
 func GetChunkIndex(chunkSize int, pos glm.Vec3) glm.Vec2 {
-	x := int(pos.X()) / chunkSize
-	z := int(pos.Z()) / chunkSize
+	x := int(pos.X())
+	z := int(pos.Z())
+	if pos.X() < 0 {
+		x++
+	}
+	if pos.Z() < 0 {
+		z++
+	}
+	x /= chunkSize
+	z /= chunkSize
 	if pos.X() < 0 {
 		x--
 	}
