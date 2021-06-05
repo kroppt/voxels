@@ -9,9 +9,12 @@ import (
 )
 
 type ChunkWorld struct {
-	ubo    *gfx.BufferObject
-	cam    *Camera
-	chunks map[glm.Vec2]*Chunk
+	ubo        *gfx.BufferObject
+	cam        *Camera
+	chunks     map[glm.Vec2]*Chunk
+	lastChunk  glm.Vec2
+	lastXRange Range
+	lastZRange Range
 }
 
 // GetChunkAt returns the chunk coordinate that the given position is in, given
@@ -33,6 +36,16 @@ type Range struct {
 	Max int
 }
 
+func withinRanges(xrng, yrng Range, x, z int) bool {
+	if x < xrng.Min || x > xrng.Max {
+		return false
+	}
+	if z < yrng.Min || z > yrng.Max {
+		return false
+	}
+	return true
+}
+
 // GetChunkBounds returns the minimum and maximum chunks indices that should be
 // in view around a camera at the given chunk.
 func GetChunkBounds(worldSize int, currChunk glm.Vec2) (x Range, z Range) {
@@ -45,9 +58,9 @@ func GetChunkBounds(worldSize int, currChunk glm.Vec2) (x Range, z Range) {
 }
 
 // chunkWorldSize must be odd.
-const chunkWorldSize = 3
 const chunkSize = 6
 const chunkHeight = 1
+const chunkRenderDist = 10
 
 func NewChunkWorld() (*ChunkWorld, error) {
 	ubo := gfx.NewBufferObject()
@@ -65,7 +78,7 @@ func NewChunkWorld() (*ChunkWorld, error) {
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
 	currChunk := GetChunkAt(chunkSize, cam.GetPosition())
-	xrng, zrng := GetChunkBounds(chunkWorldSize, currChunk)
+	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
 
 	chunks := make(map[glm.Vec2]*Chunk)
 	for i := xrng.Min; i <= xrng.Max; i++ {
@@ -75,7 +88,9 @@ func NewChunkWorld() (*ChunkWorld, error) {
 		}
 	}
 	world.chunks = chunks
-
+	world.lastChunk = currChunk
+	world.lastXRange = xrng
+	world.lastZRange = zrng
 	return world, nil
 }
 
@@ -139,15 +154,35 @@ func (w *ChunkWorld) Render() error {
 			return err
 		}
 		currChunk := GetChunkAt(chunkSize, w.cam.GetPosition())
-		xrng, zrng := GetChunkBounds(chunkWorldSize, currChunk)
-		for i := xrng.Min; i <= xrng.Max; i++ {
-			for j := zrng.Min; j <= zrng.Max; j++ {
-				key := glm.Vec2{float32(i), float32(j)}
-				if _, ok := w.chunks[key]; !ok {
-					ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(j)})
-					w.chunks[key] = ch
+		if currChunk != w.lastChunk {
+			// the camera position has moved chunks
+			// load new chunks
+			xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
+			for i := xrng.Min; i <= xrng.Max; i++ {
+				for j := zrng.Min; j <= zrng.Max; j++ {
+					key := glm.Vec2{float32(i), float32(j)}
+					if _, ok := w.chunks[key]; !ok {
+						// chunk i,j is not in map and should be added
+						ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(j)})
+						w.chunks[key] = ch
+					}
 				}
 			}
+			// delete old chunks
+			for x := w.lastXRange.Min; x <= w.lastXRange.Max; x++ {
+				for z := w.lastZRange.Min; z <= w.lastZRange.Max; z++ {
+					oldKey := glm.Vec2{float32(x), float32(z)}
+					inOld := withinRanges(w.lastXRange, w.lastZRange, x, z)
+					inNew := withinRanges(xrng, zrng, x, z)
+					if inOld && !inNew {
+						w.chunks[oldKey].Destroy()
+						delete(w.chunks, oldKey)
+					}
+				}
+			}
+			w.lastChunk = currChunk
+			w.lastXRange = xrng
+			w.lastZRange = zrng
 		}
 	}
 	for _, chunk := range w.chunks {
