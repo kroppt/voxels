@@ -5,7 +5,7 @@ import (
 	"runtime"
 
 	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/kroppt/voxels/app"
+	"github.com/kroppt/voxels/appchunk"
 	"github.com/kroppt/voxels/log"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -78,7 +78,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	app, err := app.New(win)
+	app, err := appchunk.New(win)
 	if err != nil {
 		log.Fatal(err)
 	}
