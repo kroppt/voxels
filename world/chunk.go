@@ -59,16 +59,24 @@ func (c *Chunk) GetRoot() *Octree {
 	return c.root
 }
 
-func (c *Chunk) getRelativeIndices(pos glm.Vec3) (i int, j int, k int) {
-	return int(pos.X() - c.Pos.X()), int(pos.Y()), int(pos.Z() - c.Pos.Y())
+func GetRelativeIndices(chunkPos glm.Vec2, pos glm.Vec3) (i int, j int, k int) {
+	if pos.X() < chunkPos.X() || pos.Z() < chunkPos.Y() {
+		panic("pos is not within chunk")
+	}
+	// TODO check maximum as well? requires chunk size
+	if pos.Y() < 0 {
+		panic("y index should never be negative")
+	}
+	return int(pos.X() - chunkPos.X()), int(pos.Y()), int(pos.Z() - chunkPos.Y())
 }
 
 // AddVoxel adds a voxel to the chunk, updating all data structures.
+// note: no bounds checking
 func (c *Chunk) AddVoxel(v *Voxel) {
 	i, j, k := v.Pos.X(), v.Pos.Y(), v.Pos.Z()
 	r, g, b, a := v.Col[0], v.Col[1], v.Col[2], v.Col[3]
 	c.flatData = append(c.flatData, i, j, k, r, g, b, a)
-	x, y, z := c.getRelativeIndices(v.Pos)
+	x, y, z := GetRelativeIndices(c.Pos, v.Pos)
 	c.voxels[x][y][z] = v
 	c.root = c.root.AddLeaf(v)
 	c.dirty = true
