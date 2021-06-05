@@ -43,7 +43,7 @@ func ExpandAABC(aabc *AABC, target glm.Vec3) *AABC {
 // It is assumed that the target is within the aabc, and will otherwise panic.
 func GetChildAABC(aabc *AABC, target glm.Vec3) *AABC {
 	if !WithinAABC(aabc, target) {
-		panic("unintended use: target is not within aabc")
+		panic("unintended use: target is not within aabc (probably adding duplicate voxel)")
 	}
 	size := aabc.Size / 2.0
 	offset := glm.Vec3{0.0, 0.0, 0.0}
