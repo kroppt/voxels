@@ -134,7 +134,6 @@ func (w *World) updateView() error {
 	if err != nil {
 		return err
 	}
-	cam.Clean()
 	return nil
 }
 
@@ -145,7 +144,6 @@ func (w *World) updateProj() error {
 	if err != nil {
 		return err
 	}
-	cam.Clean()
 	return nil
 }
 
@@ -159,7 +157,7 @@ func (w *World) Render() error {
 		if err != nil {
 			return err
 		}
-		currChunk := GetChunkAt(chunkSize, w.cam.GetPosition())
+		w.cam.Clean()
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks
