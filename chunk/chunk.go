@@ -83,4 +83,6 @@ func (c *Chunk) Render() {
 	c.objs.Render()
 }
 
-// TODO Destroy
+func (c *Chunk) Destroy() {
+	c.objs.Destroy()
+}
