@@ -4,19 +4,19 @@ import (
 	"testing"
 
 	"github.com/engoengine/glm"
-	"github.com/kroppt/voxels/world"
+	"github.com/kroppt/voxels/chunk"
 )
 
 func TestWithinAABCCases(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		aabc   *world.AABC
+		aabc   *chunk.AABC
 		target glm.Vec3
 		expect bool
 	}{
 		{
 			desc: "WithinAABC works for standard point",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -25,7 +25,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC excludes point on maximum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -34,7 +34,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC excludes point on X maximum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -43,7 +43,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC excludes point on Y maximum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -52,7 +52,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC excludes point on Z maximum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -61,7 +61,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC includes point on minimum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -70,7 +70,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC includes point on X minimum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -79,7 +79,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC includes point on Y minimum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -88,7 +88,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC includes point on Z minimum edge",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
@@ -97,7 +97,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC excludes far off point",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{-1, -2, -3},
 				Size: 2,
 			},
@@ -106,7 +106,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC excludes point slightly outside",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{-1, -2, -3},
 				Size: 2,
 			},
@@ -115,7 +115,7 @@ func TestWithinAABCCases(t *testing.T) {
 		},
 		{
 			desc: "WithinAABC includes point on minimum edge w/ negative center",
-			aabc: &world.AABC{
+			aabc: &chunk.AABC{
 				Pos:  glm.Vec3{-5, -6, -7},
 				Size: 4,
 			},
@@ -127,7 +127,7 @@ func TestWithinAABCCases(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			result := world.WithinAABC(tC.aabc, tC.target)
+			result := chunk.WithinAABC(tC.aabc, tC.target)
 			if result != tC.expect {
 				t.Fatalf("got %v but expected %v", result, tC.expect)
 			}
@@ -141,12 +141,12 @@ func TestExpandAABCInsidePanic(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		curr := &world.AABC{
+		curr := &chunk.AABC{
 			Pos:  glm.Vec3{0, 0, 0},
 			Size: 4,
 		}
 		target := glm.Vec3{1, 1, 1}
-		world.ExpandAABC(curr, target)
+		chunk.ExpandAABC(curr, target)
 		t.Fatal("expected panic but did not")
 	})
 }
@@ -159,54 +159,54 @@ func TestExpandAABCOutsideDoesntPanic(t *testing.T) {
 				t.Fatal("expected no panic, but did anyway")
 			}
 		}()
-		curr := &world.AABC{
+		curr := &chunk.AABC{
 			Pos:  glm.Vec3{0, 0, 0},
 			Size: 4,
 		}
 		target := glm.Vec3{5, 6, 7}
-		world.ExpandAABC(curr, target)
+		chunk.ExpandAABC(curr, target)
 	})
 }
 
 func TestExpandAABCCases(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		curr   *world.AABC
+		curr   *chunk.AABC
 		target glm.Vec3
-		expect *world.AABC
+		expect *chunk.AABC
 	}{
 		{
 			desc: "ExpandAABC is bigger than current",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
 			target: glm.Vec3{5, 5, 5},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 8,
 			},
 		},
 		{
 			desc: "ExpandAABC maximum is exclusive",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 4,
 			},
 			target: glm.Vec3{4, 4, 4},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 8,
 			},
 		},
 		{
 			desc: "ExpandAABC minimum is inclusive",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 8,
 			},
 			target: glm.Vec3{-8, -8, -8},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{-8, -8, -8},
 				Size: 16,
 			},
@@ -216,7 +216,7 @@ func TestExpandAABCCases(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			result := world.ExpandAABC(tC.curr, tC.target)
+			result := chunk.ExpandAABC(tC.curr, tC.target)
 			if *result != *tC.expect {
 				t.Fatalf("got AABC %v but expected %v", *result, *tC.expect)
 			}
@@ -227,17 +227,17 @@ func TestExpandAABCCases(t *testing.T) {
 func TestExpandAABCDoublesSize(t *testing.T) {
 	t.Run("ExpandAABC increases size twice", func(t *testing.T) {
 		t.Parallel()
-		curr := &world.AABC{
+		curr := &chunk.AABC{
 			Pos:  glm.Vec3{0, 0, 0},
 			Size: 4,
 		}
 		target := glm.Vec3{9, 9, 9}
-		expect := &world.AABC{
+		expect := &chunk.AABC{
 			Pos:  glm.Vec3{0, 0, 0},
 			Size: 16,
 		}
-		step1 := world.ExpandAABC(curr, target)
-		result := world.ExpandAABC(step1, target)
+		step1 := chunk.ExpandAABC(curr, target)
+		result := chunk.ExpandAABC(step1, target)
 		if *result != *expect {
 			t.Fatalf("got AABC %v but expected %v", *result, *expect)
 		}
@@ -250,12 +250,12 @@ func TestGetChildAABCOutsidePanic(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		aabc := &world.AABC{
+		aabc := &chunk.AABC{
 			Pos:  glm.Vec3{0, 0, 0},
 			Size: 4,
 		}
 		target := glm.Vec3{-1, -1, -1}
-		world.GetChildAABC(aabc, target)
+		chunk.GetChildAABC(aabc, target)
 		t.Fatal("expected panic but did not")
 	})
 }
@@ -266,12 +266,12 @@ func TestGetChildAABCReturnsOctant(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		aabc := &world.AABC{
+		aabc := &chunk.AABC{
 			Pos:  glm.Vec3{0, 0, 0},
 			Size: 4,
 		}
 		target := glm.Vec3{-1, -1, -1}
-		result := world.GetChildAABC(aabc, target)
+		result := chunk.GetChildAABC(aabc, target)
 		volume := result.Size * result.Size * result.Size
 		expect := float32(8.0)
 		if volume != expect {
@@ -283,102 +283,102 @@ func TestGetChildAABCReturnsOctant(t *testing.T) {
 func TestGetChildAABCCases(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		curr   *world.AABC
+		curr   *chunk.AABC
 		target glm.Vec3
-		expect *world.AABC
+		expect *chunk.AABC
 	}{
 		{
 			desc: "GetChildAABC +x +y +z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{0, 0, 0},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, 0},
 				Size: 2,
 			},
 		},
 		{
 			desc: "GetChildAABC +x +y -z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{0, 0, -1},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{0, 0, -2},
 				Size: 2,
 			},
 		},
 		{
 			desc: "GetChildAABC +x -y +z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{0, -1, 0},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{0, -2, 0},
 				Size: 2,
 			},
 		},
 		{
 			desc: "GetChildAABC +x -y -z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{0, -1, -1},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{0, -2, -2},
 				Size: 2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x +y +z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{-1, 0, 0},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{-2, 0, 0},
 				Size: 2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x +y -z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{-1, 0, -1},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{-2, 0, -2},
 				Size: 2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x -y +z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{-1, -1, 0},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, 0},
 				Size: 2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x -y -z",
-			curr: &world.AABC{
+			curr: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 4,
 			},
 			target: glm.Vec3{-1, -1, -1},
-			expect: &world.AABC{
+			expect: &chunk.AABC{
 				Pos:  glm.Vec3{-2, -2, -2},
 				Size: 2,
 			},
@@ -388,7 +388,7 @@ func TestGetChildAABCCases(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			result := world.GetChildAABC(tC.curr, tC.target)
+			result := chunk.GetChildAABC(tC.curr, tC.target)
 			if *result != *tC.expect {
 				t.Fatalf("got AABC %v but expected %v", *result, *tC.expect)
 			}
