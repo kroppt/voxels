@@ -98,7 +98,7 @@ func (app *Application) pollKeyboard() error {
 	cam := app.world.GetCamera()
 	initPos := cam.GetPosition()
 	keys := sdl.GetKeyboardState()
-	speed := float32(0.5)
+	speed := float32(0.07)
 	if keys[sdl.SCANCODE_W] == sdl.PRESSED {
 		look := cam.GetLookForward()
 		lookSpeed := look.Mul(speed)
