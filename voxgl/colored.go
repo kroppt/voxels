@@ -10,7 +10,7 @@ import (
 // Vertices should be vertices of format X, Y, Z, R, G, B, A.
 // X, Y, and Z options should be in the range -1.0 to 1.0.
 // R, G, B, and A should be in the range 0.0 to 1.0.
-func NewColoredObject(vertices [7]float32) (*Object, error) {
+func NewColoredObject(vertices []float32) (*Object, error) {
 	vshad, err := gfx.NewShader(vertColShader, gl.VERTEX_SHADER)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func NewColoredObject(vertices [7]float32) (*Object, error) {
 		return nil, err
 	}
 
-	obj, err := NewObject(prog, vertices[:], []int32{3, 4})
+	obj, err := NewObject(prog, vertices, []int32{3, 4})
 	if err != nil {
 		return nil, err
 	}

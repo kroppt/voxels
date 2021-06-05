@@ -33,7 +33,7 @@ func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
 	b := float32(k-z.Min) / float32(z.Max-z.Min)
 	a := float32(1.0)
 	point := [7]float32{float32(i), float32(j), float32(k), r, g, b, a}
-	obj, err := voxgl.NewColoredObject(point)
+	obj, err := voxgl.NewColoredObject(point[:])
 	if err != nil {
 		return nil, fmt.Errorf("couldn't create colored object at %v: %w", pos, err)
 	}

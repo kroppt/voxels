@@ -19,10 +19,7 @@ type Object struct {
 func NewObject(program gfx.Program, vertices []float32, layout []int32) (*Object, error) {
 	vao := gfx.NewVAO(gl.POINTS, layout)
 
-	err := vao.Load(vertices, gl.STATIC_DRAW)
-	if err != nil {
-		return nil, err
-	}
+	vao.Load(vertices, gl.STATIC_DRAW)
 
 	return &Object{
 		program:  program,
