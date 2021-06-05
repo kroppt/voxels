@@ -7,8 +7,9 @@ import (
 // Camera contains position and rotation information for the camera. UpdateView
 // should be called whenever the camera is translated to rotated.
 type Camera struct {
-	pos glm.Vec3
-	rot glm.Quat
+	pos   glm.Vec3
+	rot   glm.Quat
+	dirty bool
 }
 
 // NewCamera returns a new camera.
@@ -19,6 +20,14 @@ func NewCamera() *Camera {
 	}
 }
 
+func (c *Camera) IsDirty() bool {
+	return c.dirty
+}
+
+func (c *Camera) Clean() {
+	c.dirty = false
+}
+
 // GetPosition returns the position of the camera.
 func (c *Camera) GetPosition() glm.Vec3 {
 	return c.pos.Mul(-1.0)
@@ -27,11 +36,13 @@ func (c *Camera) GetPosition() glm.Vec3 {
 // SetPosition sets the position of the camera to pos
 func (c *Camera) SetPosition(pos *glm.Vec3) {
 	c.pos = pos.Mul(-1)
+	c.dirty = true
 }
 
 // Translate adds the given translation to the position of the camera.
 func (c *Camera) Translate(diff *glm.Vec3) {
 	c.pos = c.pos.Sub(diff)
+	c.dirty = true
 }
 
 // quatLookAtV is a fixed version of GLM's QuatLookAtV that accounts for Y direction
@@ -69,6 +80,7 @@ func (c *Camera) LookAt(center *glm.Vec3) {
 	up := c.GetLookUp()
 	quat := quatLookAtV(&negatedPos, center, &up)
 	c.rot = quat
+	c.dirty = true
 }
 
 // GetRotationQuat returns the quaternion the camera is rotated with.
@@ -81,6 +93,7 @@ func (c *Camera) Rotate(axis *glm.Vec3, deg float32) {
 	rad := glm.DegToRad(deg)
 	quat := glm.QuatRotate(rad, axis)
 	c.rot = c.rot.Mul(&quat)
+	c.dirty = true
 }
 
 // GetViewMat returns the 4x4 matrix associated with the view represented by the

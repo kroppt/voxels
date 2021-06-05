@@ -30,6 +30,13 @@ func NewObject(program gfx.Program, vertices []float32, layout []int32) (*Object
 	}, nil
 }
 
+func (o *Object) SetData(data []float32) {
+	err := o.vao.Load(data, gl.STATIC_DRAW)
+	if err != nil {
+		panic("failed to set data")
+	}
+}
+
 // Render generates an image of the object with OpenGL.
 func (o *Object) Render() {
 	// sw := util.Start()
