@@ -15,29 +15,6 @@ type World struct {
 	lastChunk ChunkPos
 }
 
-// GetChunkIndex returns the chunk coordinate that the given position
-// is in, given the chunkSize.
-// TODO rename this, it's not an index
-func GetChunkIndex(chunkSize int32, pos VoxelPos) ChunkPos {
-	x := pos.X
-	z := pos.Z
-	if pos.X < 0 {
-		x++
-	}
-	if pos.Z < 0 {
-		z++
-	}
-	x /= chunkSize
-	z /= chunkSize
-	if pos.X < 0 {
-		x--
-	}
-	if pos.Z < 0 {
-		z--
-	}
-	return ChunkPos{x, z}
-}
-
 // TODO range of what??
 // TODO document this
 type Range struct {
@@ -98,7 +75,7 @@ func NewWorld() (*World, error) {
 	cam.SetPosition(&glm.Vec3{3, 2, 3})
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
-	currChunk := GetChunkIndex(chunkSize, cam.AsVoxelPos())
+	currChunk := cam.AsVoxelPos().AsChunkPos(chunkSize)
 	// TODO extract below calculation to function
 	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
 
@@ -131,7 +108,7 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 // SetVoxel updates a voxel's variables in the world if the chunk
 // that it would belong to is currently loaded.
 func (w *World) SetVoxel(v *Voxel) {
-	key := GetChunkIndex(chunkSize, v.Pos)
+	key := v.Pos.AsChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	if chunk, ok := w.chunks[key]; ok {
 		chunk.SetVoxel(v)
@@ -178,7 +155,7 @@ func (w *World) Render() error {
 		}
 		w.cam.Clean()
 
-		currChunk := GetChunkIndex(chunkSize, w.cam.AsVoxelPos())
+		currChunk := w.cam.AsVoxelPos().AsChunkPos(chunkSize)
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks
