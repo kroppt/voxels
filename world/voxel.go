@@ -60,9 +60,16 @@ func (pos VoxelPos) AsChunkPos(chunkSize int32) ChunkPos {
 	return ChunkPos{x, z}
 }
 
+// Color is an RGBA color.
+type Color struct {
+	R float32
+	G float32
+	B float32
+	A float32
+}
+
 // Voxel describes a discrete unit of 3D space.
 type Voxel struct {
-	Pos VoxelPos
-	// TODO Col is RGBA color
-	Col glm.Vec4
+	Pos   VoxelPos
+	Color Color
 }

@@ -3,7 +3,6 @@ package world_test
 import (
 	"testing"
 
-	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/world"
 )
 
@@ -182,12 +181,12 @@ func TestOctreeReassignment(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: world.VoxelPos{0, 0, 0},
-			Col: glm.Vec4{0.5, 0.5, 0.5, 0.5},
+			Pos:   world.VoxelPos{0, 0, 0},
+			Color: world.Color{0.5, 0.5, 0.5, 0.5},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: world.VoxelPos{0, 0, 0},
-			Col: glm.Vec4{1.0, 1.0, 1.0, 1.0},
+			Pos:   world.VoxelPos{0, 0, 0},
+			Color: world.Color{1.0, 1.0, 1.0, 1.0},
 		})
 		expectedAABC := &world.AABC{
 			Origin: world.VoxelPos{0, 0, 0},
@@ -204,8 +203,8 @@ func TestOctreeReassignment(t *testing.T) {
 			t.Fatalf("expected %v children but counted %v", expectedChildrenCount, resultChildrenCount)
 		}
 
-		resultCol := root.GetVoxel().Col
-		expectCol := glm.Vec4{1.0, 1.0, 1.0, 1.0}
+		resultCol := root.GetVoxel().Color
+		expectCol := world.Color{1.0, 1.0, 1.0, 1.0}
 		if expectCol != resultCol {
 			t.Fatalf("expected reassigned voxel color to be %v but got %v", expectCol, resultCol)
 		}
@@ -218,20 +217,20 @@ func TestOctreeRecursionReassignment(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: world.VoxelPos{0, 0, 0},
-			Col: glm.Vec4{0.5, 0.5, 0.5, 0.5},
+			Pos:   world.VoxelPos{0, 0, 0},
+			Color: world.Color{0.5, 0.5, 0.5, 0.5},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: world.VoxelPos{4, 0, 0},
-			Col: glm.Vec4{0.2, 0.5, 0.5, 0.5},
+			Pos:   world.VoxelPos{4, 0, 0},
+			Color: world.Color{0.2, 0.5, 0.5, 0.5},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: world.VoxelPos{2, 0, 0},
-			Col: glm.Vec4{0.5, 0.5, 0.5, 0.4},
+			Pos:   world.VoxelPos{2, 0, 0},
+			Color: world.Color{0.5, 0.5, 0.5, 0.4},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: world.VoxelPos{2, 0, 0},
-			Col: glm.Vec4{1.0, 1.0, 1.0, 1.0},
+			Pos:   world.VoxelPos{2, 0, 0},
+			Color: world.Color{1.0, 1.0, 1.0, 1.0},
 		})
 		list, _ := root.Find(func(o *world.Octree) bool {
 			return true
@@ -244,8 +243,8 @@ func TestOctreeRecursionReassignment(t *testing.T) {
 			}
 		}
 
-		resultCol := answer.Col
-		expectCol := glm.Vec4{1.0, 1.0, 1.0, 1.0}
+		resultCol := answer.Color
+		expectCol := world.Color{1.0, 1.0, 1.0, 1.0}
 		if expectCol != resultCol {
 			t.Fatalf("expected reassigned voxel color to be %v but got %v", expectCol, resultCol)
 		}

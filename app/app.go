@@ -60,8 +60,8 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
 	vpos := app.world.GetCamera().AsVoxelPos()
 	app.world.SetVoxel(&world.Voxel{
-		Pos: vpos,
-		Col: [4]float32{1.0, 0.0, 0.0, 1.0},
+		Pos:   vpos,
+		Color: world.Color{R: 1.0, G: 0.0, B: 0.0, A: 1.0},
 	})
 }
 

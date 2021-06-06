@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
 )
@@ -98,8 +97,8 @@ func NewChunk(size, height int32, pos ChunkPos) *Chunk {
 				z := chunk.Pos.Z + k
 				r, g, b := rand.Float32(), rand.Float32(), rand.Float32()
 				v := Voxel{
-					Pos: VoxelPos{x, y, z},
-					Col: glm.Vec4{r, g, b, 1.0},
+					Pos:   VoxelPos{x, y, z},
+					Color: Color{r, g, b, 1.0},
 				}
 				chunk.SetVoxel(&v)
 			}
@@ -144,7 +143,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	}
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	i, j, k := c.GetRelativeIndices(v.Pos)
-	r, g, b, a := v.Col[0], v.Col[1], v.Col[2], v.Col[3]
+	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
 	off := (i + j*int(c.size*c.height) + k*int(c.size)) * 7
 	if off%7 != 0 {
 		panic("offset not divisible by 7")
