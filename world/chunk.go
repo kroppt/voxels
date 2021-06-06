@@ -9,20 +9,34 @@ import (
 	"github.com/kroppt/voxels/voxgl"
 )
 
+// ChunkPos is a position in chunk space.
+type ChunkPos struct {
+	X int32
+	Z int32
+}
+
+// Mul returns this ChunkPos multiplied by another ChunkPos.
+func (pos ChunkPos) Mul(s int32) ChunkPos {
+	return ChunkPos{
+		X: pos.X * s,
+		Z: pos.Z * s,
+	}
+}
+
 // Chunk manages a size X height X size region of voxels.
 type Chunk struct {
-	Pos      glm.Vec2
+	Pos      ChunkPos
 	flatData []float32
 	objs     *voxgl.Object
 	root     *Octree
 	dirty    bool
-	size     int
-	height   int
+	size     int32
+	height   int32
 }
 
 // NewChunk returns a new Chunk shaped as size X height X size.
-func NewChunk(size, height int, chunkPos glm.Vec2) *Chunk {
-	vertSize := 7
+func NewChunk(size, height int32, pos ChunkPos) *Chunk {
+	vertSize := int32(7)
 	flatData := make([]float32, size*size*height*vertSize)
 	// layout 3+4=7 hard coded in here too
 	objs, err := voxgl.NewColoredObject(nil)
@@ -30,19 +44,19 @@ func NewChunk(size, height int, chunkPos glm.Vec2) *Chunk {
 		panic("failed to make NewColoredObject for chunk")
 	}
 	chunk := &Chunk{
-		Pos:      chunkPos.Mul(float32(size)),
+		Pos:      pos.Mul(size),
 		objs:     objs,
 		flatData: flatData,
 		size:     size,
 		height:   height,
 	}
 	rand.Seed(time.Now().UnixNano())
-	for i := 0; i < size; i++ {
-		for j := 0; j < height; j++ {
-			for k := 0; k < size; k++ {
-				x := int32(chunk.Pos.X()) + int32(i)
-				y := int32(j)
-				z := int32(chunk.Pos.Y()) + int32(k)
+	for i := int32(0); i < size; i++ {
+		for j := int32(0); j < height; j++ {
+			for k := int32(0); k < size; k++ {
+				x := chunk.Pos.X + i
+				y := j
+				z := chunk.Pos.Z + k
 				r, g, b := rand.Float32(), rand.Float32(), rand.Float32()
 				v := Voxel{
 					Pos: VoxelPos{x, y, z},
@@ -63,20 +77,20 @@ func (c *Chunk) GetRoot() *Octree {
 // the chunk, with the assumption that the position is in bounds.
 // TODO returns voxel index
 func (c *Chunk) GetRelativeIndices(pos VoxelPos) (int, int, int) {
-	return int(pos.X - int32(c.Pos.X())), int(pos.Y), int(pos.Z - int32(c.Pos.Y()))
+	return int(pos.X - c.Pos.X), int(pos.Y), int(pos.Z - c.Pos.Z)
 }
 
 // IsWithinChunk returns whether the position is within the chunk
 func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
-	if float32(pos.X) < c.Pos.X() || float32(pos.Z) < c.Pos.Y() {
+	if pos.X < c.Pos.X || pos.Z < c.Pos.Z {
 		//pos is below x or z chunk bounds
 		return false
 	}
-	if float32(pos.X) >= c.Pos.X()+float32(c.size) || float32(pos.Z) >= c.Pos.Y()+float32(c.size) {
+	if pos.X >= c.Pos.X+c.size || pos.Z >= c.Pos.Z+c.size {
 		// pos is above x or z chunk bounds
 		return false
 	}
-	if float32(pos.Y) < 0 || float32(pos.Y) >= float32(c.height) {
+	if pos.Y < 0 || pos.Y >= c.height {
 		// y coordinate is out of chunk's bounds
 		return false
 	}
@@ -92,7 +106,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	i, j, k := c.GetRelativeIndices(v.Pos)
 	r, g, b, a := v.Col[0], v.Col[1], v.Col[2], v.Col[3]
-	off := (i + j*c.size*c.height + k*c.size) * 7
+	off := (i + j*int(c.size*c.height) + k*int(c.size)) * 7
 	if off%7 != 0 {
 		panic("offset not divisible by 7")
 	}

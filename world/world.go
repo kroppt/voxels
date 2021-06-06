@@ -9,17 +9,16 @@ import (
 )
 
 type World struct {
-	ubo    *gfx.BufferObject
-	cam    *Camera
-	chunks map[glm.Vec2]*Chunk
-	// TODO lastChunk is chunk position
-	lastChunk glm.Vec2
+	ubo       *gfx.BufferObject
+	cam       *Camera
+	chunks    map[ChunkPos]*Chunk
+	lastChunk ChunkPos
 }
 
 // GetChunkIndex returns the chunk coordinate that the given position
 // is in, given the chunkSize.
-// TODO returns chunk position index
-func GetChunkIndex(chunkSize int32, pos VoxelPos) glm.Vec2 {
+// TODO rename this, it's not an index
+func GetChunkIndex(chunkSize int32, pos VoxelPos) ChunkPos {
 	x := pos.X
 	z := pos.Z
 	if pos.X < 0 {
@@ -36,19 +35,19 @@ func GetChunkIndex(chunkSize int32, pos VoxelPos) glm.Vec2 {
 	if pos.Z < 0 {
 		z--
 	}
-	return glm.Vec2{float32(x), float32(z)}
+	return ChunkPos{x, z}
 }
 
 // TODO range of what??
 // TODO document this
 type Range struct {
-	Min int
-	Max int
+	Min int32
+	Max int32
 }
 
 // TODO xrng, yrng is chunk position range
 // TODO consolidate x,z into chunk position ?
-func withinRanges(xrng, yrng Range, x, z int) bool {
+func withinRanges(xrng, yrng Range, x, z int32) bool {
 	if x < xrng.Min || x > xrng.Max {
 		return false
 	}
@@ -60,7 +59,7 @@ func withinRanges(xrng, yrng Range, x, z int) bool {
 
 // TODO xrng, yrng is chunk position ranges
 // TODO i,j in fn is chunk position
-func applyWithinRanges(xrng, zrng Range, fn func(i, j int)) {
+func applyWithinRanges(xrng, zrng Range, fn func(i, j int32)) {
 	for x := xrng.Min; x <= xrng.Max; x++ {
 		for z := zrng.Min; z <= zrng.Max; z++ {
 			fn(x, z)
@@ -70,14 +69,13 @@ func applyWithinRanges(xrng, zrng Range, fn func(i, j int)) {
 
 // GetChunkBounds returns the minimum and maximum chunks indices that should be
 // in view around a camera at the given chunk.
-// TODO currChunk is chunk position
 // TODO returns chunk position ranges
-func GetChunkBounds(worldSize int, currChunk glm.Vec2) (x Range, z Range) {
+func GetChunkBounds(worldSize int32, currChunk ChunkPos) (x Range, z Range) {
 	halfWorld := worldSize / 2
-	minx := int(currChunk.X()) - halfWorld
-	maxx := int(currChunk.X()) + halfWorld
-	minj := int(currChunk.Y()) - halfWorld
-	maxj := int(currChunk.Y()) + halfWorld
+	minx := currChunk.X - halfWorld
+	maxx := currChunk.X + halfWorld
+	minj := currChunk.Z - halfWorld
+	maxj := currChunk.Z + halfWorld
 	return Range{minx, maxx}, Range{minj, maxj}
 }
 
@@ -104,10 +102,10 @@ func NewWorld() (*World, error) {
 	// TODO extract below calculation to function
 	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
 
-	chunks := make(map[glm.Vec2]*Chunk)
-	applyWithinRanges(xrng, zrng, func(i, j int) {
-		ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(j)})
-		chunks[glm.Vec2{float32(i), float32(j)}] = ch
+	chunks := make(map[ChunkPos]*Chunk)
+	applyWithinRanges(xrng, zrng, func(i, j int32) {
+		ch := NewChunk(chunkSize, chunkHeight, ChunkPos{i, j})
+		chunks[ChunkPos{i, j}] = ch
 	})
 
 	world.chunks = chunks
@@ -185,18 +183,18 @@ func (w *World) Render() error {
 			// the camera position has moved chunks
 			// load new chunks
 			xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
-			applyWithinRanges(xrng, zrng, func(i, j int) {
-				key := glm.Vec2{float32(i), float32(j)}
+			applyWithinRanges(xrng, zrng, func(i, j int32) {
+				key := ChunkPos{i, j}
 				if _, ok := w.chunks[key]; !ok {
 					// chunk i,j is not in map and should be added
-					ch := NewChunk(chunkSize, chunkHeight, glm.Vec2{float32(i), float32(j)})
+					ch := NewChunk(chunkSize, chunkHeight, ChunkPos{i, j})
 					w.chunks[key] = ch
 				}
 			})
 			// delete old chunks
 			lastXRange, lastZRange := GetChunkBounds(chunkRenderDist*2+1, w.lastChunk)
-			applyWithinRanges(lastXRange, lastZRange, func(i, j int) {
-				oldKey := glm.Vec2{float32(i), float32(j)}
+			applyWithinRanges(lastXRange, lastZRange, func(i, j int32) {
+				oldKey := ChunkPos{i, j}
 				inOld := withinRanges(lastXRange, lastZRange, i, j)
 				inNew := withinRanges(xrng, zrng, i, j)
 				if inOld && !inNew {
