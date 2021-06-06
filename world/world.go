@@ -1,170 +1,93 @@
 package world
 
 import (
-	"errors"
-	"fmt"
 	"unsafe"
 
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
-	"github.com/kroppt/voxels/shapes"
 )
 
-type Range struct {
-	Min int
-	Max int
-}
-
+// World tracks the camera and its renderable chunks.
 type World struct {
-	x      Range
-	y      Range
-	z      Range
-	voxels [][][]*Voxel
-	ubo    *gfx.BufferObject
-	cam    *Camera
+	ubo       *gfx.BufferObject
+	cam       *Camera
+	chunks    map[ChunkPos]*Chunk
+	lastChunk ChunkPos
 }
 
-func makeVoxel(x, y, z Range, i, j, k int) (*Voxel, error) {
-	pos := Position{X: i, Y: j, Z: k}
-	r := float32(i-x.Min) / float32(x.Max-x.Min)
-	g := float32(j-y.Min) / float32(y.Max-y.Min)
-	b := float32(k-z.Min) / float32(z.Max-z.Min)
-	a := float32(1.0)
-	col := [4]float32{r, g, b, a}
-	colors := [8][4]float32{
-		col, col, col, col, col, col, col, col,
-	}
-	obj, err := shapes.NewColoredCube(colors)
-	if err != nil {
-		return nil, fmt.Errorf("couldn't create colored cube at %v: %w", pos, err)
-	}
-	obj.Translate(float32(i), float32(j), float32(k))
-	return &Voxel{
-		Object: obj,
-	}, nil
-}
+const chunkSize = 10
+const chunkHeight = 1
+const chunkRenderDist = 2
 
-func makeYVoxels(x, y, z Range, i, j int) ([]*Voxel, error) {
-	yvox := []*Voxel{}
-	for k := z.Min; k <= z.Max; k++ {
-		zvox, err := makeVoxel(x, y, z, i, j, k)
-		if err != nil {
-			return yvox, err
-		}
-		yvox = append(yvox, zvox)
-	}
-	return yvox, nil
-}
-
-func makeXVoxels(x, y, z Range, i int) ([][]*Voxel, error) {
-	xvox := [][]*Voxel{}
-	for j := y.Min; j <= y.Max; j++ {
-		yvox, err := makeYVoxels(x, y, z, i, j)
-		if err != nil {
-			return xvox, err
-		}
-		xvox = append(xvox, yvox)
-	}
-	return xvox, nil
-}
-
-func makeVoxels(x, y, z Range) ([][][]*Voxel, error) {
-	voxels := [][][]*Voxel{}
-	for i := x.Min; i <= x.Max; i++ {
-		xvox, err := makeXVoxels(x, y, z, i)
-		if err != nil {
-			return voxels, err
-		}
-		voxels = append(voxels, xvox)
-	}
-	return voxels, nil
-}
-
-func cleanupCubes(objs [][][]*Voxel) {
-	for _, objs1 := range objs {
-		for _, objs2 := range objs1 {
-			for _, obj := range objs2 {
-				obj.Destroy()
-			}
-		}
-	}
-}
-
-func New(x, y, z Range) (*World, error) {
-	voxels, err := makeVoxels(x, y, z)
-	if err != nil {
-		cleanupCubes(voxels)
-		return nil, err
-	}
-
+// New returns a new world.World.
+func New() *World {
 	ubo := gfx.NewBufferObject()
 	var mat glm.Mat4
 	// opengl memory allocation, 2x mat4 = 1 for proj + 1 for view
 	ubo.BufferData(gl.UNIFORM_BUFFER, uint32(2*unsafe.Sizeof(mat)), gl.Ptr(nil), gl.STATIC_DRAW)
 	// use binding = 0
 	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
-
 	cam := NewCamera()
-
 	world := &World{
-		x:      x,
-		y:      y,
-		z:      z,
-		voxels: voxels,
-		ubo:    ubo,
-		cam:    cam,
+		ubo: ubo,
+		cam: cam,
 	}
-	world.cam.SetPosition(&glm.Vec3{0, 0, 25})
-	world.cam.LookAt(&glm.Vec3{0, 0, 0})
-	err = world.UpdateView()
-	if err != nil {
-		return nil, err
+	cam.SetPosition(&glm.Vec3{3, 2, 3})
+	cam.LookAt(&glm.Vec3{0, 0, 0})
+
+	currChunk := cam.AsVoxelPos().GetChunkPos(chunkSize)
+	rng := currChunk.GetSurroundings(chunkRenderDist)
+
+	chunks := make(map[ChunkPos]*Chunk)
+	rng.ForEach(func(pos ChunkPos) {
+		ch := NewChunk(chunkSize, chunkHeight, pos)
+		chunks[pos] = ch
+	})
+
+	world.chunks = chunks
+	world.lastChunk = currChunk
+	return world
+}
+
+// FindLookAtVoxel determines which voxel is being looked at. It returns the
+// block, distance to the block, and whether the block was found.
+func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
+	var hits []*Voxel
+	for _, chunk := range w.chunks {
+		chunkHits, _ := chunk.root.Find(func(node *Octree) bool {
+			aabc := *node.GetAABC()
+			_, hit := Intersect(aabc, w.cam.GetPosition(), w.cam.GetLookForward())
+			return hit
+		})
+		hits = append(hits, chunkHits...)
 	}
-	err = world.UpdateProj()
-	if err != nil {
-		return nil, err
+
+	closest, dist := GetClosest(w.cam.GetPosition(), hits)
+	return closest, dist, len(hits) != 0
+}
+
+// SetVoxel updates a voxel's variables in the world if the chunk
+// that it would belong to is currently loaded.
+func (w *World) SetVoxel(v *Voxel) {
+	key := v.Pos.GetChunkPos(chunkSize)
+	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
+	if chunk, ok := w.chunks[key]; ok {
+		chunk.SetVoxel(v)
 	}
-	return world, nil
 }
 
-func (p *World) Destroy() {
-	p.ubo.Destroy()
+// Destroy frees external resources.
+func (w *World) Destroy() {
+	w.ubo.Destroy()
 }
 
-var ErrOutOfBounds = errors.New("position out of bounds")
-
-func getRangeOffsets(pos Position, x, y, z Range) (i int, j int, k int) {
-	i = pos.X - x.Min
-	j = pos.Y - y.Min
-	k = pos.Z - z.Min
-	return i, j, k
-}
-
-func (w *World) At(pos Position) (*Voxel, error) {
-	switch {
-	case pos.X < w.x.Min:
-	case pos.X > w.x.Max:
-	case pos.Y < w.y.Min:
-	case pos.Y > w.y.Max:
-	case pos.Z < w.z.Min:
-	case pos.Z > w.z.Max:
-	default:
-		i, j, k := getRangeOffsets(pos, w.x, w.y, w.z)
-		return w.voxels[i][j][k], nil
-	}
-	return nil, ErrOutOfBounds
-}
-
-func (w *World) Size() (x, y, z Range) {
-	return w.x, w.y, w.z
-}
-
+// GetCamera returns a reference to the camera.
 func (w *World) GetCamera() *Camera {
 	return w.cam
 }
 
-func (w *World) UpdateView() error {
+func (w *World) updateView() error {
 	cam := *w.GetCamera()
 	view := cam.GetViewMat()
 	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
@@ -174,7 +97,7 @@ func (w *World) UpdateView() error {
 	return nil
 }
 
-func (w *World) UpdateProj() error {
+func (w *World) updateProj() error {
 	cam := *w.GetCamera()
 	proj := cam.GetProjMat()
 	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(proj)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
@@ -184,12 +107,47 @@ func (w *World) UpdateProj() error {
 	return nil
 }
 
-func (w *World) Render() {
-	for _, xcubes := range w.voxels {
-		for _, ycubes := range xcubes {
-			for _, cube := range ycubes {
-				cube.Render()
-			}
+// Render renders the chunks of the world in OpenGL.
+// TODO isolate chunk loading and unloading logic.
+func (w *World) Render() error {
+	if w.cam.IsDirty() {
+		err := w.updateView()
+		if err != nil {
+			return err
+		}
+		err = w.updateProj()
+		if err != nil {
+			return err
+		}
+		w.cam.Clean()
+
+		currChunk := w.cam.AsVoxelPos().GetChunkPos(chunkSize)
+		if currChunk != w.lastChunk {
+			// the camera position has moved chunks
+			// load new chunks
+			rng := currChunk.GetSurroundings(chunkRenderDist)
+			rng.ForEach(func(pos ChunkPos) {
+				if _, ok := w.chunks[pos]; !ok {
+					// chunk i,j is not in map and should be added
+					ch := NewChunk(chunkSize, chunkHeight, pos)
+					w.chunks[pos] = ch
+				}
+			})
+			// delete old chunks
+			lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
+			lastRng.ForEach(func(pos ChunkPos) {
+				inOld := lastRng.Contains(pos)
+				inNew := rng.Contains(pos)
+				if inOld && !inNew {
+					w.chunks[pos].Destroy()
+					delete(w.chunks, pos)
+				}
+			})
+			w.lastChunk = currChunk
 		}
 	}
+	for _, chunk := range w.chunks {
+		chunk.Render()
+	}
+	return nil
 }

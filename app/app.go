@@ -1,12 +1,10 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -19,22 +17,14 @@ type Application struct {
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	// 11 x 11 x 11
-	x := world.Range{Min: -5, Max: 5}
-	y := world.Range{Min: -5, Max: 5}
-	z := world.Range{Min: -5, Max: 5}
-	wld, err := world.New(x, y, z)
-	if err != nil {
-		return nil, fmt.Errorf("could not create world: %v", err)
-	}
-
 	return &Application{
 		win:   win,
-		world: wld,
+		world: world.New(),
 	}, nil
 }
 
 func (app *Application) Start() {
+	util.SetMetricsEnabled(true)
 	app.running = true
 	app.win.Show()
 }
@@ -56,7 +46,7 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 			return err
 		}
 	case *sdl.MouseWheelEvent:
-		//app.handleMouseWheelEvent(evt)
+		app.handleMouseWheelEvent(evt)
 	case *sdl.WindowEvent:
 		//app.handleWindowEvent(evt)
 	case *sdl.SysWMEvent:
@@ -67,7 +57,16 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 	return nil
 }
 
+func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
+	vpos := app.world.GetCamera().AsVoxelPos()
+	app.world.SetVoxel(&world.Voxel{
+		Pos:   vpos,
+		Color: world.Color{R: 1.0, G: 0.0, B: 0.0, A: 1.0},
+	})
+}
+
 func (app *Application) handleQuitEvent(evt *sdl.QuitEvent) {
+	util.LogMetrics()
 	app.running = false
 }
 
@@ -90,10 +89,6 @@ func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error 
 	// use y component to rotate around the axis that goes through your ears
 	lookRight := cam.GetLookRight()
 	cam.Rotate(&lookRight, speed*float32(evt.YRel))
-	err := app.world.UpdateView()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -102,9 +97,8 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 
 func (app *Application) pollKeyboard() error {
 	cam := app.world.GetCamera()
-	initPos := cam.GetPosition()
 	keys := sdl.GetKeyboardState()
-	speed := float32(0.5)
+	speed := float32(0.07)
 	if keys[sdl.SCANCODE_W] == sdl.PRESSED {
 		look := cam.GetLookForward()
 		lookSpeed := look.Mul(speed)
@@ -135,52 +129,16 @@ func (app *Application) pollKeyboard() error {
 		lookSpeed := look.Mul(speed)
 		cam.Translate(&lookSpeed)
 	}
-	if cam.GetPosition() == initPos {
-		return nil
-	}
-	err := app.world.UpdateView()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
-func (app *Application) findLookatVoxel() (block glm.Vec3, dist float32, found bool) {
-	cam := *app.world.GetCamera()
-	pos := cam.GetPosition()
-	dir := cam.GetLookForward()
-	xrng, yrng, zrng := app.world.Size()
-	intersects := 0
-	for i := xrng.Min; i <= xrng.Max; i++ {
-		for j := yrng.Min; j <= yrng.Max; j++ {
-			for k := zrng.Min; k <= zrng.Max; k++ {
-				aabb := geo.AABB{
-					Center:     glm.Vec3{float32(i), float32(j), float32(k)},
-					HalfExtend: glm.Vec3{0.5, 0.5, 0.5},
-				}
-				t, overlap := world.Intersect(aabb, pos, dir)
-				if !overlap {
-					continue
-				}
-				intersects++
-				if t < dist || !found {
-					found = true
-					dist = t
-					block = aabb.Center
-				}
-			}
-		}
-	}
-	return
-}
+var Block *world.Voxel
 
 func (app *Application) PostEventActions() {
 	app.pollKeyboard()
-	block, dist, found := app.findLookatVoxel()
-	if found {
-		log.Debugf("I see %v from %v away", block, dist)
-	}
-
+	sw := util.Start()
+	Block, _, _ = app.world.FindLookAtVoxel()
+	sw.StopRecordAverage("intersect")
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
 

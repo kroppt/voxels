@@ -1,8 +1,8 @@
+// +build !test
+
 package voxgl
 
 import (
-	"fmt"
-
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
@@ -18,36 +18,13 @@ type Object struct {
 }
 
 // NewObject returns a newly created Object with the given vertices.
-func NewObject(vertShader string, fragShader string, vertices [][]float32, layout []int32) (*Object, error) {
-	vshad, err := gfx.NewShader(vertShader, gl.VERTEX_SHADER)
-	if err != nil {
-		return nil, err
-	}
+func NewObject(program gfx.Program, vertices []float32, layout []int32) (*Object, error) {
+	vao := gfx.NewVAO(gl.POINTS, layout)
 
-	fshad, err := gfx.NewShader(fragShader, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return nil, err
-	}
-
-	prog, err := gfx.NewProgram(vshad, fshad)
-	if err != nil {
-		return nil, err
-	}
-
-	vao := gfx.NewVAO(gl.TRIANGLES, layout)
-
-	points := []float32{}
-	for _, v := range vertices {
-		points = append(points, v[:]...)
-	}
-
-	err = vao.Load(points, gl.STATIC_DRAW)
-	if err != nil {
-		return nil, err
-	}
+	vao.Load(vertices, gl.STATIC_DRAW)
 
 	return &Object{
-		program:  prog,
+		program:  program,
 		vao:      *vao,
 		position: glm.Vec3{0.0, 0.0, 0.0},
 		scale:    glm.Vec3{1.0, 1.0, 1.0},
@@ -55,23 +32,21 @@ func NewObject(vertShader string, fragShader string, vertices [][]float32, layou
 	}, nil
 }
 
+func (o *Object) SetData(data []float32) {
+	err := o.vao.Load(data, gl.STATIC_DRAW)
+	if err != nil {
+		panic("failed to set data")
+	}
+}
+
 // Render generates an image of the object with OpenGL.
 func (o *Object) Render() {
-	model := glm.Ident4()
-	trans := glm.Translate3D(o.position[0], o.position[1], o.position[2])
-	model = model.Mul4(&trans)
-	scale := glm.Scale3D(o.scale[0], o.scale[1], o.scale[2])
-	model = model.Mul4(&scale)
-	rot := o.rotation.Mat4()
-	model = model.Mul4(&rot)
-	err := o.program.UploadUniformMat4("model", model)
-	if err != nil {
-		panic(fmt.Errorf("error uploading uniform \"model\": %w", err))
-	}
-
+	// sw := util.Start()
 	o.program.Bind()
 	o.vao.Draw()
 	o.program.Unbind()
+	// gl.Finish()
+	// sw.StopRecordAverage("individual voxel render")
 }
 
 // Translate adds the given position to the object.
