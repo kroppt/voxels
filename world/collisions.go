@@ -56,7 +56,7 @@ func GetClosest(eye glm.Vec3, positions []*Voxel) (*Voxel, float32) {
 		v := positions[i]
 		pos := positions[i].Pos.AsVec3()
 		diff := pos.Sub(&eye)
-		dist := (&diff).Len()
+		dist := diff.Len()
 		if !found || dist < closestDist {
 			found = true
 			closestDist = dist
