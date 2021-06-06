@@ -36,7 +36,7 @@ func New() *World {
 	cam.SetPosition(&glm.Vec3{3, 2, 3})
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
-	currChunk := cam.AsVoxelPos().AsChunkPos(chunkSize)
+	currChunk := cam.AsVoxelPos().GetChunkPos(chunkSize)
 	rng := currChunk.GetSurroundings(chunkRenderDist)
 
 	chunks := make(map[ChunkPos]*Chunk)
@@ -70,7 +70,7 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 // SetVoxel updates a voxel's variables in the world if the chunk
 // that it would belong to is currently loaded.
 func (w *World) SetVoxel(v *Voxel) {
-	key := v.Pos.AsChunkPos(chunkSize)
+	key := v.Pos.GetChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	if chunk, ok := w.chunks[key]; ok {
 		chunk.SetVoxel(v)
@@ -121,7 +121,7 @@ func (w *World) Render() error {
 		}
 		w.cam.Clean()
 
-		currChunk := w.cam.AsVoxelPos().AsChunkPos(chunkSize)
+		currChunk := w.cam.AsVoxelPos().GetChunkPos(chunkSize)
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks

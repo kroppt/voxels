@@ -38,9 +38,9 @@ func (pos VoxelPos) AsVec3() glm.Vec3 {
 	}
 }
 
-// AsChunkPos returns the chunk position that the this VoxelPos is in for the
+// GetChunkPos returns the chunk position that the this VoxelPos is in for the
 // given chunkSize.
-func (pos VoxelPos) AsChunkPos(chunkSize int32) ChunkPos {
+func (pos VoxelPos) GetChunkPos(chunkSize int32) ChunkPos {
 	x := pos.X
 	z := pos.Z
 	if pos.X < 0 {
