@@ -23,23 +23,21 @@ type Range struct {
 }
 
 // TODO xrng, yrng is chunk position range
-// TODO consolidate x,z into chunk position ?
-func withinRanges(xrng, yrng Range, x, z int32) bool {
-	if x < xrng.Min || x > xrng.Max {
+func withinRanges(xrng, yrng Range, pos ChunkPos) bool {
+	if pos.X < xrng.Min || pos.X > xrng.Max {
 		return false
 	}
-	if z < yrng.Min || z > yrng.Max {
+	if pos.Z < yrng.Min || pos.Z > yrng.Max {
 		return false
 	}
 	return true
 }
 
 // TODO xrng, yrng is chunk position ranges
-// TODO i,j in fn is chunk position
-func applyWithinRanges(xrng, zrng Range, fn func(i, j int32)) {
+func applyWithinRanges(xrng, zrng Range, fn func(pos ChunkPos)) {
 	for x := xrng.Min; x <= xrng.Max; x++ {
 		for z := zrng.Min; z <= zrng.Max; z++ {
-			fn(x, z)
+			fn(ChunkPos{X: x, Z: z})
 		}
 	}
 }
@@ -80,9 +78,9 @@ func NewWorld() (*World, error) {
 	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
 
 	chunks := make(map[ChunkPos]*Chunk)
-	applyWithinRanges(xrng, zrng, func(i, j int32) {
-		ch := NewChunk(chunkSize, chunkHeight, ChunkPos{i, j})
-		chunks[ChunkPos{i, j}] = ch
+	applyWithinRanges(xrng, zrng, func(pos ChunkPos) {
+		ch := NewChunk(chunkSize, chunkHeight, pos)
+		chunks[pos] = ch
 	})
 
 	world.chunks = chunks
@@ -160,23 +158,21 @@ func (w *World) Render() error {
 			// the camera position has moved chunks
 			// load new chunks
 			xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
-			applyWithinRanges(xrng, zrng, func(i, j int32) {
-				key := ChunkPos{i, j}
-				if _, ok := w.chunks[key]; !ok {
+			applyWithinRanges(xrng, zrng, func(pos ChunkPos) {
+				if _, ok := w.chunks[pos]; !ok {
 					// chunk i,j is not in map and should be added
-					ch := NewChunk(chunkSize, chunkHeight, ChunkPos{i, j})
-					w.chunks[key] = ch
+					ch := NewChunk(chunkSize, chunkHeight, pos)
+					w.chunks[pos] = ch
 				}
 			})
 			// delete old chunks
 			lastXRange, lastZRange := GetChunkBounds(chunkRenderDist*2+1, w.lastChunk)
-			applyWithinRanges(lastXRange, lastZRange, func(i, j int32) {
-				oldKey := ChunkPos{i, j}
-				inOld := withinRanges(lastXRange, lastZRange, i, j)
-				inNew := withinRanges(xrng, zrng, i, j)
+			applyWithinRanges(lastXRange, lastZRange, func(pos ChunkPos) {
+				inOld := withinRanges(lastXRange, lastZRange, pos)
+				inNew := withinRanges(xrng, zrng, pos)
 				if inOld && !inNew {
-					w.chunks[oldKey].Destroy()
-					delete(w.chunks, oldKey)
+					w.chunks[pos].Destroy()
+					delete(w.chunks, pos)
 				}
 			})
 			w.lastChunk = currChunk
