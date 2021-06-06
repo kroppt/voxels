@@ -138,7 +138,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
 	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
-	off := int((i + j*c.size*c.height + k*c.size) * 7)
+	off := (i + j*c.size*c.size + k*c.size) * 7
 	if off%7 != 0 {
 		panic("offset not divisible by 7")
 	}
