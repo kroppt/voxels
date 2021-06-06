@@ -15,6 +15,27 @@ type ChunkPos struct {
 	Z int32
 }
 
+// GetSurroundings returns a range surrounding the position by amount in every
+// direction.
+func (pos ChunkPos) GetSurroundings(amount int32) ChunkRange {
+	minx := pos.X - amount
+	maxx := pos.X + amount
+	mink := pos.Z - amount
+	maxk := pos.Z + amount
+	return ChunkRange{
+		Min: ChunkPos{minx, mink},
+		Max: ChunkPos{maxx, maxk},
+	}
+}
+
+// Mul returns this ChunkPos multiplied by a scalar s.
+func (pos ChunkPos) Mul(s int32) ChunkPos {
+	return ChunkPos{
+		X: pos.X * s,
+		Z: pos.Z * s,
+	}
+}
+
 // ChunkRange is the range of chunks between Min and Max.
 type ChunkRange struct {
 	Min ChunkPos
@@ -39,14 +60,6 @@ func (rng ChunkRange) Contains(pos ChunkPos) bool {
 		return false
 	}
 	return true
-}
-
-// Mul returns this ChunkPos multiplied by another ChunkPos.
-func (pos ChunkPos) Mul(s int32) ChunkPos {
-	return ChunkPos{
-		X: pos.X * s,
-		Z: pos.Z * s,
-	}
 }
 
 // Chunk manages a size X height X size region of voxels.

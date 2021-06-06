@@ -1,8 +1,6 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/log"
@@ -19,14 +17,9 @@ type Application struct {
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	wld, err := world.NewWorld()
-	if err != nil {
-		return nil, fmt.Errorf("could not create world: %v", err)
-	}
-
 	return &Application{
 		win:   win,
-		world: wld,
+		world: world.New(),
 	}, nil
 }
 

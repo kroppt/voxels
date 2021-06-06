@@ -134,7 +134,7 @@ func TestGetChunkBounds(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			actualRng := world.GetChunkBounds(tC.renderDist, tC.currChunk)
+			actualRng := tC.currChunk.GetSurroundings(tC.renderDist)
 			if tC.expectRng != actualRng {
 				t.Fatalf("expected %v but got %v", tC.expectRng, actualRng)
 			}

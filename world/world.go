@@ -8,6 +8,7 @@ import (
 	"github.com/kroppt/gfx"
 )
 
+// World tracks the camera and its renderable chunks.
 type World struct {
 	ubo       *gfx.BufferObject
 	cam       *Camera
@@ -15,24 +16,12 @@ type World struct {
 	lastChunk ChunkPos
 }
 
-// GetChunkBounds returns the chunk position ranges that are in view around
-// currChunk.
-func GetChunkBounds(renderDist int32, currChunk ChunkPos) ChunkRange {
-	minx := currChunk.X - renderDist
-	maxx := currChunk.X + renderDist
-	mink := currChunk.Z - renderDist
-	maxk := currChunk.Z + renderDist
-	return ChunkRange{
-		Min: ChunkPos{minx, mink},
-		Max: ChunkPos{maxx, maxk},
-	}
-}
-
 const chunkSize = 10
 const chunkHeight = 1
 const chunkRenderDist = 2
 
-func NewWorld() (*World, error) {
+// New returns a new world.World.
+func New() *World {
 	ubo := gfx.NewBufferObject()
 	var mat glm.Mat4
 	// opengl memory allocation, 2x mat4 = 1 for proj + 1 for view
@@ -48,7 +37,7 @@ func NewWorld() (*World, error) {
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
 	currChunk := cam.AsVoxelPos().AsChunkPos(chunkSize)
-	rng := GetChunkBounds(chunkRenderDist, currChunk)
+	rng := currChunk.GetSurroundings(chunkRenderDist)
 
 	chunks := make(map[ChunkPos]*Chunk)
 	rng.ForEach(func(pos ChunkPos) {
@@ -58,9 +47,11 @@ func NewWorld() (*World, error) {
 
 	world.chunks = chunks
 	world.lastChunk = currChunk
-	return world, nil
+	return world
 }
 
+// FindLookAtVoxel determines which voxel is being looked at. It returns the
+// block, distance to the block, and whether the block was found.
 func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 	var hits []*Voxel
 	for _, chunk := range w.chunks {
@@ -86,10 +77,12 @@ func (w *World) SetVoxel(v *Voxel) {
 	}
 }
 
+// Destroy frees external resources.
 func (w *World) Destroy() {
 	w.ubo.Destroy()
 }
 
+// GetCamera returns a reference to the camera.
 func (w *World) GetCamera() *Camera {
 	return w.cam
 }
@@ -114,6 +107,8 @@ func (w *World) updateProj() error {
 	return nil
 }
 
+// Render renders the chunks of the world in OpenGL.
+// TODO isolate chunk loading and unloading logic.
 func (w *World) Render() error {
 	if w.cam.IsDirty() {
 		err := w.updateView()
@@ -130,7 +125,7 @@ func (w *World) Render() error {
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks
-			rng := GetChunkBounds(chunkRenderDist, currChunk)
+			rng := currChunk.GetSurroundings(chunkRenderDist)
 			rng.ForEach(func(pos ChunkPos) {
 				if _, ok := w.chunks[pos]; !ok {
 					// chunk i,j is not in map and should be added
@@ -139,7 +134,7 @@ func (w *World) Render() error {
 				}
 			})
 			// delete old chunks
-			lastRng := GetChunkBounds(chunkRenderDist, w.lastChunk)
+			lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
 			lastRng.ForEach(func(pos ChunkPos) {
 				inOld := lastRng.Contains(pos)
 				inNew := rng.Contains(pos)
