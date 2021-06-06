@@ -73,7 +73,6 @@ func NewWorld() (*World, error) {
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
 	currChunk := cam.AsVoxelPos().AsChunkPos(chunkSize)
-	// TODO extract below calculation to function
 	xrng, zrng := GetChunkBounds(chunkRenderDist, currChunk)
 
 	chunks := make(map[ChunkPos]*Chunk)
