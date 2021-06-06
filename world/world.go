@@ -15,16 +15,6 @@ type World struct {
 	lastChunk ChunkPos
 }
 
-func withinRanges(rng ChunkRange, pos ChunkPos) bool {
-	if pos.X < rng.Min.X || pos.X > rng.Max.X {
-		return false
-	}
-	if pos.Z < rng.Min.Z || pos.Z > rng.Max.Z {
-		return false
-	}
-	return true
-}
-
 // GetChunkBounds returns the chunk position ranges that are in view around
 // currChunk.
 func GetChunkBounds(renderDist int32, currChunk ChunkPos) ChunkRange {
@@ -151,8 +141,8 @@ func (w *World) Render() error {
 			// delete old chunks
 			lastRng := GetChunkBounds(chunkRenderDist, w.lastChunk)
 			lastRng.ForEach(func(pos ChunkPos) {
-				inOld := withinRanges(lastRng, pos)
-				inNew := withinRanges(rng, pos)
+				inOld := lastRng.Contains(pos)
+				inNew := rng.Contains(pos)
 				if inOld && !inNew {
 					w.chunks[pos].Destroy()
 					delete(w.chunks, pos)

@@ -30,6 +30,17 @@ func (rng ChunkRange) ForEach(fn func(pos ChunkPos)) {
 	}
 }
 
+// Contains returns whether this ChunkRange contains the given pos.
+func (rng ChunkRange) Contains(pos ChunkPos) bool {
+	if pos.X < rng.Min.X || pos.X > rng.Max.X {
+		return false
+	}
+	if pos.Z < rng.Min.Z || pos.Z > rng.Max.Z {
+		return false
+	}
+	return true
+}
+
 // Mul returns this ChunkPos multiplied by another ChunkPos.
 func (pos ChunkPos) Mul(s int32) ChunkPos {
 	return ChunkPos{
