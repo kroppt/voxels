@@ -40,12 +40,12 @@ func NewChunk(size, height int, chunkPos glm.Vec2) *Chunk {
 	for i := 0; i < size; i++ {
 		for j := 0; j < height; j++ {
 			for k := 0; k < size; k++ {
-				x := chunk.Pos.X() + float32(i)
-				y := float32(j)
-				z := chunk.Pos.Y() + float32(k)
+				x := int32(chunk.Pos.X()) + int32(i)
+				y := int32(j)
+				z := int32(chunk.Pos.Y()) + int32(k)
 				r, g, b := rand.Float32(), rand.Float32(), rand.Float32()
 				v := Voxel{
-					Pos: glm.Vec3{x, y, z},
+					Pos: VoxelPos{x, y, z},
 					Col: glm.Vec4{r, g, b, 1.0},
 				}
 				chunk.SetVoxel(&v)
@@ -61,21 +61,22 @@ func (c *Chunk) GetRoot() *Octree {
 
 // GetRelativeIndices returns the voxel coordinate relative to the origin of
 // the chunk, with the assumption that the position is in bounds.
-func (c *Chunk) GetRelativeIndices(pos glm.Vec3) (int, int, int) {
-	return int(pos.X() - c.Pos.X()), int(pos.Y()), int(pos.Z() - c.Pos.Y())
+// TODO returns voxel index
+func (c *Chunk) GetRelativeIndices(pos VoxelPos) (int, int, int) {
+	return int(pos.X - int32(c.Pos.X())), int(pos.Y), int(pos.Z - int32(c.Pos.Y()))
 }
 
 // IsWithinChunk returns whether the position is within the chunk
-func (c *Chunk) IsWithinChunk(pos glm.Vec3) bool {
-	if pos.X() < c.Pos.X() || pos.Z() < c.Pos.Y() {
+func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
+	if float32(pos.X) < c.Pos.X() || float32(pos.Z) < c.Pos.Y() {
 		//pos is below x or z chunk bounds
 		return false
 	}
-	if pos.X() >= c.Pos.X()+float32(c.size) || pos.Z() >= c.Pos.Y()+float32(c.size) {
+	if float32(pos.X) >= c.Pos.X()+float32(c.size) || float32(pos.Z) >= c.Pos.Y()+float32(c.size) {
 		// pos is above x or z chunk bounds
 		return false
 	}
-	if pos.Y() < 0 || pos.Y() >= float32(c.height) {
+	if float32(pos.Y) < 0 || float32(pos.Y) >= float32(c.height) {
 		// y coordinate is out of chunk's bounds
 		return false
 	}
@@ -88,7 +89,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 		log.Debugf("%v is not within %v", v, c.Pos)
 		return
 	}
-	x, y, z := v.Pos.X(), v.Pos.Y(), v.Pos.Z()
+	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	i, j, k := c.GetRelativeIndices(v.Pos)
 	r, g, b, a := v.Col[0], v.Col[1], v.Col[2], v.Col[3]
 	off := (i + j*c.size*c.height + k*c.size) * 7

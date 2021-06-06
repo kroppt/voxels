@@ -8,11 +8,13 @@ import (
 // Intersect returns whether the given ray intersects the given box and the
 // distance if it does.
 func Intersect(box AABC, pos, dir glm.Vec3) (dist float32, hit bool) {
+	boxPos := box.Pos.AsVec3()
+	boxSize := float32(box.Size)
 	boxmin := func(d int) float32 {
-		return box.Pos[d] - box.Size/2.0
+		return boxPos[d]
 	}
 	boxmax := func(d int) float32 {
-		return box.Pos[d] + box.Size/2.0
+		return boxPos[d] + boxSize
 	}
 
 	invx := float32(1.0) / dir[0]
@@ -20,7 +22,6 @@ func Intersect(box AABC, pos, dir glm.Vec3) (dist float32, hit bool) {
 	tx2 := (boxmax(0) - pos[0]) * invx
 	txmin := math.Min(tx1, tx2)
 	txmax := math.Max(tx1, tx2)
-
 	min := txmin
 	max := txmax
 
@@ -53,7 +54,8 @@ func GetClosest(eye glm.Vec3, positions []*Voxel) (*Voxel, float32) {
 	var closestVoxel *Voxel
 	for i := 0; i < len(positions); i++ {
 		v := positions[i]
-		diff := positions[i].Pos.Sub(&eye)
+		pos := positions[i].Pos.AsVec3()
+		diff := pos.Sub(&eye)
 		dist := (&diff).Len()
 		if !found || dist < closestDist {
 			found = true

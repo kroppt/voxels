@@ -9,39 +9,45 @@ import (
 )
 
 type World struct {
-	ubo       *gfx.BufferObject
-	cam       *Camera
-	chunks    map[glm.Vec2]*Chunk
+	ubo    *gfx.BufferObject
+	cam    *Camera
+	chunks map[glm.Vec2]*Chunk
+	// TODO lastChunk is chunk position
 	lastChunk glm.Vec2
 }
 
 // GetChunkIndex returns the chunk coordinate that the given position
 // is in, given the chunkSize.
-func GetChunkIndex(chunkSize int, pos glm.Vec3) glm.Vec2 {
-	x := int(pos.X())
-	z := int(pos.Z())
-	if pos.X() < 0 {
+// TODO returns chunk position index
+func GetChunkIndex(chunkSize int32, pos VoxelPos) glm.Vec2 {
+	x := pos.X
+	z := pos.Z
+	if pos.X < 0 {
 		x++
 	}
-	if pos.Z() < 0 {
+	if pos.Z < 0 {
 		z++
 	}
 	x /= chunkSize
 	z /= chunkSize
-	if pos.X() < 0 {
+	if pos.X < 0 {
 		x--
 	}
-	if pos.Z() < 0 {
+	if pos.Z < 0 {
 		z--
 	}
 	return glm.Vec2{float32(x), float32(z)}
 }
 
+// TODO range of what??
+// TODO document this
 type Range struct {
 	Min int
 	Max int
 }
 
+// TODO xrng, yrng is chunk position range
+// TODO consolidate x,z into chunk position ?
 func withinRanges(xrng, yrng Range, x, z int) bool {
 	if x < xrng.Min || x > xrng.Max {
 		return false
@@ -52,6 +58,8 @@ func withinRanges(xrng, yrng Range, x, z int) bool {
 	return true
 }
 
+// TODO xrng, yrng is chunk position ranges
+// TODO i,j in fn is chunk position
 func applyWithinRanges(xrng, zrng Range, fn func(i, j int)) {
 	for x := xrng.Min; x <= xrng.Max; x++ {
 		for z := zrng.Min; z <= zrng.Max; z++ {
@@ -62,6 +70,8 @@ func applyWithinRanges(xrng, zrng Range, fn func(i, j int)) {
 
 // GetChunkBounds returns the minimum and maximum chunks indices that should be
 // in view around a camera at the given chunk.
+// TODO currChunk is chunk position
+// TODO returns chunk position ranges
 func GetChunkBounds(worldSize int, currChunk glm.Vec2) (x Range, z Range) {
 	halfWorld := worldSize / 2
 	minx := int(currChunk.X()) - halfWorld
@@ -90,7 +100,8 @@ func NewWorld() (*World, error) {
 	cam.SetPosition(&glm.Vec3{3, 2, 3})
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
-	currChunk := GetChunkIndex(chunkSize, cam.GetPosition())
+	currChunk := GetChunkIndex(chunkSize, cam.AsVoxelPos())
+	// TODO extract below calculation to function
 	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
 
 	chunks := make(map[glm.Vec2]*Chunk)
@@ -108,9 +119,8 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 	var hits []*Voxel
 	for _, chunk := range w.chunks {
 		chunkHits, _ := chunk.root.Find(func(node *Octree) bool {
-			half := node.GetAABC().Size / float32(2.0)
 			aabc := AABC{
-				Pos:  (&node.GetAABC().Pos).Add(&glm.Vec3{half, half, half}),
+				Pos:  node.GetAABC().Pos,
 				Size: node.GetAABC().Size,
 			}
 			_, hit := Intersect(aabc, w.cam.GetPosition(), w.cam.GetLookForward())
@@ -173,7 +183,7 @@ func (w *World) Render() error {
 		}
 		w.cam.Clean()
 
-		currChunk := GetChunkIndex(chunkSize, w.cam.GetPosition())
+		currChunk := GetChunkIndex(chunkSize, w.cam.AsVoxelPos())
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks

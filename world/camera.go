@@ -45,7 +45,7 @@ func (c *Camera) Translate(diff *glm.Vec3) {
 	c.dirty = true
 }
 
-func (c *Camera) GetVoxelCoord() glm.Vec3 {
+func (c *Camera) AsVoxelPos() VoxelPos {
 	// negated
 	pos := c.GetPosition()
 	if pos.X() < 0 {
@@ -57,10 +57,10 @@ func (c *Camera) GetVoxelCoord() glm.Vec3 {
 	if pos.Z() < 0 {
 		pos[2] -= 1
 	}
-	return glm.Vec3{
-		float32(int(pos.X())),
-		float32(int(pos.Y())),
-		float32(int(pos.Z())),
+	return VoxelPos{
+		int32(pos.X()),
+		int32(pos.Y()),
+		int32(pos.Z()),
 	}
 }
 

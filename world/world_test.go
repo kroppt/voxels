@@ -7,76 +7,70 @@ import (
 	"github.com/kroppt/voxels/world"
 )
 
-func TestGetCurrentChunk(t *testing.T) {
+func TestGetChunkIndex(t *testing.T) {
 	testCases := []struct {
 		desc      string
-		pos       glm.Vec3
-		chunkSize int
+		pos       world.VoxelPos
+		chunkSize int32
 		expect    glm.Vec2
 	}{
 		{
-			desc:      "first chunk normal",
-			pos:       glm.Vec3{2.5, 2, 1.5},
-			chunkSize: 3,
-			expect:    glm.Vec2{0, 0},
-		},
-		{
 			desc:      "minimum edge inclusive",
-			pos:       glm.Vec3{0, 0, 0},
+			pos:       world.VoxelPos{0, 0, 0},
 			chunkSize: 3,
 			expect:    glm.Vec2{0, 0},
 		},
 		{
 			desc:      "maximum x edge exclusive",
-			pos:       glm.Vec3{3, 2, 2},
+			pos:       world.VoxelPos{3, 2, 2},
 			chunkSize: 3,
 			expect:    glm.Vec2{1, 0},
 		},
 		{
 			desc:      "maximum z edge exclusive",
-			pos:       glm.Vec3{2, 2, 3},
+			pos:       world.VoxelPos{2, 2, 3},
 			chunkSize: 3,
 			expect:    glm.Vec2{0, 1},
 		},
 		{
 			desc:      "negative first chunk x",
-			pos:       glm.Vec3{-1, 1, 1},
+			pos:       world.VoxelPos{-1, 1, 1},
 			chunkSize: 3,
 			expect:    glm.Vec2{-1, 0},
 		},
 		{
 			desc:      "negative second chunk x",
-			pos:       glm.Vec3{-5, 1, 1},
+			pos:       world.VoxelPos{-5, 1, 1},
 			chunkSize: 3,
 			expect:    glm.Vec2{-2, 0},
 		},
 		{
 			desc:      "negative y no change",
-			pos:       glm.Vec3{1, -1, 1},
+			pos:       world.VoxelPos{1, -1, 1},
 			chunkSize: 3,
 			expect:    glm.Vec2{0, 0},
 		},
 		{
 			desc:      "negative first chunk z",
-			pos:       glm.Vec3{1, 1, -1},
+			pos:       world.VoxelPos{1, 1, -1},
 			chunkSize: 3,
 			expect:    glm.Vec2{0, -1},
 		},
 		{
 			desc:      "negative second chunk z",
-			pos:       glm.Vec3{1, 1, -5},
+			pos:       world.VoxelPos{1, 1, -5},
 			chunkSize: 3,
 			expect:    glm.Vec2{0, -2},
 		},
 		{
 			desc:      "regression",
-			pos:       glm.Vec3{3, 2, 3},
+			pos:       world.VoxelPos{3, 2, 3},
 			chunkSize: 6,
 			expect:    glm.Vec2{0, 0},
 		},
 		{
 			desc:      "far negative edge is inclusive",
-			pos:       glm.Vec3{0, 0, -5},
+			pos:       world.VoxelPos{0, 0, -5},
 			chunkSize: 5,
 			expect:    glm.Vec2{0, -1},
 		},

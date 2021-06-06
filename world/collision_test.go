@@ -9,9 +9,8 @@ import (
 
 func getCamIntersectionPredicate(cam *world.Camera) func(*world.Octree) bool {
 	return func(node *world.Octree) bool {
-		half := node.GetAABC().Size / float32(2.0)
 		aabc := world.AABC{
-			Pos:  (&node.GetAABC().Pos).Add(&glm.Vec3{half, half, half}),
+			Pos:  node.GetAABC().Pos,
 			Size: node.GetAABC().Size,
 		}
 		_, hit := world.Intersect(aabc, cam.GetPosition(), cam.GetLookForward())
@@ -27,11 +26,11 @@ func TestSimpleVoxelIntersect(t *testing.T) {
 		cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		result, ok := root.Find(getCamIntersectionPredicate(cam))
 		closest, _ := world.GetClosest(cam.GetPosition(), result)
-		expectVoxel := glm.Vec3{0, 0, 0}
+		expectVoxel := world.VoxelPos{0, 0, 0}
 		expectedIntersections := 1
 		if !ok {
 			t.Fatal("view did not intersect voxel")
@@ -54,20 +53,20 @@ func TestMultipleVoxelIntersect(t *testing.T) {
 		cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{4, 0, 0},
+			Pos: world.VoxelPos{4, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{3, 0, 7},
+			Pos: world.VoxelPos{3, 0, 7},
 		})
 		result, ok := root.Find(getCamIntersectionPredicate(cam))
 		closest, _ := world.GetClosest(cam.GetPosition(), result)
-		expectVoxel := glm.Vec3{4, 0, 0}
+		expectVoxel := world.VoxelPos{4, 0, 0}
 		expectedIntersections := 3
 		if !ok {
 			t.Fatal("view did not intersect voxel")
@@ -90,20 +89,20 @@ func TestMultipleVoxelIntersectLookBetween(t *testing.T) {
 		cam.LookAt(&glm.Vec3{3.5, 0.5, 7.5})
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{4, 0, 0},
+			Pos: world.VoxelPos{4, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{3, 0, 7},
+			Pos: world.VoxelPos{3, 0, 7},
 		})
 		result, ok := root.Find(getCamIntersectionPredicate(cam))
 		closest, _ := world.GetClosest(cam.GetPosition(), result)
-		expectVoxel := glm.Vec3{3, 0, 7}
+		expectVoxel := world.VoxelPos{3, 0, 7}
 		expectedIntersections := 1
 		if !ok {
 			t.Fatal("view did not intersect voxel")

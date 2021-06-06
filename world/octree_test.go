@@ -12,10 +12,10 @@ func TestOneVoxelOctree(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 1,
 		}
 		resultAABC := root.GetAABC()
@@ -23,7 +23,7 @@ func TestOneVoxelOctree(t *testing.T) {
 			t.Fatalf("expected AABC %v but got %v", *expectedAABC, *resultAABC)
 		}
 		expectedVoxel := &world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		}
 		resultVoxel := root.GetVoxel()
 		if *resultVoxel != *expectedVoxel {
@@ -42,13 +42,13 @@ func TestAdjacentTwoVoxelOctree(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{1, 0, 0},
+			Pos: world.VoxelPos{1, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 2,
 		}
 		resultAABC := root.GetAABC()
@@ -69,13 +69,13 @@ func TestCorneredTwoVoxelOctree(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{1, 1, 1},
+			Pos: world.VoxelPos{1, 1, 1},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 2,
 		}
 		resultAABC := root.GetAABC()
@@ -96,13 +96,13 @@ func TestTwoDistantVoxelOctree(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 4,
 		}
 		resultAABC := root.GetAABC()
@@ -124,13 +124,13 @@ func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{4, 0, 0},
+			Pos: world.VoxelPos{4, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 8,
 		}
 		resultAABC := root.GetAABC()
@@ -151,16 +151,16 @@ func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{1, 0, 0},
+			Pos: world.VoxelPos{1, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 4,
 		}
 		resultAABC := root.GetAABC()
@@ -182,15 +182,15 @@ func TestOctreeReassignment(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 			Col: glm.Vec4{0.5, 0.5, 0.5, 0.5},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 			Col: glm.Vec4{1.0, 1.0, 1.0, 1.0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 1,
 		}
 		resultAABC := root.GetAABC()
@@ -218,19 +218,19 @@ func TestOctreeRecursionReassignment(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 			Col: glm.Vec4{0.5, 0.5, 0.5, 0.5},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{4, 0, 0},
+			Pos: world.VoxelPos{4, 0, 0},
 			Col: glm.Vec4{0.2, 0.5, 0.5, 0.5},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 			Col: glm.Vec4{0.5, 0.5, 0.5, 0.4},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 			Col: glm.Vec4{1.0, 1.0, 1.0, 1.0},
 		})
 		list, _ := root.Find(func(o *world.Octree) bool {
@@ -239,7 +239,7 @@ func TestOctreeRecursionReassignment(t *testing.T) {
 
 		var answer *world.Voxel
 		for _, v := range list {
-			if v.Pos.X() == float32(2.0) {
+			if v.Pos.X == 2 {
 				answer = v
 			}
 		}
@@ -258,16 +258,16 @@ func TestThreeVoxelOctree(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 2, 2},
+			Pos: world.VoxelPos{2, 2, 2},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{0, 0, 0},
+			Pos:  world.VoxelPos{0, 0, 0},
 			Size: 4,
 		}
 		resultAABC := root.GetAABC()
@@ -288,19 +288,19 @@ func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 2, 2},
+			Pos: world.VoxelPos{2, 2, 2},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{-1, -1, -1},
+			Pos: world.VoxelPos{-1, -1, -1},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{-4, -4, -4},
+			Pos:  world.VoxelPos{-4, -4, -4},
 			Size: 8,
 		}
 		resultAABC := root.GetAABC()
@@ -320,22 +320,22 @@ func TestOctreeFarCornerDoesntChange(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{0, 0, 0},
+			Pos: world.VoxelPos{0, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 0, 0},
+			Pos: world.VoxelPos{2, 0, 0},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{2, 2, 2},
+			Pos: world.VoxelPos{2, 2, 2},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{-1, -1, -1},
+			Pos: world.VoxelPos{-1, -1, -1},
 		})
 		root = root.AddLeaf(&world.Voxel{
-			Pos: glm.Vec3{-4, 3, 3},
+			Pos: world.VoxelPos{-4, 3, 3},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  [3]float32{-4, -4, -4},
+			Pos:  world.VoxelPos{-4, -4, -4},
 			Size: 8,
 		}
 		resultAABC := root.GetAABC()

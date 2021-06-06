@@ -65,7 +65,7 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 }
 
 func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
-	vpos := app.world.GetCamera().GetVoxelCoord()
+	vpos := app.world.GetCamera().AsVoxelPos()
 	app.world.SetVoxel(&world.Voxel{
 		Pos: vpos,
 		Col: [4]float32{1.0, 0.0, 0.0, 1.0},
