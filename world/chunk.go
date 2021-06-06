@@ -111,13 +111,6 @@ func (c *Chunk) GetRoot() *Octree {
 	return c.root
 }
 
-// GetRelativeIndices returns the voxel coordinate relative to the origin of
-// the chunk, with the assumption that the position is in bounds.
-// TODO returns voxel index
-func (c *Chunk) GetRelativeIndices(pos VoxelPos) (int, int, int) {
-	return int(pos.X - c.Pos.X), int(pos.Y), int(pos.Z - c.Pos.Z)
-}
-
 // IsWithinChunk returns whether the position is within the chunk
 func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 	if pos.X < c.Pos.X || pos.Z < c.Pos.Z {
@@ -142,9 +135,10 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 		return
 	}
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
-	i, j, k := c.GetRelativeIndices(v.Pos)
+	localPos := v.Pos.AsLocalChunkPos(*c)
+	i, j, k := localPos.X, localPos.Y, localPos.Z
 	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
-	off := (i + j*int(c.size*c.height) + k*int(c.size)) * 7
+	off := int((i + j*c.size*c.height + k*c.size) * 7)
 	if off%7 != 0 {
 		panic("offset not divisible by 7")
 	}
