@@ -21,6 +21,15 @@ type ChunkRange struct {
 	Max ChunkPos
 }
 
+// ForEach executes the given function on every position in the this ChunkRange.
+func (rng ChunkRange) ForEach(fn func(pos ChunkPos)) {
+	for x := rng.Min.X; x <= rng.Max.X; x++ {
+		for z := rng.Min.Z; z <= rng.Max.Z; z++ {
+			fn(ChunkPos{X: x, Z: z})
+		}
+	}
+}
+
 // Mul returns this ChunkPos multiplied by another ChunkPos.
 func (pos ChunkPos) Mul(s int32) ChunkPos {
 	return ChunkPos{

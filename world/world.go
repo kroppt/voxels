@@ -25,14 +25,6 @@ func withinRanges(rng ChunkRange, pos ChunkPos) bool {
 	return true
 }
 
-func applyWithinRanges(rng ChunkRange, fn func(pos ChunkPos)) {
-	for x := rng.Min.X; x <= rng.Max.X; x++ {
-		for z := rng.Min.Z; z <= rng.Max.Z; z++ {
-			fn(ChunkPos{X: x, Z: z})
-		}
-	}
-}
-
 // GetChunkBounds returns the chunk position ranges that are in view around
 // currChunk.
 func GetChunkBounds(renderDist int32, currChunk ChunkPos) ChunkRange {
@@ -69,7 +61,7 @@ func NewWorld() (*World, error) {
 	rng := GetChunkBounds(chunkRenderDist, currChunk)
 
 	chunks := make(map[ChunkPos]*Chunk)
-	applyWithinRanges(rng, func(pos ChunkPos) {
+	rng.ForEach(func(pos ChunkPos) {
 		ch := NewChunk(chunkSize, chunkHeight, pos)
 		chunks[pos] = ch
 	})
@@ -149,7 +141,7 @@ func (w *World) Render() error {
 			// the camera position has moved chunks
 			// load new chunks
 			rng := GetChunkBounds(chunkRenderDist, currChunk)
-			applyWithinRanges(rng, func(pos ChunkPos) {
+			rng.ForEach(func(pos ChunkPos) {
 				if _, ok := w.chunks[pos]; !ok {
 					// chunk i,j is not in map and should be added
 					ch := NewChunk(chunkSize, chunkHeight, pos)
@@ -158,7 +150,7 @@ func (w *World) Render() error {
 			})
 			// delete old chunks
 			lastRng := GetChunkBounds(chunkRenderDist, w.lastChunk)
-			applyWithinRanges(lastRng, func(pos ChunkPos) {
+			lastRng.ForEach(func(pos ChunkPos) {
 				inOld := withinRanges(lastRng, pos)
 				inNew := withinRanges(rng, pos)
 				if inOld && !inNew {
