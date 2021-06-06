@@ -119,10 +119,7 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 	var hits []*Voxel
 	for _, chunk := range w.chunks {
 		chunkHits, _ := chunk.root.Find(func(node *Octree) bool {
-			aabc := AABC{
-				Pos:  node.GetAABC().Pos,
-				Size: node.GetAABC().Size,
-			}
+			aabc := *node.GetAABC()
 			_, hit := Intersect(aabc, w.cam.GetPosition(), w.cam.GetLookForward())
 			return hit
 		})

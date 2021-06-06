@@ -3,8 +3,8 @@ package world
 // AABC represents an Axis Aligned Bounding Cube, where the
 // position represents the corner minimum coordinates.
 type AABC struct {
-	Pos  VoxelPos
-	Size int32
+	Origin VoxelPos
+	Size   int32
 }
 
 // ExpandAABC doubles the dimensions of the aabc, moving the center
@@ -16,20 +16,20 @@ func ExpandAABC(aabc *AABC, target VoxelPos) *AABC {
 	}
 	size := aabc.Size
 	newAabb := &AABC{
-		Pos:  aabc.Pos,
-		Size: size * 2,
+		Origin: aabc.Origin,
+		Size:   size * 2,
 	}
-	if target.X < aabc.Pos.X {
+	if target.X < aabc.Origin.X {
 		sub := VoxelPos{size, 0, 0}
-		newAabb.Pos = newAabb.Pos.Sub(sub)
+		newAabb.Origin = newAabb.Origin.Sub(sub)
 	}
-	if target.Y < aabc.Pos.Y {
+	if target.Y < aabc.Origin.Y {
 		sub := VoxelPos{0, size, 0}
-		newAabb.Pos = newAabb.Pos.Sub(sub)
+		newAabb.Origin = newAabb.Origin.Sub(sub)
 	}
-	if target.Z < aabc.Pos.Z {
+	if target.Z < aabc.Origin.Z {
 		sub := VoxelPos{0, 0, size}
-		newAabb.Pos = newAabb.Pos.Sub(sub)
+		newAabb.Origin = newAabb.Origin.Sub(sub)
 	}
 	return newAabb
 }
@@ -43,21 +43,21 @@ func GetChildAABC(aabc *AABC, target VoxelPos) *AABC {
 	}
 	size := aabc.Size / 2.0
 	offset := VoxelPos{0, 0, 0}
-	if target.X >= aabc.Pos.X+size {
+	if target.X >= aabc.Origin.X+size {
 		add := VoxelPos{size, 0, 0}
 		offset = offset.Add(add)
 	}
-	if target.Y >= aabc.Pos.Y+size {
+	if target.Y >= aabc.Origin.Y+size {
 		add := VoxelPos{0, size, 0}
 		offset = offset.Add(add)
 	}
-	if target.Z >= aabc.Pos.Z+size {
+	if target.Z >= aabc.Origin.Z+size {
 		add := VoxelPos{0, 0, size}
 		offset = offset.Add(add)
 	}
 	newAabb := &AABC{
-		Pos:  aabc.Pos.Add(offset),
-		Size: size,
+		Origin: aabc.Origin.Add(offset),
+		Size:   size,
 	}
 	return newAabb
 }
@@ -66,20 +66,20 @@ func GetChildAABC(aabc *AABC, target VoxelPos) *AABC {
 // where minimum is inclusive and maximum is exclusive.
 func WithinAABC(aabc *AABC, target VoxelPos) bool {
 	// the vertex associated with the bounding box is the bounding box's minimum coordinate vertex
-	minx := aabc.Pos.X
-	maxx := aabc.Pos.X + aabc.Size
+	minx := aabc.Origin.X
+	maxx := aabc.Origin.X + aabc.Size
 	if target.X >= maxx || target.X < minx {
 		return false
 	}
 
-	miny := aabc.Pos.Y
-	maxy := aabc.Pos.Y + aabc.Size
+	miny := aabc.Origin.Y
+	maxy := aabc.Origin.Y + aabc.Size
 	if target.Y >= maxy || target.Y < miny {
 		return false
 	}
 
-	minz := aabc.Pos.Z
-	maxz := aabc.Pos.Z + aabc.Size
+	minz := aabc.Origin.Z
+	maxz := aabc.Origin.Z + aabc.Size
 	if target.Z >= maxz || target.Z < minz {
 		return false
 	}

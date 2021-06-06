@@ -15,8 +15,8 @@ func TestOneVoxelOctree(t *testing.T) {
 			Pos: world.VoxelPos{0, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 1,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   1,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -48,8 +48,8 @@ func TestAdjacentTwoVoxelOctree(t *testing.T) {
 			Pos: world.VoxelPos{1, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 2,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   2,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -75,8 +75,8 @@ func TestCorneredTwoVoxelOctree(t *testing.T) {
 			Pos: world.VoxelPos{1, 1, 1},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 2,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   2,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -102,8 +102,8 @@ func TestTwoDistantVoxelOctree(t *testing.T) {
 			Pos: world.VoxelPos{2, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 4,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   4,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -130,8 +130,8 @@ func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 			Pos: world.VoxelPos{4, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 8,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   8,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -160,8 +160,8 @@ func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 			Pos: world.VoxelPos{1, 0, 0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 4,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   4,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -190,8 +190,8 @@ func TestOctreeReassignment(t *testing.T) {
 			Col: glm.Vec4{1.0, 1.0, 1.0, 1.0},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 1,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   1,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -267,8 +267,8 @@ func TestThreeVoxelOctree(t *testing.T) {
 			Pos: world.VoxelPos{2, 2, 2},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{0, 0, 0},
-			Size: 4,
+			Origin: world.VoxelPos{0, 0, 0},
+			Size:   4,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -300,8 +300,8 @@ func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 			Pos: world.VoxelPos{-1, -1, -1},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{-4, -4, -4},
-			Size: 8,
+			Origin: world.VoxelPos{-4, -4, -4},
+			Size:   8,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {
@@ -335,8 +335,8 @@ func TestOctreeFarCornerDoesntChange(t *testing.T) {
 			Pos: world.VoxelPos{-4, 3, 3},
 		})
 		expectedAABC := &world.AABC{
-			Pos:  world.VoxelPos{-4, -4, -4},
-			Size: 8,
+			Origin: world.VoxelPos{-4, -4, -4},
+			Size:   8,
 		}
 		resultAABC := root.GetAABC()
 		if *resultAABC != *expectedAABC {

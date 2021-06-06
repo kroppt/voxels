@@ -101,8 +101,8 @@ func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
 	}
 	if tree == nil {
 		aabc := &AABC{
-			Pos:  voxel.Pos,
-			Size: 1,
+			Origin: voxel.Pos,
+			Size:   1,
 		}
 		octree := &Octree{
 			voxel: voxel,

@@ -8,7 +8,7 @@ import (
 // Intersect returns whether the given ray intersects the given box and the
 // distance if it does.
 func Intersect(box AABC, pos, dir glm.Vec3) (dist float32, hit bool) {
-	boxPos := box.Pos.AsVec3()
+	boxPos := box.Origin.AsVec3()
 	boxSize := float32(box.Size)
 	boxmin := func(d int) float32 {
 		return boxPos[d]

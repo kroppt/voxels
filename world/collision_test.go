@@ -9,10 +9,7 @@ import (
 
 func getCamIntersectionPredicate(cam *world.Camera) func(*world.Octree) bool {
 	return func(node *world.Octree) bool {
-		aabc := world.AABC{
-			Pos:  node.GetAABC().Pos,
-			Size: node.GetAABC().Size,
-		}
+		aabc := *node.GetAABC()
 		_, hit := world.Intersect(aabc, cam.GetPosition(), cam.GetLookForward())
 		return hit
 	}
