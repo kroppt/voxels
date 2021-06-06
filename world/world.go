@@ -15,28 +15,19 @@ type World struct {
 	lastChunk ChunkPos
 }
 
-// TODO range of what??
-// TODO document this
-type Range struct {
-	Min int32
-	Max int32
-}
-
-// TODO xrng, yrng is chunk position range
-func withinRanges(xrng, yrng Range, pos ChunkPos) bool {
-	if pos.X < xrng.Min || pos.X > xrng.Max {
+func withinRanges(rng ChunkRange, pos ChunkPos) bool {
+	if pos.X < rng.Min.X || pos.X > rng.Max.X {
 		return false
 	}
-	if pos.Z < yrng.Min || pos.Z > yrng.Max {
+	if pos.Z < rng.Min.Z || pos.Z > rng.Max.Z {
 		return false
 	}
 	return true
 }
 
-// TODO xrng, yrng is chunk position ranges
-func applyWithinRanges(xrng, zrng Range, fn func(pos ChunkPos)) {
-	for x := xrng.Min; x <= xrng.Max; x++ {
-		for z := zrng.Min; z <= zrng.Max; z++ {
+func applyWithinRanges(rng ChunkRange, fn func(pos ChunkPos)) {
+	for x := rng.Min.X; x <= rng.Max.X; x++ {
+		for z := rng.Min.Z; z <= rng.Max.Z; z++ {
 			fn(ChunkPos{X: x, Z: z})
 		}
 	}
@@ -44,13 +35,15 @@ func applyWithinRanges(xrng, zrng Range, fn func(pos ChunkPos)) {
 
 // GetChunkBounds returns the chunk position ranges that are in view around
 // currChunk.
-// TODO returns chunk position ranges
-func GetChunkBounds(renderDist int32, currChunk ChunkPos) (x Range, z Range) {
+func GetChunkBounds(renderDist int32, currChunk ChunkPos) ChunkRange {
 	minx := currChunk.X - renderDist
 	maxx := currChunk.X + renderDist
-	minj := currChunk.Z - renderDist
-	maxj := currChunk.Z + renderDist
-	return Range{minx, maxx}, Range{minj, maxj}
+	mink := currChunk.Z - renderDist
+	maxk := currChunk.Z + renderDist
+	return ChunkRange{
+		Min: ChunkPos{minx, mink},
+		Max: ChunkPos{maxx, maxk},
+	}
 }
 
 const chunkSize = 10
@@ -73,10 +66,10 @@ func NewWorld() (*World, error) {
 	cam.LookAt(&glm.Vec3{0, 0, 0})
 
 	currChunk := cam.AsVoxelPos().AsChunkPos(chunkSize)
-	xrng, zrng := GetChunkBounds(chunkRenderDist, currChunk)
+	rng := GetChunkBounds(chunkRenderDist, currChunk)
 
 	chunks := make(map[ChunkPos]*Chunk)
-	applyWithinRanges(xrng, zrng, func(pos ChunkPos) {
+	applyWithinRanges(rng, func(pos ChunkPos) {
 		ch := NewChunk(chunkSize, chunkHeight, pos)
 		chunks[pos] = ch
 	})
@@ -155,8 +148,8 @@ func (w *World) Render() error {
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks
-			xrng, zrng := GetChunkBounds(chunkRenderDist, currChunk)
-			applyWithinRanges(xrng, zrng, func(pos ChunkPos) {
+			rng := GetChunkBounds(chunkRenderDist, currChunk)
+			applyWithinRanges(rng, func(pos ChunkPos) {
 				if _, ok := w.chunks[pos]; !ok {
 					// chunk i,j is not in map and should be added
 					ch := NewChunk(chunkSize, chunkHeight, pos)
@@ -164,10 +157,10 @@ func (w *World) Render() error {
 				}
 			})
 			// delete old chunks
-			lastXRange, lastZRange := GetChunkBounds(chunkRenderDist, w.lastChunk)
-			applyWithinRanges(lastXRange, lastZRange, func(pos ChunkPos) {
-				inOld := withinRanges(lastXRange, lastZRange, pos)
-				inNew := withinRanges(xrng, zrng, pos)
+			lastRng := GetChunkBounds(chunkRenderDist, w.lastChunk)
+			applyWithinRanges(lastRng, func(pos ChunkPos) {
+				inOld := withinRanges(lastRng, pos)
+				inNew := withinRanges(rng, pos)
 				if inOld && !inNew {
 					w.chunks[pos].Destroy()
 					delete(w.chunks, pos)

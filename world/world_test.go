@@ -91,48 +91,55 @@ func TestGetChunkBounds(t *testing.T) {
 		desc       string
 		renderDist int32
 		currChunk  world.ChunkPos
-		expectX    world.Range
-		expectZ    world.Range
+		expectRng  world.ChunkRange
 	}{
 		{
 			desc:       "3x3 around 0,0",
 			renderDist: 1,
 			currChunk:  world.ChunkPos{0, 0},
-			expectX:    world.Range{-1, 1},
-			expectZ:    world.Range{-1, 1},
+			expectRng: world.ChunkRange{
+				Min: world.ChunkPos{X: -1, Z: -1},
+				Max: world.ChunkPos{X: 1, Z: 1},
+			},
 		},
 		{
 			desc:       "5x5 around -1,-1",
 			renderDist: 2,
 			currChunk:  world.ChunkPos{-1, -1},
-			expectX:    world.Range{-3, 1},
-			expectZ:    world.Range{-3, 1},
+			expectRng: world.ChunkRange{
+				Min: world.ChunkPos{X: -3, Z: -3},
+				Max: world.ChunkPos{X: 1, Z: 1},
+			},
 		},
 		{
 			desc:       "1x1 around 3,5",
 			renderDist: 0,
 			currChunk:  world.ChunkPos{3, 5},
-			expectX:    world.Range{3, 3},
-			expectZ:    world.Range{5, 5},
+			expectRng: world.ChunkRange{
+				Min: world.ChunkPos{X: 3, Z: 5},
+				Max: world.ChunkPos{X: 3, Z: 5},
+			},
 		},
 		{
 			desc:       "3x3 around -1,2",
 			renderDist: 1,
 			currChunk:  world.ChunkPos{-1, 2},
-			expectX:    world.Range{-2, 0},
-			expectZ:    world.Range{1, 3},
+			expectRng: world.ChunkRange{
+				Min: world.ChunkPos{X: -2, Z: 1},
+				Max: world.ChunkPos{X: 0, Z: 3},
+			},
 		},
 	}
 	for _, tC := range testCases {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			actualX, actualZ := world.GetChunkBounds(tC.renderDist, tC.currChunk)
-			if tC.expectX != actualX {
-				t.Fatalf("expected %v but got %v", tC.expectX, actualX)
+			actualRng := world.GetChunkBounds(tC.renderDist, tC.currChunk)
+			if tC.expectRng != actualRng {
+				t.Fatalf("expected %v but got %v", tC.expectRng, actualRng)
 			}
-			if tC.expectZ != actualZ {
-				t.Fatalf("expected %v but got %v", tC.expectZ, actualZ)
+			if tC.expectRng != actualRng {
+				t.Fatalf("expected %v but got %v", tC.expectRng, actualRng)
 			}
 		})
 	}

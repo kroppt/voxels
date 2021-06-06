@@ -15,6 +15,12 @@ type ChunkPos struct {
 	Z int32
 }
 
+// ChunkRange is the range of chunks between Min and Max.
+type ChunkRange struct {
+	Min ChunkPos
+	Max ChunkPos
+}
+
 // Mul returns this ChunkPos multiplied by another ChunkPos.
 func (pos ChunkPos) Mul(s int32) ChunkPos {
 	return ChunkPos{
