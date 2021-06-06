@@ -10,7 +10,7 @@ func TestGetChunkIndex(t *testing.T) {
 	testCases := []struct {
 		desc      string
 		pos       world.VoxelPos
-		chunkSize int32
+		chunkSize int
 		expect    world.ChunkPos
 	}{
 		{
@@ -89,7 +89,7 @@ func TestGetChunkIndex(t *testing.T) {
 func TestGetChunkBounds(t *testing.T) {
 	testCases := []struct {
 		desc       string
-		renderDist int32
+		renderDist int
 		currChunk  world.ChunkPos
 		expectRng  world.ChunkRange
 	}{

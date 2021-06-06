@@ -58,9 +58,9 @@ func (c *Camera) AsVoxelPos() VoxelPos {
 		pos[2] -= 1
 	}
 	return VoxelPos{
-		int32(pos.X()),
-		int32(pos.Y()),
-		int32(pos.Z()),
+		int(pos.X()),
+		int(pos.Y()),
+		int(pos.Z()),
 	}
 }
 

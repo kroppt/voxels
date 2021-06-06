@@ -6,9 +6,9 @@ import (
 
 // VoxelPos is a position in voxel space.
 type VoxelPos struct {
-	X int32
-	Y int32
-	Z int32
+	X int
+	Y int
+	Z int
 }
 
 // Add returns this VoxelPos with another VoxelPos added to it.
@@ -40,7 +40,7 @@ func (pos VoxelPos) AsVec3() glm.Vec3 {
 
 // GetChunkPos returns the chunk position that the this VoxelPos is in for the
 // given chunkSize.
-func (pos VoxelPos) GetChunkPos(chunkSize int32) ChunkPos {
+func (pos VoxelPos) GetChunkPos(chunkSize int) ChunkPos {
 	x := pos.X
 	z := pos.Z
 	if pos.X < 0 {

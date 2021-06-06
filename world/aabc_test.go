@@ -272,7 +272,7 @@ func TestGetChildAABCReturnsOctant(t *testing.T) {
 		target := world.VoxelPos{-1, -1, -1}
 		result := world.GetChildAABC(aabc, target)
 		volume := result.Size * result.Size * result.Size
-		expect := int32(8)
+		expect := 8
 		if volume != expect {
 			t.Fatalf("expected octant volume to be %v but got %v", expect, volume)
 		}

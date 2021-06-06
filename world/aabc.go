@@ -4,7 +4,7 @@ package world
 // position represents the corner minimum coordinates.
 type AABC struct {
 	Origin VoxelPos
-	Size   int32
+	Size   int
 }
 
 // ExpandAABC doubles the dimensions of the aabc, moving the center

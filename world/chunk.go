@@ -10,13 +10,13 @@ import (
 
 // ChunkPos is a position in chunk space.
 type ChunkPos struct {
-	X int32
-	Z int32
+	X int
+	Z int
 }
 
 // GetSurroundings returns a range surrounding the position by amount in every
 // direction.
-func (pos ChunkPos) GetSurroundings(amount int32) ChunkRange {
+func (pos ChunkPos) GetSurroundings(amount int) ChunkRange {
 	minx := pos.X - amount
 	maxx := pos.X + amount
 	mink := pos.Z - amount
@@ -28,7 +28,7 @@ func (pos ChunkPos) GetSurroundings(amount int32) ChunkRange {
 }
 
 // Mul returns this ChunkPos multiplied by a scalar s.
-func (pos ChunkPos) Mul(s int32) ChunkPos {
+func (pos ChunkPos) Mul(s int) ChunkPos {
 	return ChunkPos{
 		X: pos.X * s,
 		Z: pos.Z * s,
@@ -68,13 +68,13 @@ type Chunk struct {
 	objs     *voxgl.Object
 	root     *Octree
 	dirty    bool
-	size     int32
-	height   int32
+	size     int
+	height   int
 }
 
 // NewChunk returns a new Chunk shaped as size X height X size.
-func NewChunk(size, height int32, pos ChunkPos) *Chunk {
-	vertSize := int32(7)
+func NewChunk(size, height int, pos ChunkPos) *Chunk {
+	vertSize := 7
 	flatData := make([]float32, size*size*height*vertSize)
 	// layout 3+4=7 hard coded in here too
 	objs, err := voxgl.NewColoredObject(nil)
@@ -89,9 +89,9 @@ func NewChunk(size, height int32, pos ChunkPos) *Chunk {
 		height:   height,
 	}
 	rand.Seed(time.Now().UnixNano())
-	for i := int32(0); i < size; i++ {
-		for j := int32(0); j < height; j++ {
-			for k := int32(0); k < size; k++ {
+	for i := 0; i < size; i++ {
+		for j := 0; j < height; j++ {
+			for k := 0; k < size; k++ {
 				x := chunk.Pos.X + i
 				y := j
 				z := chunk.Pos.Z + k
