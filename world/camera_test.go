@@ -263,7 +263,6 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
-
 	t.Run("up is -90 deg pitch from forward", func(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
@@ -274,7 +273,6 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
-
 	t.Run("fancy rotation", func(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
@@ -292,7 +290,6 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
-
 	t.Run("rotate about negative axis", func(t *testing.T) {
 		t.Parallel()
 		cam := world.NewCamera()
@@ -304,7 +301,39 @@ func TestCameraLookVector(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expect, look)
 		}
 	})
-
+	t.Run("look straight down with LookAt check rounding", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		expect := cam.GetLookDown()
+		cam.SetPosition(&glm.Vec3{2.1, 1.45, 2.1})
+		cam.LookAt(&glm.Vec3{2.1, -1.23, 2.1})
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+	t.Run("look straight down with LookAt", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		expect := cam.GetLookDown()
+		cam.SetPosition(&glm.Vec3{0, 1, 0})
+		cam.LookAt(&glm.Vec3{0, 0, 0})
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
+	t.Run("look straight up with LookAt", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCamera()
+		expect := cam.GetLookUp()
+		cam.SetPosition(&glm.Vec3{1, 1, 1})
+		cam.LookAt(&glm.Vec3{1, 2, 1})
+		look := cam.GetLookForward()
+		if !withinErrorVec3(look, expect, 0.0001) {
+			t.Fatalf("expected %v but got %v", expect, look)
+		}
+	})
 }
 
 func TestCameraVoxelCoords(t *testing.T) {

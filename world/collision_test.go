@@ -113,3 +113,30 @@ func TestMultipleVoxelIntersectLookBetween(t *testing.T) {
 
 	})
 }
+
+func TestStraightDownIntersect(t *testing.T) {
+	t.Parallel()
+	cam := world.NewCamera()
+	cam.SetPosition(&glm.Vec3{10.5, 3.5, 10.5})
+	cam.LookAt(&glm.Vec3{10.5, 0.5, 10.5})
+	var root *world.Octree
+	root = root.AddLeaf(&world.Voxel{
+		Pos: world.VoxelPos{0, 0, 0},
+	})
+	root = root.AddLeaf(&world.Voxel{
+		Pos: world.VoxelPos{10, 0, 10},
+	})
+	result, ok := root.Find(getCamIntersectionPredicate(cam))
+	closest, _ := world.GetClosest(cam.GetPosition(), result)
+	expectVoxel := world.VoxelPos{10, 0, 10}
+	expectedIntersections := 1
+	if !ok {
+		t.Fatal("view did not intersect voxel")
+	}
+	if len(result) != expectedIntersections {
+		t.Fatal("only expected to intersect one voxel")
+	}
+	if closest.Pos != expectVoxel {
+		t.Fatalf("expected to find voxel at %v but found %v", expectVoxel, closest.Pos)
+	}
+}
