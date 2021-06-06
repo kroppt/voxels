@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/engoengine/glm"
+	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -12,34 +13,33 @@ import (
 type Chunk struct {
 	Pos      glm.Vec2
 	flatData []float32
-	voxels   [][][]*Voxel
 	objs     *voxgl.Object
 	root     *Octree
 	dirty    bool
+	size     int
+	height   int
 }
 
 // NewChunk returns a new Chunk shaped as size X height X size.
 func NewChunk(size, height int, chunkPos glm.Vec2) *Chunk {
-	voxels := make([][][]*Voxel, size)
-	for i := range voxels {
-		voxels[i] = make([][]*Voxel, height)
-		for j := range voxels[i] {
-			voxels[i][j] = make([]*Voxel, size)
-		}
-	}
+	vertSize := 7
+	flatData := make([]float32, size*size*height*vertSize)
+	// layout 3+4=7 hard coded in here too
 	objs, err := voxgl.NewColoredObject(nil)
 	if err != nil {
 		panic("failed to make NewColoredObject for chunk")
 	}
 	chunk := &Chunk{
-		Pos:    chunkPos.Mul(float32(size)),
-		objs:   objs,
-		voxels: voxels,
+		Pos:      chunkPos.Mul(float32(size)),
+		objs:     objs,
+		flatData: flatData,
+		size:     size,
+		height:   height,
 	}
 	rand.Seed(time.Now().UnixNano())
-	for i := range voxels {
-		for j := range voxels[i] {
-			for k := range voxels[i][j] {
+	for i := 0; i < size; i++ {
+		for j := 0; j < height; j++ {
+			for k := 0; k < size; k++ {
 				x := chunk.Pos.X() + float32(i)
 				y := float32(j)
 				z := chunk.Pos.Y() + float32(k)
@@ -48,7 +48,7 @@ func NewChunk(size, height int, chunkPos glm.Vec2) *Chunk {
 					Pos: glm.Vec3{x, y, z},
 					Col: glm.Vec4{r, g, b, 1.0},
 				}
-				chunk.AddVoxel(&v)
+				chunk.SetVoxel(&v)
 			}
 		}
 	}
@@ -59,25 +59,53 @@ func (c *Chunk) GetRoot() *Octree {
 	return c.root
 }
 
-func GetRelativeIndices(chunkPos glm.Vec2, pos glm.Vec3) (i int, j int, k int) {
-	if pos.X() < chunkPos.X() || pos.Z() < chunkPos.Y() {
-		panic("pos is not within chunk")
-	}
-	// TODO check maximum as well? requires chunk size
-	if pos.Y() < 0 {
-		panic("y index should never be negative")
-	}
-	return int(pos.X() - chunkPos.X()), int(pos.Y()), int(pos.Z() - chunkPos.Y())
+// GetRelativeIndices returns the voxel coordinate relative to the origin of
+// the chunk, with the assumption that the position is in bounds.
+func (c *Chunk) GetRelativeIndices(pos glm.Vec3) (int, int, int) {
+	return int(pos.X() - c.Pos.X()), int(pos.Y()), int(pos.Z() - c.Pos.Y())
 }
 
-// AddVoxel adds a voxel to the chunk, updating all data structures.
-// note: no bounds checking
-func (c *Chunk) AddVoxel(v *Voxel) {
-	i, j, k := v.Pos.X(), v.Pos.Y(), v.Pos.Z()
+// IsWithinChunk returns whether the position is within the chunk
+func (c *Chunk) IsWithinChunk(pos glm.Vec3) bool {
+	if pos.X() < c.Pos.X() || pos.Z() < c.Pos.Y() {
+		//pos is below x or z chunk bounds
+		return false
+	}
+	if pos.X() >= c.Pos.X()+float32(c.size) || pos.Z() >= c.Pos.Y()+float32(c.size) {
+		// pos is above x or z chunk bounds
+		return false
+	}
+	if pos.Y() < 0 || pos.Y() >= float32(c.height) {
+		// y coordinate is out of chunk's bounds
+		return false
+	}
+	return true
+}
+
+// SetVoxel updates a voxel's variables in the chunk, if it exists
+func (c *Chunk) SetVoxel(v *Voxel) {
+	if !c.IsWithinChunk(v.Pos) {
+		log.Debugf("%v is not within %v", v, c.Pos)
+		return
+	}
+	x, y, z := v.Pos.X(), v.Pos.Y(), v.Pos.Z()
+	i, j, k := c.GetRelativeIndices(v.Pos)
 	r, g, b, a := v.Col[0], v.Col[1], v.Col[2], v.Col[3]
-	c.flatData = append(c.flatData, i, j, k, r, g, b, a)
-	x, y, z := GetRelativeIndices(c.Pos, v.Pos)
-	c.voxels[x][y][z] = v
+	off := (i + j*c.size*c.height + k*c.size) * 7
+	if off%7 != 0 {
+		panic("offset not divisible by 7")
+	}
+	if off >= len(c.flatData) || off < 0 {
+		panic("offset out of bounds")
+	}
+
+	c.flatData[off] = x
+	c.flatData[off+1] = y
+	c.flatData[off+2] = z
+	c.flatData[off+3] = r
+	c.flatData[off+4] = g
+	c.flatData[off+5] = b
+	c.flatData[off+6] = a
 	c.root = c.root.AddLeaf(v)
 	c.dirty = true
 }

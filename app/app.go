@@ -53,7 +53,7 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 			return err
 		}
 	case *sdl.MouseWheelEvent:
-		//app.handleMouseWheelEvent(evt)
+		app.handleMouseWheelEvent(evt)
 	case *sdl.WindowEvent:
 		//app.handleWindowEvent(evt)
 	case *sdl.SysWMEvent:
@@ -62,6 +62,14 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 		app.handleKeyboardEvent(evt)
 	}
 	return nil
+}
+
+func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
+	vpos := app.world.GetCamera().GetVoxelCoord()
+	app.world.SetVoxel(&world.Voxel{
+		Pos: vpos,
+		Col: [4]float32{1.0, 0.0, 0.0, 1.0},
+	})
 }
 
 func (app *Application) handleQuitEvent(evt *sdl.QuitEvent) {

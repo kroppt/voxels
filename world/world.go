@@ -123,6 +123,16 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 	return closest, dist, len(hits) != 0
 }
 
+// SetVoxel updates a voxel's variables in the world if the chunk
+// that it would belong to is currently loaded.
+func (w *World) SetVoxel(v *Voxel) {
+	key := GetChunkIndex(chunkSize, v.Pos)
+	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
+	if chunk, ok := w.chunks[key]; ok {
+		chunk.SetVoxel(v)
+	}
+}
+
 func (w *World) Destroy() {
 	w.ubo.Destroy()
 }
