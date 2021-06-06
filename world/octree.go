@@ -35,6 +35,34 @@ func (tree *Octree) Find(fn func(*Octree) bool) ([]*Voxel, bool) {
 	return voxels, voxels != nil
 }
 
+// FindClosestIntersect finds the closest voxel that the camera's
+// look direction intersects, if any.
+func (tree *Octree) FindClosestIntersect(cam *Camera) (block *Voxel, dist float32, found bool) {
+	if tree == nil {
+		return nil, -1, false
+	}
+	boxDist, hit := Intersect(*tree.aabc, cam.GetPosition(), cam.GetLookForward())
+	if !hit {
+		return nil, -1, false
+	}
+	if tree.children == nil {
+		return tree.voxel, boxDist, true
+	}
+
+	var bestDist float32
+	var bestVox *Voxel
+	head := tree.children
+	for head != nil {
+		vox, vdist, hit := head.node.FindClosestIntersect(cam)
+		if hit && (vdist < bestDist || bestVox == nil) {
+			bestVox = vox
+			bestDist = vdist
+		}
+		head = head.next
+	}
+	return bestVox, bestDist, bestVox != nil
+}
+
 // Apply applies the function to every Octree node that is a leaf
 // in a depth-first order.
 func (tree *Octree) Apply(fn func(*Octree)) {
