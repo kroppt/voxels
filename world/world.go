@@ -42,15 +42,14 @@ func applyWithinRanges(xrng, zrng Range, fn func(pos ChunkPos)) {
 	}
 }
 
-// GetChunkBounds returns the minimum and maximum chunks indices that should be
-// in view around a camera at the given chunk.
+// GetChunkBounds returns the chunk position ranges that are in view around
+// currChunk.
 // TODO returns chunk position ranges
-func GetChunkBounds(worldSize int32, currChunk ChunkPos) (x Range, z Range) {
-	halfWorld := worldSize / 2
-	minx := currChunk.X - halfWorld
-	maxx := currChunk.X + halfWorld
-	minj := currChunk.Z - halfWorld
-	maxj := currChunk.Z + halfWorld
+func GetChunkBounds(renderDist int32, currChunk ChunkPos) (x Range, z Range) {
+	minx := currChunk.X - renderDist
+	maxx := currChunk.X + renderDist
+	minj := currChunk.Z - renderDist
+	maxj := currChunk.Z + renderDist
 	return Range{minx, maxx}, Range{minj, maxj}
 }
 
@@ -75,7 +74,7 @@ func NewWorld() (*World, error) {
 
 	currChunk := cam.AsVoxelPos().AsChunkPos(chunkSize)
 	// TODO extract below calculation to function
-	xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
+	xrng, zrng := GetChunkBounds(chunkRenderDist, currChunk)
 
 	chunks := make(map[ChunkPos]*Chunk)
 	applyWithinRanges(xrng, zrng, func(pos ChunkPos) {
@@ -157,7 +156,7 @@ func (w *World) Render() error {
 		if currChunk != w.lastChunk {
 			// the camera position has moved chunks
 			// load new chunks
-			xrng, zrng := GetChunkBounds(chunkRenderDist*2+1, currChunk)
+			xrng, zrng := GetChunkBounds(chunkRenderDist, currChunk)
 			applyWithinRanges(xrng, zrng, func(pos ChunkPos) {
 				if _, ok := w.chunks[pos]; !ok {
 					// chunk i,j is not in map and should be added
@@ -166,7 +165,7 @@ func (w *World) Render() error {
 				}
 			})
 			// delete old chunks
-			lastXRange, lastZRange := GetChunkBounds(chunkRenderDist*2+1, w.lastChunk)
+			lastXRange, lastZRange := GetChunkBounds(chunkRenderDist, w.lastChunk)
 			applyWithinRanges(lastXRange, lastZRange, func(pos ChunkPos) {
 				inOld := withinRanges(lastXRange, lastZRange, pos)
 				inNew := withinRanges(xrng, zrng, pos)
