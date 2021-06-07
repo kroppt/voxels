@@ -65,7 +65,7 @@ func (c *Camera) AsVoxelPos() VoxelPos {
 }
 
 // quatLookAtV is a fixed version of GLM's QuatLookAtV that accounts for Y direction
-func quatLookAtV(eye, center, up *glm.Vec3) glm.Quat {
+func quatLookAtV(eye, center, up, forward *glm.Vec3) glm.Quat {
 	// glm bug fix
 	if *eye == *center {
 		return glm.QuatIdent()
@@ -80,6 +80,16 @@ func quatLookAtV(eye, center, up *glm.Vec3) glm.Quat {
 	// Uncommented these 2 lines
 	right := direction.Cross(up)
 	upp := right.Cross(&direction)
+	// the direction of target is parallel to up: either opposite or same direction
+	if upp == (glm.Vec3{0, 0, 0}) {
+		if direction == *up {
+			upp = forward.Mul(-1)
+		} else if direction == up.Mul(-1) {
+			upp = *forward
+		} else {
+			panic("unexpected rounding error")
+		}
+	}
 
 	dup := glm.Vec3{0, 1, 0}
 	upCur := rotDir.Rotate(&dup)
@@ -97,7 +107,8 @@ func (c *Camera) LookAt(center *glm.Vec3) {
 		return
 	}
 	up := c.GetLookUp()
-	quat := quatLookAtV(&negatedPos, center, &up)
+	forward := c.GetLookForward()
+	quat := quatLookAtV(&negatedPos, center, &up, &forward)
 	c.rot = quat
 	c.dirty = true
 }

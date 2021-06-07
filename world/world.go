@@ -33,8 +33,8 @@ func New() *World {
 		ubo: ubo,
 		cam: cam,
 	}
-	cam.SetPosition(&glm.Vec3{3, 2, 3})
-	cam.LookAt(&glm.Vec3{0, 0, 0})
+	cam.SetPosition(&glm.Vec3{0.5, 2.5, 0.5})
+	cam.LookAt(&glm.Vec3{0.5, 0, 0.5})
 
 	currChunk := cam.AsVoxelPos().GetChunkPos(chunkSize)
 	rng := currChunk.GetSurroundings(chunkRenderDist)
@@ -53,18 +53,16 @@ func New() *World {
 // FindLookAtVoxel determines which voxel is being looked at. It returns the
 // block, distance to the block, and whether the block was found.
 func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
-	var hits []*Voxel
+	var bestVox *Voxel
+	var bestDist float32
 	for _, chunk := range w.chunks {
-		chunkHits, _ := chunk.root.Find(func(node *Octree) bool {
-			aabc := *node.GetAABC()
-			_, hit := Intersect(aabc, w.cam.GetPosition(), w.cam.GetLookForward())
-			return hit
-		})
-		hits = append(hits, chunkHits...)
+		vox, dist, hit := chunk.root.FindClosestIntersect(w.cam)
+		if hit && (dist < bestDist || bestVox == nil) {
+			bestVox = vox
+			bestDist = dist
+		}
 	}
-
-	closest, dist := GetClosest(w.cam.GetPosition(), hits)
-	return closest, dist, len(hits) != 0
+	return bestVox, bestDist, bestVox != nil
 }
 
 // SetVoxel updates a voxel's variables in the world if the chunk
