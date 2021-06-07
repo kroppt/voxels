@@ -146,7 +146,6 @@ func (w *World) Render() error {
 	}
 	culled := 0
 	for _, chunk := range w.chunks {
-		// log.Debugf("chunk = %v %v", chunk.Pos.GetSurroundings(0).Min.X, chunk.Pos.GetSurroundings(0).Min.Z)
 		if w.cam.IsWithinFrustum(chunk.Pos.AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
 			chunk.Render()
 		} else {
