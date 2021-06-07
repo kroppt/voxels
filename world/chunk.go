@@ -1,9 +1,11 @@
 package world
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
+	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
 )
@@ -32,6 +34,15 @@ func (pos ChunkPos) Mul(s int) ChunkPos {
 	return ChunkPos{
 		X: pos.X * s,
 		Z: pos.Z * s,
+	}
+}
+
+func (pos ChunkPos) AsVec3() glm.Vec3 {
+	return glm.Vec3{
+		float32(pos.X),
+		// TODO un hack this, chunks just so happen to start at y=0
+		float32(0.0),
+		float32(pos.Z),
 	}
 }
 
@@ -79,7 +90,7 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 	// layout 3+4=7 hard coded in here too
 	objs, err := voxgl.NewColoredObject(nil)
 	if err != nil {
-		panic("failed to make NewColoredObject for chunk")
+		panic(fmt.Sprint(err))
 	}
 	chunk := &Chunk{
 		Pos:      pos.Mul(size),
@@ -153,6 +164,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	c.flatData[off+4] = g
 	c.flatData[off+5] = b
 	c.flatData[off+6] = a
+
 	c.root = c.root.AddLeaf(v)
 	c.dirty = true
 }

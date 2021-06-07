@@ -19,7 +19,7 @@ func getCamIntersectionPredicate(cam *world.Camera) func(*world.Octree) bool {
 func TestSimpleVoxelIntersect(t *testing.T) {
 	t.Run("simple voxel-ray intersection", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		cam.SetPosition(&glm.Vec3{0.5, 0.5, -2})
 		cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
 		var root *world.Octree
@@ -46,7 +46,7 @@ func TestSimpleVoxelIntersect(t *testing.T) {
 func TestMultipleVoxelIntersect(t *testing.T) {
 	t.Run("look through many and hit closer voxel", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		cam.SetPosition(&glm.Vec3{9, 0.5, 0.5})
 		cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
 		var root *world.Octree
@@ -82,7 +82,7 @@ func TestMultipleVoxelIntersect(t *testing.T) {
 func TestMultipleVoxelIntersectLookBetween(t *testing.T) {
 	t.Run("look between many voxels to see one in the back", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		cam.SetPosition(&glm.Vec3{3.5, 0.5, -10})
 		cam.LookAt(&glm.Vec3{3.5, 0.5, 7.5})
 		var root *world.Octree
@@ -117,7 +117,7 @@ func TestMultipleVoxelIntersectLookBetween(t *testing.T) {
 
 func TestStraightDownIntersect(t *testing.T) {
 	t.Parallel()
-	cam := world.NewCamera()
+	cam := world.NewCameraDefault()
 	cam.SetPosition(&glm.Vec3{10.5, 3.5, 10.5})
 	cam.LookAt(&glm.Vec3{10.5, 0.5, 10.5})
 	var root *world.Octree
@@ -215,7 +215,7 @@ func TestIntersectAlone(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			cam := world.NewCamera()
+			cam := world.NewCameraDefault()
 			cam.SetPosition(&tC.pos)
 			cam.LookAt(&tC.target)
 			dist, hit := world.Intersect(tC.aabc, cam.GetPosition(), cam.GetLookForward())

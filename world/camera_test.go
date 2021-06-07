@@ -13,7 +13,7 @@ func TestNewCamera(t *testing.T) {
 
 	t.Run("new camera not nil", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		if cam == nil {
 			t.Fatal("expected valid camera but got nil")
 		}
@@ -25,13 +25,13 @@ func TestCameraGetPosition(t *testing.T) {
 
 	t.Run("get camera position", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		_ = cam.GetPosition()
 	})
 
 	t.Run("initial camera position is 0, 0, 0", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		pos := cam.GetPosition()
 		expect := glm.Vec3{0.0, 0.0, 0.0}
 
@@ -105,7 +105,7 @@ func TestTableCameraTranslate(t *testing.T) {
 		tC := tC
 		t.Run(fmt.Sprintf("translate %v by %v", tC.start, tC.diff), func(t *testing.T) {
 			t.Parallel()
-			cam := world.NewCamera()
+			cam := world.NewCameraDefault()
 			cam.Translate(&tC.start)
 
 			cam.Translate(&tC.diff)
@@ -123,13 +123,13 @@ func TestCameraGetRotationQuat(t *testing.T) {
 
 	t.Run("get camera rotation", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		_ = cam.GetRotationQuat()
 	})
 
 	t.Run("initial camera rotation is identity quat", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		rot := cam.GetRotationQuat()
 		expect := glm.QuatIdent()
 
@@ -189,7 +189,7 @@ func TestTableCameraRotate(t *testing.T) {
 		tC := tC
 		t.Run(fmt.Sprintf("rotate %v by %v", tC.start, tC.diff), func(t *testing.T) {
 			t.Parallel()
-			cam := world.NewCamera()
+			cam := world.NewCameraDefault()
 			cam.Rotate(&glm.Vec3{1.0, 0.0, 0.0}, tC.start.X())
 			cam.Rotate(&glm.Vec3{0.0, 1.0, 0.0}, tC.start.Y())
 			cam.Rotate(&glm.Vec3{0.0, 0.0, 1.0}, tC.start.Z())
@@ -225,7 +225,7 @@ func withinErrorVec3(a, b glm.Vec3, diff float32) bool {
 func TestCameraLookVector(t *testing.T) {
 	t.Run("roll doesn't change look forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		cam.Rotate(&glm.Vec3{0, 0, 1}, 60)
 		look := cam.GetLookForward()
 		expect := glm.Vec3{0.0, 0.0, -1.0}
@@ -235,7 +235,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("back is 180 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		expect := cam.GetLookBack()
 		cam.Rotate(&glm.Vec3{0, 1, 0}, 180)
 		look := cam.GetLookForward()
@@ -245,7 +245,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("right is +90 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		expect := cam.GetLookRight()
 		cam.Rotate(&glm.Vec3{0, 1, 0}, 90)
 		look := cam.GetLookForward()
@@ -255,7 +255,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("left is -90 deg yaw from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		expect := cam.GetLookLeft()
 		cam.Rotate(&glm.Vec3{0, 1, 0}, -90)
 		look := cam.GetLookForward()
@@ -265,7 +265,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("up is -90 deg pitch from forward", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		expect := cam.GetLookUp()
 		cam.Rotate(&glm.Vec3{1, 0, 0}, -90)
 		look := cam.GetLookForward()
@@ -275,7 +275,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("fancy rotation", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		// Use the right hand rule:
 		// Point thumb in direction of axis, fingers curl towards
 		// negative degree rotation
@@ -292,7 +292,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("rotate about negative axis", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		// Right hand rule works for negative axes too
 		expect := cam.GetLookDown()
 		cam.Rotate(&glm.Vec3{-1, 0, 0}, -90)
@@ -303,7 +303,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("look straight down with LookAt check rounding", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		expect := cam.GetLookDown()
 		cam.SetPosition(&glm.Vec3{2.1, 1.45, 2.1})
 		cam.LookAt(&glm.Vec3{2.1, -1.23, 2.1})
@@ -314,7 +314,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("look straight down with LookAt", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		expect := cam.GetLookDown()
 		cam.SetPosition(&glm.Vec3{0, 1, 0})
 		cam.LookAt(&glm.Vec3{0, 0, 0})
@@ -325,7 +325,7 @@ func TestCameraLookVector(t *testing.T) {
 	})
 	t.Run("look straight up with LookAt", func(t *testing.T) {
 		t.Parallel()
-		cam := world.NewCamera()
+		cam := world.NewCameraDefault()
 		expect := cam.GetLookUp()
 		cam.SetPosition(&glm.Vec3{1, 1, 1})
 		cam.LookAt(&glm.Vec3{1, 2, 1})
@@ -375,7 +375,7 @@ func TestCameraVoxelCoords(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		t.Run(tC.desc, func(t *testing.T) {
-			cam := world.NewCamera()
+			cam := world.NewCameraDefault()
 			cam.SetPosition(&tC.cPos)
 			result := cam.AsVoxelPos()
 			if result != tC.expect {
@@ -383,4 +383,27 @@ func TestCameraVoxelCoords(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestIsWithinFrustum(t *testing.T) {
+	t.Run("simple within default frustum", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCameraDefault()
+		cam.SetPosition(&glm.Vec3{0.5, 0.5, 10})
+		result := cam.IsWithinFrustum(glm.Vec3{0, 0, 0}, 1, 1, 1)
+		expect := true
+		if result != expect {
+			t.Fatalf("expected voxel at 0,0,0 to be within frustum, but wasn't")
+		}
+	})
+	t.Run("simple outside default frustum", func(t *testing.T) {
+		t.Parallel()
+		cam := world.NewCameraDefault()
+		cam.SetPosition(&glm.Vec3{0.5, 0.5, 10})
+		result := cam.IsWithinFrustum(glm.Vec3{0, 0, 50}, 1, 1, 1)
+		expect := false
+		if result != expect {
+			t.Fatalf("expected voxel at 0,0,0 to be outside frustum, but was within")
+		}
+	})
 }
