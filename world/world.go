@@ -28,7 +28,7 @@ func New() *World {
 	ubo.BufferData(gl.UNIFORM_BUFFER, uint32(2*unsafe.Sizeof(mat)), gl.Ptr(nil), gl.STATIC_DRAW)
 	// use binding = 0
 	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
-	cam := NewCamera()
+	cam := NewDefaultCamera()
 	world := &World{
 		ubo: ubo,
 		cam: cam,
@@ -144,8 +144,15 @@ func (w *World) Render() error {
 			w.lastChunk = currChunk
 		}
 	}
+	culled := 0
 	for _, chunk := range w.chunks {
-		chunk.Render()
+		// log.Debugf("chunk = %v %v", chunk.Pos.GetSurroundings(0).Min.X, chunk.Pos.GetSurroundings(0).Min.Z)
+		if w.cam.IsWithinFrustum(chunk.Pos.AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
+			chunk.Render()
+		} else {
+			culled++
+		}
 	}
+	// log.Debugf("culled %v / %v chunks", culled, len(w.chunks))
 	return nil
 }

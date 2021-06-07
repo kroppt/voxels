@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
 )
@@ -33,6 +34,15 @@ func (pos ChunkPos) Mul(s int) ChunkPos {
 	return ChunkPos{
 		X: pos.X * s,
 		Z: pos.Z * s,
+	}
+}
+
+func (pos ChunkPos) AsVec3() glm.Vec3 {
+	return glm.Vec3{
+		float32(pos.X),
+		// TODO un hack this, chunks just so happen to start at y=0
+		float32(0.0),
+		float32(pos.Z),
 	}
 }
 
@@ -111,10 +121,6 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 func (c *Chunk) GetRoot() *Octree {
 	return c.root
 }
-
-// func (c *Chunk) IsWithinFrustum() bool {
-
-// }
 
 // IsWithinChunk returns whether the position is within the chunk
 func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {

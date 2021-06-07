@@ -1,30 +1,34 @@
 package world
 
 import (
+	"math"
+
 	"github.com/engoengine/glm"
+	"github.com/engoengine/glm/geo"
 )
 
 // Camera contains position and rotation information for the camera. UpdateView
 // should be called whenever the camera is translated to rotated.
 type Camera struct {
-	pos    glm.Vec3
-	rot    glm.Quat
-	near   float32
-	far    float32
-	aspect float32
-	fovy   float32
-	dirty  bool
+	pos     glm.Vec3
+	rot     glm.Quat
+	near    float32
+	far     float32
+	aspect  float32
+	fovyDeg float32
+	dirty   bool
 }
 
-// NewCamera returns a new camera.
-func NewCamera() *Camera {
+// NewDefaultCamera returns a new camera.
+func NewDefaultCamera() *Camera {
+	// TODO customize the projection variables
 	return &Camera{
-		fovy:   60.0,
-		aspect: 16.0 / 9.0,
-		near:   0.1,
-		far:    100.0,
-		pos:    [3]float32{},
-		rot:    glm.QuatIdent(),
+		fovyDeg: 60.0,
+		aspect:  16.0 / 9.0,
+		near:    0.1,
+		far:     100.0,
+		pos:     [3]float32{},
+		rot:     glm.QuatIdent(),
 	}
 }
 
@@ -43,7 +47,7 @@ func (c *Camera) GetFar() float32 {
 	return c.far
 }
 func (c *Camera) GetFovy() float32 {
-	return c.fovy
+	return c.fovyDeg
 }
 func (c *Camera) GetAspect() float32 {
 	return c.aspect
@@ -83,6 +87,103 @@ func (c *Camera) AsVoxelPos() VoxelPos {
 		int(pos.Y()),
 		int(pos.Z()),
 	}
+}
+
+type FRange struct {
+	Min   float32
+	Max   float32
+	delta float32
+}
+
+type WorldRange struct {
+	X FRange
+	Y FRange
+	Z FRange
+}
+
+func (rng WorldRange) ForEach(fn func(glm.Vec3)) {
+	for x := rng.X.Min; x <= rng.X.Max; x += rng.X.delta {
+		for y := rng.Y.Min; y <= rng.Y.Max; y += rng.Y.delta {
+			for z := rng.Z.Min; z <= rng.Z.Max; z += rng.Z.delta {
+				fn(glm.Vec3{x, y, z})
+			}
+		}
+	}
+}
+
+// IsWithinFrustum returns whether a specified AABB is within the frustum
+// view of the camera.
+func (c *Camera) IsWithinFrustum(corner glm.Vec3, dx, dy, dz float32) bool {
+	eye := c.GetPosition()
+	dir := c.GetLookForward()
+	left := c.GetLookLeft()
+	right := c.GetLookRight()
+	up := c.GetLookUp()
+	down := c.GetLookDown()
+	// far plane math
+	farDist := dir.Mul(c.far)
+	farCenter := eye.Add(&farDist)
+	fovyRad := glm.DegToRad(c.fovyDeg / 2.0)
+	fhh := c.far * float32(math.Tan(float64(fovyRad)))
+	fhw := c.aspect * fhh
+	farLeftOff := left.Mul(fhw)
+	farRightOff := right.Mul(fhw)
+	farUpOff := up.Mul(fhh)
+	farDownOff := down.Mul(fhh)
+	ftl := farCenter.Add(&farLeftOff)
+	ftl = ftl.Add(&farUpOff)
+	fbl := farCenter.Add(&farLeftOff)
+	fbl = fbl.Add(&farDownOff)
+	ftr := farCenter.Add(&farRightOff)
+	ftr = ftr.Add(&farUpOff)
+	fbr := farCenter.Add(&farRightOff)
+	fbr = fbr.Add(&farDownOff)
+	// near plane math
+	nearDist := dir.Mul(c.near)
+	nearCenter := eye.Add(&nearDist)
+	nhh := c.near * float32(math.Tan(float64(fovyRad/2.0)))
+	nhw := c.aspect * nhh
+	nearLeftOff := left.Mul(nhw)
+	nearUpOff := up.Mul(nhh)
+	nleft := nearCenter.Add(&nearLeftOff)
+	nup := nearCenter.Add(&nearUpOff)
+
+	planeTriangles := [6][3]glm.Vec3{
+		{eye, ftl, fbl},          // left
+		{eye, ftr, ftl},          // top
+		{eye, fbr, ftr},          // right
+		{eye, fbl, fbr},          // bottom
+		{fbl, ftl, ftr},          // far
+		{nearCenter, nup, nleft}, // near
+	}
+	cubeRange := WorldRange{
+		X: FRange{corner.X(), corner.X() + dx, dx},
+		Y: FRange{corner.Y(), corner.Y() + dy, dy},
+		Z: FRange{corner.Z(), corner.Z() + dz, dz},
+	}
+	for _, tri := range planeTriangles {
+		out := 0
+		in := 0
+		cubeRange.ForEach(func(v glm.Vec3) {
+			// every corner of cube
+			if geo.PointOutsidePlane(&v, &tri[0], &tri[1], &tri[2]) {
+				out++
+			} else {
+				in++
+			}
+		})
+		if in == 0 {
+			return false
+		} else if out > 0 {
+			// https://sites.google.com/site/letsmakeavoxelengine/home/frustum-culling
+			// "result = intersect"
+			// if result remains "intersect" after all 6 planes
+			// are checked, the chunk was partially intersected
+			// we could then look further into the voxels
+			// within the chunk and cull those individually
+		}
+	}
+	return true
 }
 
 // quatLookAtV is a fixed version of GLM's QuatLookAtV that accounts for Y direction
@@ -162,7 +263,7 @@ func (c *Camera) GetViewMat() glm.Mat4 {
 // by the camera.
 func (c *Camera) GetProjMat() glm.Mat4 {
 	proj := glm.Ident4()
-	persp := glm.Perspective(glm.DegToRad(c.fovy), c.aspect, c.near, c.far)
+	persp := glm.Perspective(glm.DegToRad(c.fovyDeg), c.aspect, c.near, c.far)
 	proj = proj.Mul4(&persp)
 	return proj
 }

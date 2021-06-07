@@ -137,13 +137,13 @@ var Block *world.Voxel
 func (app *Application) PostEventActions() {
 	app.pollKeyboard()
 	sw := util.Start()
-	Block, dist, found := app.world.FindLookAtVoxel()
-	if found {
-		cam := app.world.GetCamera()
-		eye := cam.GetPosition()
-		dir := cam.GetLookForward()
-		log.Debugf("Block: %v, dist: %v, pos: %v, look: %v", Block.Pos, dist, eye, dir)
-	}
+	Block, _, _ = app.world.FindLookAtVoxel()
+	// if found {
+	// 	cam := app.world.GetCamera()
+	// 	eye := cam.GetPosition()
+	// 	dir := cam.GetLookForward()
+	// 	log.Debugf("Block: %v, dist: %v, pos: %v, look: %v", Block.Pos, dist, eye, dir)
+	// }
 	sw.StopRecordAverage("intersect")
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
