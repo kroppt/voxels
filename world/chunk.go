@@ -1,6 +1,7 @@
 package world
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -79,7 +80,7 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 	// layout 3+4=7 hard coded in here too
 	objs, err := voxgl.NewColoredObject(nil)
 	if err != nil {
-		panic("failed to make NewColoredObject for chunk")
+		panic(fmt.Sprint(err))
 	}
 	chunk := &Chunk{
 		Pos:      pos.Mul(size),
@@ -110,6 +111,10 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 func (c *Chunk) GetRoot() *Octree {
 	return c.root
 }
+
+// func (c *Chunk) IsWithinFrustum() bool {
+
+// }
 
 // IsWithinChunk returns whether the position is within the chunk
 func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
@@ -153,6 +158,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	c.flatData[off+4] = g
 	c.flatData[off+5] = b
 	c.flatData[off+6] = a
+
 	c.root = c.root.AddLeaf(v)
 	c.dirty = true
 }

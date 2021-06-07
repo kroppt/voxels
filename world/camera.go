@@ -7,16 +7,24 @@ import (
 // Camera contains position and rotation information for the camera. UpdateView
 // should be called whenever the camera is translated to rotated.
 type Camera struct {
-	pos   glm.Vec3
-	rot   glm.Quat
-	dirty bool
+	pos    glm.Vec3
+	rot    glm.Quat
+	near   float32
+	far    float32
+	aspect float32
+	fovy   float32
+	dirty  bool
 }
 
 // NewCamera returns a new camera.
 func NewCamera() *Camera {
 	return &Camera{
-		pos: [3]float32{},
-		rot: glm.QuatIdent(),
+		fovy:   60.0,
+		aspect: 16.0 / 9.0,
+		near:   0.1,
+		far:    100.0,
+		pos:    [3]float32{},
+		rot:    glm.QuatIdent(),
 	}
 }
 
@@ -26,6 +34,19 @@ func (c *Camera) IsDirty() bool {
 
 func (c *Camera) Clean() {
 	c.dirty = false
+}
+
+func (c *Camera) GetNear() float32 {
+	return c.near
+}
+func (c *Camera) GetFar() float32 {
+	return c.far
+}
+func (c *Camera) GetFovy() float32 {
+	return c.fovy
+}
+func (c *Camera) GetAspect() float32 {
+	return c.aspect
 }
 
 // GetPosition returns the position of the camera.
@@ -141,7 +162,7 @@ func (c *Camera) GetViewMat() glm.Mat4 {
 // by the camera.
 func (c *Camera) GetProjMat() glm.Mat4 {
 	proj := glm.Ident4()
-	persp := glm.Perspective(glm.DegToRad(60.0), 16.0/9.0, 0.1, 100.0)
+	persp := glm.Perspective(glm.DegToRad(c.fovy), c.aspect, c.near, c.far)
 	proj = proj.Mul4(&persp)
 	return proj
 }
