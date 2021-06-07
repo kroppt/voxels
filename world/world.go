@@ -28,7 +28,7 @@ func New() *World {
 	ubo.BufferData(gl.UNIFORM_BUFFER, uint32(2*unsafe.Sizeof(mat)), gl.Ptr(nil), gl.STATIC_DRAW)
 	// use binding = 0
 	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
-	cam := NewDefaultCamera()
+	cam := NewCameraDefault()
 	world := &World{
 		ubo: ubo,
 		cam: cam,

@@ -19,14 +19,25 @@ type Camera struct {
 	dirty   bool
 }
 
-// NewDefaultCamera returns a new camera.
-func NewDefaultCamera() *Camera {
-	// TODO customize the projection variables
+// NewCameraDefault returns a new camera with default settings.
+func NewCameraDefault() *Camera {
 	return &Camera{
 		fovyDeg: 60.0,
 		aspect:  16.0 / 9.0,
 		near:    0.1,
 		far:     100.0,
+		pos:     [3]float32{},
+		rot:     glm.QuatIdent(),
+	}
+}
+
+// NewCameraCustom returns a new camera with custom projection settings
+func NewCameraCustom(fovyDeg, aspect, near, far float32) *Camera {
+	return &Camera{
+		fovyDeg: fovyDeg,
+		aspect:  aspect,
+		near:    near,
+		far:     far,
 		pos:     [3]float32{},
 		rot:     glm.QuatIdent(),
 	}
@@ -162,25 +173,16 @@ func (c *Camera) IsWithinFrustum(corner glm.Vec3, dx, dy, dz float32) bool {
 		Z: FRange{corner.Z(), corner.Z() + dz, dz},
 	}
 	for _, tri := range planeTriangles {
-		out := 0
 		in := 0
 		cubeRange.ForEach(func(v glm.Vec3) {
 			// every corner of cube
-			if geo.PointOutsidePlane(&v, &tri[0], &tri[1], &tri[2]) {
-				out++
-			} else {
+			if !geo.PointOutsidePlane(&v, &tri[0], &tri[1], &tri[2]) {
 				in++
+				// TODO break early, change ForEach
 			}
 		})
 		if in == 0 {
 			return false
-		} else if out > 0 {
-			// https://sites.google.com/site/letsmakeavoxelengine/home/frustum-culling
-			// "result = intersect"
-			// if result remains "intersect" after all 6 planes
-			// are checked, the chunk was partially intersected
-			// we could then look further into the voxels
-			// within the chunk and cull those individually
 		}
 	}
 	return true
