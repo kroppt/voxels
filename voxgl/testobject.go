@@ -13,6 +13,15 @@ func NewObject(program gfx.Program, vertices []float32, layout []int32) (*Object
 	return &Object{}, nil
 }
 
+func (o *Object) Add3DTexture(dx, dy, dz int32) {
+}
+
+func (o *Object) SetSpotOnTexture1(i, j, k int32) error {
+	return nil
+}
+func (o *Object) SetManySpotsOnTexture1(size, height int32, data []byte) error {
+	return nil
+}
 func (o *Object) SetData(data []float32) {
 }
 

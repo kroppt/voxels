@@ -7,6 +7,7 @@ import (
 
 	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -99,6 +100,7 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 		size:     size,
 		height:   height,
 	}
+	sw := util.Start()
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < size; i++ {
 		for j := 0; j < height; j++ {
@@ -115,6 +117,20 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 			}
 		}
 	}
+
+	// for voxel face culling below
+	buf := make([]byte, size*size*height)
+	for i := range buf {
+		buf[i] = 1
+	}
+	objs.Add3DTexture(int32(size), int32(height), int32(size))
+	err = objs.SetManySpotsOnTexture1(int32(size), int32(height), buf)
+	if err != nil {
+		panic("failed setting 3d tex range")
+	}
+
+	sw.StopRecordAverage("NewChunk total")
+
 	return chunk
 }
 
@@ -164,16 +180,21 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	c.flatData[off+4] = g
 	c.flatData[off+5] = b
 	c.flatData[off+6] = a
-
 	c.root = c.root.AddLeaf(v)
 	c.dirty = true
+	// sw := util.Start()
+	// // set 1 in adjacency texture
+	// c.objs.SetSpotOnTexture1(int32(i), int32(j), int32(k))
+	// sw.StopRecordAverage("Chunk.SetVoxel")
 }
 
 // Render renders the chunk in OpenGL.
 func (c *Chunk) Render() {
 	if c.dirty {
+		sw := util.Start()
 		c.objs.SetData(c.flatData)
 		c.dirty = false
+		sw.StopRecordAverage("dirty objs")
 	}
 	c.objs.Render()
 }

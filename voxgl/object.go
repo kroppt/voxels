@@ -3,6 +3,8 @@
 package voxgl
 
 import (
+	"fmt"
+
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
@@ -15,6 +17,7 @@ type Object struct {
 	position glm.Vec3
 	scale    glm.Vec3
 	rotation glm.Quat
+	texture1 *gfx.Texture3D
 }
 
 // NewObject returns a newly created Object with the given vertices.
@@ -32,6 +35,27 @@ func NewObject(program gfx.Program, vertices []float32, layout []int32) (*Object
 	}, nil
 }
 
+func (o *Object) Add3DTexture(dx, dy, dz int32) {
+	data := make([]byte, dx*dy*dz)
+	texture1, err := gfx.NewTexture3D(dx, dy, dz, data, gl.RED, 1, 1)
+	if err != nil {
+		panic(fmt.Sprint(err))
+	}
+	o.texture1 = &texture1
+}
+
+func (o *Object) SetSpotOnTexture1(i, j, k int32) error {
+	return o.texture1.SetPixel(gfx.Point3D{
+		X: i,
+		Y: j,
+		Z: k,
+	}, []byte{1}, false)
+}
+
+func (o *Object) SetManySpotsOnTexture1(size, height int32, data []byte) error {
+	return o.texture1.SetPixelArea(0, 0, 0, size, height, size, data, false)
+}
+
 func (o *Object) SetData(data []float32) {
 	err := o.vao.Load(data, gl.STATIC_DRAW)
 	if err != nil {
@@ -43,7 +67,9 @@ func (o *Object) SetData(data []float32) {
 func (o *Object) Render() {
 	// sw := util.Start()
 	o.program.Bind()
+	o.texture1.Bind()
 	o.vao.Draw()
+	o.texture1.Unbind()
 	o.program.Unbind()
 	// gl.Finish()
 	// sw.StopRecordAverage("individual voxel render")
@@ -78,4 +104,5 @@ func (o *Object) Rotate(x, y, z float32) {
 func (o *Object) Destroy() {
 	o.program.Destroy()
 	o.vao.Destroy()
+	o.texture1.Destroy()
 }

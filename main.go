@@ -53,6 +53,8 @@ func initWindow(title string, width, height int32) (*sdl.Window, error) {
 	}
 	gl.Enable(gl.BLEND)
 	gl.Enable(gl.DEPTH_TEST)
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
