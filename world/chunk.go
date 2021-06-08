@@ -92,7 +92,7 @@ type Chunk struct {
 }
 
 // NewChunk returns a new Chunk shaped as size X height X size.
-func NewChunk(size, height int, pos ChunkPos, chunkChan chan *Chunk) {
+func NewChunk(size, height int, pos ChunkPos) *Chunk {
 	vertSize := 8
 	flatData := make([]float32, size*size*height*vertSize)
 	// layout 4+4=8 hard coded in here too
@@ -145,7 +145,7 @@ func NewChunk(size, height int, pos ChunkPos, chunkChan chan *Chunk) {
 			}
 		}
 	}
-	chunkChan <- chunk
+	return chunk
 }
 
 func (c *Chunk) SetObjs(objs *voxgl.Object) {

@@ -63,7 +63,8 @@ func (w *World) LoadChunkAsync(pos ChunkPos) {
 	// immediately set that the chunk is expected to be loaded
 	w.chunkExpect[pos] = struct{}{}
 	go func() {
-		NewChunk(chunkSize, chunkHeight, pos, w.chunkChan)
+		chunk := NewChunk(chunkSize, chunkHeight, pos)
+		w.chunkChan <- chunk
 	}()
 }
 
