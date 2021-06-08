@@ -64,9 +64,9 @@ func (pos VoxelPos) GetChunkPos(chunkSize int) ChunkPos {
 // with the assumption that the position is in the bounds of the chunk.
 func (pos VoxelPos) AsLocalChunkPos(chunk Chunk) VoxelPos {
 	return VoxelPos{
-		X: pos.X - chunk.Pos.X,
+		X: pos.X - chunk.AsVoxelPos().X,
 		Y: pos.Y, // TODO this will break with 3D chunks
-		Z: pos.Z - chunk.Pos.Z,
+		Z: pos.Z - chunk.AsVoxelPos().Z,
 	}
 }
 

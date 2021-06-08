@@ -8,14 +8,17 @@ import (
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/util"
+	"github.com/kroppt/voxels/voxgl"
 )
 
 // World tracks the camera and its renderable chunks.
 type World struct {
-	ubo       *gfx.BufferObject
-	cam       *Camera
-	chunks    map[ChunkPos]*Chunk
-	lastChunk ChunkPos
+	ubo         *gfx.BufferObject
+	cam         *Camera
+	chunks      map[ChunkPos]*Chunk
+	chunkExpect map[ChunkPos]struct{}
+	lastChunk   ChunkPos
+	chunkChan   chan *Chunk
 }
 
 const chunkSize = 16
@@ -33,8 +36,9 @@ func New() *World {
 	cam := NewCameraDefault()
 
 	world := &World{
-		ubo: ubo,
-		cam: cam,
+		ubo:       ubo,
+		cam:       cam,
+		chunkChan: make(chan *Chunk),
 	}
 
 	cam.SetPosition(&glm.Vec3{0.5, 0.5, 2})
@@ -43,14 +47,54 @@ func New() *World {
 	rng := currChunk.GetSurroundings(chunkRenderDist)
 
 	chunks := make(map[ChunkPos]*Chunk)
+	world.chunkExpect = make(map[ChunkPos]struct{})
 	rng.ForEach(func(pos ChunkPos) {
-		ch := NewChunk(chunkSize, chunkHeight, pos)
-		chunks[pos] = ch
+		world.chunkExpect[pos] = struct{}{}
+		world.LoadChunkAsync(pos) // TODO dont attempt to load a culled chunk
 	})
 
 	world.chunks = chunks
 	world.lastChunk = currChunk
 	return world
+}
+
+// LoadChunkAsync starts a thread that will put the chunk in the chunkChan
+func (w *World) LoadChunkAsync(pos ChunkPos) {
+	// immediately set that the chunk is expected to be loaded
+	w.chunkExpect[pos] = struct{}{}
+	go func() {
+		NewChunk(chunkSize, chunkHeight, pos, w.chunkChan)
+	}()
+}
+
+func (w *World) UpdateChunksAsync() {
+	hasChunks := true
+	for hasChunks {
+		select {
+		case ch := <-w.chunkChan:
+			if _, ok := w.chunkExpect[ch.Pos]; ok {
+				// the chunk has arrived and we expected it
+				// give the chunk its object
+				sw := util.Start()
+				objs, err := voxgl.NewColoredObject(nil)
+				if err != nil {
+					panic(fmt.Sprint(err))
+				}
+				ch.SetObjs(objs)
+				w.chunks[ch.Pos] = ch
+				sw.StopRecordAverage("Chunk objs")
+
+			}
+			// the load was too late, chunk already unloaded
+			// before it was even loaded for the first time
+			// do not destroy, because it was never created
+			// and this will cause nil pointer dereference
+
+		default:
+			// no more in pipe
+			hasChunks = false
+		}
+	}
 }
 
 // FindLookAtVoxel determines which voxel is being looked at. It returns the
@@ -107,6 +151,8 @@ func (w *World) updateUBO() error {
 // Render renders the chunks of the world in OpenGL.
 // TODO isolate chunk loading and unloading logic.
 func (w *World) Render() error {
+	w.UpdateChunksAsync()
+
 	if w.cam.IsDirty() {
 		err := w.updateUBO()
 		if err != nil {
@@ -116,28 +162,30 @@ func (w *World) Render() error {
 
 		currChunk := w.cam.AsVoxelPos().GetChunkPos(chunkSize)
 		if currChunk != w.lastChunk {
-			sw := util.Start()
 			// the camera position has moved chunks
 			// load new chunks
 			rng := currChunk.GetSurroundings(chunkRenderDist)
 			counter := 0
 			rng.ForEach(func(pos ChunkPos) {
-				if _, ok := w.chunks[pos]; !ok {
+				if _, ok := w.chunkExpect[pos]; !ok {
+					// we do not yet expect chunk i,j to be loaded,
+					// but we want to add it as a new one
+					w.LoadChunkAsync(pos) // TODO dont attempt to load a culled chunk
 					counter++
-					// chunk i,j is not in map and should be added
-					ch := NewChunk(chunkSize, chunkHeight, pos)
-					w.chunks[pos] = ch
 				}
 			})
-			sw.StopRecordAverage(fmt.Sprintf("Load %v Chunks", counter))
 			// delete old chunks
 			lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
 			lastRng.ForEach(func(pos ChunkPos) {
 				inOld := lastRng.Contains(pos)
 				inNew := rng.Contains(pos)
 				if inOld && !inNew {
-					w.chunks[pos].Destroy()
-					delete(w.chunks, pos)
+					if _, ok := w.chunks[pos]; ok {
+						// the chunk-to-be-unloaded actually exists
+						w.chunks[pos].Destroy()
+						delete(w.chunks, pos)
+						delete(w.chunkExpect, pos)
+					}
 				}
 			})
 			w.lastChunk = currChunk
@@ -145,7 +193,7 @@ func (w *World) Render() error {
 	}
 	culled := 0
 	for _, chunk := range w.chunks {
-		if w.cam.IsWithinFrustum(chunk.Pos.AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
+		if w.cam.IsWithinFrustum(chunk.AsVoxelPos().AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
 			chunk.Render()
 		} else {
 			culled++

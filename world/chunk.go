@@ -1,13 +1,11 @@
 package world
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 
 	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
-	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -44,6 +42,15 @@ func (pos ChunkPos) AsVec3() glm.Vec3 {
 		// TODO un hack this, chunks just so happen to start at y=0
 		float32(0.0),
 		float32(pos.Z),
+	}
+}
+
+func (c *Chunk) AsVoxelPos() VoxelPos {
+	scaled := c.Pos.Mul(c.size)
+	return VoxelPos{
+		X: scaled.X,
+		Y: 0, // TODO hacked
+		Z: scaled.Z,
 	}
 }
 
@@ -85,31 +92,23 @@ type Chunk struct {
 }
 
 // NewChunk returns a new Chunk shaped as size X height X size.
-func NewChunk(size, height int, pos ChunkPos) *Chunk {
-	sw2 := util.Start()
+func NewChunk(size, height int, pos ChunkPos, chunkChan chan *Chunk) {
 	vertSize := 8
 	flatData := make([]float32, size*size*height*vertSize)
 	// layout 4+4=8 hard coded in here too
-	objs, err := voxgl.NewColoredObject(nil)
-	if err != nil {
-		panic(fmt.Sprint(err))
-	}
 	chunk := &Chunk{
-		Pos:      pos.Mul(size),
-		objs:     objs,
+		Pos:      pos,
 		flatData: flatData,
 		size:     size,
 		height:   height,
 	}
-	sw := util.Start()
 	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < size; i++ {
 		for j := 0; j < height; j++ {
 			for k := 0; k < size; k++ {
-				sw3 := util.Start()
-				x := chunk.Pos.X + i
+				x := chunk.AsVoxelPos().X + i
 				y := j
-				z := chunk.Pos.Z + k
+				z := chunk.AsVoxelPos().Z + k
 				r, g, b := rand.Float32(), rand.Float32(), rand.Float32()
 				v := Voxel{
 					Pos:   VoxelPos{x, y, z},
@@ -143,13 +142,14 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 					code += backwardmask
 				}
 				chunk.SetVoxel(&v, float32(code))
-				sw3.StopRecordAverage("Per Voxel Loop")
 			}
 		}
 	}
-	sw.StopRecordAverage("NewChunk Total Voxel loop")
-	sw2.StopRecordAverage("NewChunk")
-	return chunk
+	chunkChan <- chunk
+}
+
+func (c *Chunk) SetObjs(objs *voxgl.Object) {
+	c.objs = objs
 }
 
 func (c *Chunk) GetRoot() *Octree {
@@ -158,11 +158,11 @@ func (c *Chunk) GetRoot() *Octree {
 
 // IsWithinChunk returns whether the position is within the chunk
 func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
-	if pos.X < c.Pos.X || pos.Z < c.Pos.Z {
+	if pos.X < c.AsVoxelPos().X || pos.Z < c.AsVoxelPos().Z {
 		//pos is below x or z chunk bounds
 		return false
 	}
-	if pos.X >= c.Pos.X+c.size || pos.Z >= c.Pos.Z+c.size {
+	if pos.X >= c.AsVoxelPos().X+c.size || pos.Z >= c.AsVoxelPos().Z+c.size {
 		// pos is above x or z chunk bounds
 		return false
 	}
@@ -175,9 +175,8 @@ func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 
 // SetVoxel updates a voxel's variables in the chunk, if it exists
 func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
-	sw := util.Start()
 	if !c.IsWithinChunk(v.Pos) {
-		log.Debugf("%v is not within %v", v, c.Pos)
+		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
 		return
 	}
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
@@ -201,10 +200,7 @@ func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
 	c.flatData[off+6] = b
 	c.flatData[off+7] = a
 
-	sw.StopRecordAverage("SetVoxel (minus octree)")
-	sw = util.Start()
 	c.root = c.root.AddLeaf(v)
-	sw.StopRecordAverage("Octree.AddLeaf")
 	c.dirty = true
 }
 
