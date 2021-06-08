@@ -2,6 +2,8 @@ package world
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 	"unsafe"
 
 	"github.com/engoengine/glm"
@@ -46,6 +48,7 @@ func New() *World {
 	currChunk := cam.AsVoxelPos().GetChunkPos(chunkSize)
 	rng := currChunk.GetSurroundings(chunkRenderDist)
 
+	rand.Seed(time.Now().UnixNano())
 	chunks := make(map[ChunkPos]*Chunk)
 	world.chunkExpect = make(map[ChunkPos]struct{})
 	rng.ForEach(func(pos ChunkPos) {

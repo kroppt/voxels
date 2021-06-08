@@ -2,7 +2,6 @@ package world
 
 import (
 	"math/rand"
-	"time"
 
 	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
@@ -102,7 +101,6 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 		size:     size,
 		height:   height,
 	}
-	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < size; i++ {
 		for j := 0; j < height; j++ {
 			for k := 0; k < size; k++ {
