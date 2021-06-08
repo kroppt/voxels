@@ -119,7 +119,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	key := v.Pos.GetChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	if chunk, ok := w.chunks[key]; ok {
-		chunk.SetVoxel(v, 0x3F)
+		chunk.SetVoxel(v, AdjacentAll)
 	}
 }
 

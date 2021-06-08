@@ -112,34 +112,27 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 					Pos:   VoxelPos{x, y, z},
 					Color: Color{r, g, b, 1.0},
 				}
-				// left right top bottom forward backward
 				// a worldgenerator should be asked for this info
-				leftmask := 0x20
-				rightmask := 0x10
-				topmask := 0x08
-				bottommask := 0x04
-				forwardmask := 0x02
-				backwardmask := 0x01
-				code := 0
+				var adjMask AdjacentMask
 				if i == 0 {
-					code += leftmask
+					adjMask |= AdjacentLeft
 				}
 				if i == size-1 {
-					code += rightmask
+					adjMask |= AdjacentRight
 				}
 				if j == 0 {
-					code += bottommask
+					adjMask |= AdjacentBottom
 				}
 				if j == height-1 {
-					code += topmask
+					adjMask |= AdjacentTop
 				}
 				if k == 0 {
-					code += forwardmask
+					adjMask |= AdjacentForward
 				}
 				if k == size-1 {
-					code += backwardmask
+					adjMask |= AdjacentBackward
 				}
-				chunk.SetVoxel(&v, float32(code))
+				chunk.SetVoxel(&v, adjMask)
 			}
 		}
 	}
@@ -171,8 +164,25 @@ func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 	return true
 }
 
+// AdjacentMask indicates which in which directions there are adjacent voxels.
+type AdjacentMask int
+
+const (
+	AdjacentBackward AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
+	AdjacentForward  AdjacentMask = 0b00000010 // The voxel has a forward adjacency.
+	AdjacentBottom   AdjacentMask = 0b00000100 // The voxel has a bottom adjacency.
+	AdjacentTop      AdjacentMask = 0b00001000 // The voxel has a top adjacency.
+	AdjacentRight    AdjacentMask = 0b00010000 // The voxel has a right adjacency.
+	AdjacentLeft     AdjacentMask = 0b00100000 // The voxel has a left adjacency.
+
+	AdjacentX   = AdjacentRight | AdjacentLeft       // The voxel has adjacencies in the +/-x directions.
+	AdjacentY   = AdjacentTop | AdjacentBottom       // The voxel has adjacencies in the +/-y directions.
+	AdjacentZ   = AdjacentBackward | AdjacentForward // The voxel has adjacencies in the +/-z directions.
+	AdjacentAll = AdjacentX | AdjacentY | AdjacentZ  // The voxel has adjacencies in all directions.
+)
+
 // SetVoxel updates a voxel's variables in the chunk, if it exists
-func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
+func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask) {
 	if !c.IsWithinChunk(v.Pos) {
 		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
 		return
@@ -180,6 +190,7 @@ func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
+	adj := float32(adjMask)
 	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
 	off := (i + j*c.size*c.size + k*c.size) * 8
 	if off%8 != 0 {
@@ -192,7 +203,7 @@ func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
 	c.flatData[off] = x
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
-	c.flatData[off+3] = adjaCode
+	c.flatData[off+3] = adj
 	c.flatData[off+4] = r
 	c.flatData[off+5] = g
 	c.flatData[off+6] = b
