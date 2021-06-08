@@ -68,8 +68,7 @@ func (w *World) LoadChunkAsync(pos ChunkPos) {
 }
 
 func (w *World) UpdateChunksAsync() {
-	hasChunks := true
-	for hasChunks {
+	for {
 		select {
 		case ch := <-w.chunkChan:
 			if _, ok := w.chunkExpect[ch.Pos]; ok {
@@ -88,11 +87,9 @@ func (w *World) UpdateChunksAsync() {
 			// the load was too late, chunk already unloaded
 			// before it was even loaded for the first time
 			// do not destroy, because it was never created
-			// and this will cause nil pointer dereference
 
 		default:
-			// no more in pipe
-			hasChunks = false
+			return
 		}
 	}
 }
