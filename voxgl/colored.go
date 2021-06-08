@@ -5,41 +5,23 @@ package voxgl
 import (
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
-	"github.com/kroppt/voxels/util"
 )
 
 // NewColoredObject returns a newly created Object with the given colors.
 //
-// Vertices should be vertices of format X, Y, Z, R, G, B, A.
+// Vertices should be vertices of format X, Y, Z, AdjacencyBits, R, G, B, A.
 // X, Y, and Z options should be in the range -1.0 to 1.0.
+// AdjacencyBits is a float where the least significant 6 bits
+// represent whether each of the left right top bottom forward backward faces
+// can be seen.
 // R, G, B, and A should be in the range 0.0 to 1.0.
 func NewColoredObject(vertices []float32) (*Object, error) {
-	sw := util.Start()
-	// prog, err := GetProgram(vertColShader, fragColShader, geoColShader)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	vshad, err := gfx.NewShader(vertColShader, gl.VERTEX_SHADER)
+	prog, err := GetProgram(vertColShader, fragColShader, geoColShader)
 	if err != nil {
 		return nil, err
 	}
 
-	fshad, err := gfx.NewShader(fragColShader, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return nil, err
-	}
-
-	gshad, err := gfx.NewShader(geoColShader, gl.GEOMETRY_SHADER_ARB)
-	if err != nil {
-		return nil, err
-	}
-	prog, err := gfx.NewProgram(vshad, fshad, gshad)
-	if err != nil {
-		return nil, err
-	}
-	sw.StopRecordAverage("program")
-
-	obj, err := NewObject(prog, vertices, []int32{3, 4})
+	obj, err := NewObject(prog, vertices, []int32{4, 4})
 	if err != nil {
 		return nil, err
 	}
@@ -61,12 +43,10 @@ func GetProgram(vshadstr, fshadstr, gshadstr string) (gfx.Program, error) {
 	if err != nil {
 		return gfx.Program{}, err
 	}
-
 	fshad, err := gfx.NewShader(fshadstr, gl.FRAGMENT_SHADER)
 	if err != nil {
 		return gfx.Program{}, err
 	}
-
 	gshad, err := gfx.NewShader(gshadstr, gl.GEOMETRY_SHADER_ARB)
 	if err != nil {
 		return gfx.Program{}, err
@@ -82,17 +62,19 @@ func GetProgram(vshadstr, fshadstr, gshadstr string) (gfx.Program, error) {
 const vertColShader = `
 	#version 420 core
 
-	layout (location = 0) in vec3 pos;
+	layout (location = 0) in vec4 pos;
 	layout (location = 1) in vec4 col;
 
 	out Vertex {
 		vec4 color;
+		float vbits;
 	} OUT;
 
 	void main()
 	{
-		gl_Position = vec4(pos, 1.0f);
+		gl_Position = vec4(pos.xyz, 1.0f);
 		OUT.color = col;
+		OUT.vbits = pos[3];
 	}
 `
 
@@ -107,10 +89,10 @@ const geoColShader = `
 		mat4 view;
 		mat4 projection;
 	} cam;
-	uniform sampler3D adjaTex;
 
 	in Vertex {
 		vec4 color;
+		float vbits;
 	} IN[];
 
 	out Vertex {
@@ -131,40 +113,18 @@ const geoColShader = `
 		EndPrimitive();
 	}
 
-	ivec2 getChunkPos(vec4 p, int chunkSize) {
-		int x = int(p.x);
-		int z = int(p.z);
-		if (p.x < 0) {
-			x = x + 1;
-		}
-		if (p.z < 0) {
-			z = z + 1;
-		}
-		x = x / chunkSize;
-		z = z / chunkSize;
-		if (p.x < 0) {
-			x = x - 1;
-		}
-		if (p.z < 0) {
-			z = z - 1;
-		}
-		return ivec2(x, z);
-	}
-
-	ivec3 getLocalChunkPos(vec4 p, int chunkSize) {
-		ivec2 chunkPos = getChunkPos(p, chunkSize);
-		return ivec3(int(p.x)-(chunkPos.x*chunkSize), int(p.y), int(p.z)-(chunkPos.y*chunkSize));
-	}
-	
 	void main() {
 		vec4 center = gl_in[0].gl_Position;
-		int chunkSize = textureSize(adjaTex, 0).x;
-		int height = textureSize(adjaTex, 0).y;
-		
-		vec3 indices = getLocalChunkPos(center, chunkSize);
-		int i = int(indices.x);
-		int j = int(indices.y);
-		int k = int(indices.z);
+
+		// 0011 1111
+		// bit order = left right top bottom forward backward
+		int leftmask = 0x20;
+		int rightmask = 0x10;
+		int topmask = 0x08;
+		int bottommask = 0x04;
+		int forwardmask = 0x02;
+		int backwardmask = 0x01;
+		int bits = int(IN[0].vbits);
 
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
@@ -172,23 +132,23 @@ const geoColShader = `
 		vec4 p1 = center;
 		vec4 p2 = p1 + dx + dy + dz;
 
-		if (k == chunkSize - 1 || texelFetch(adjaTex, ivec3(i, j, k+1), 0).r == 0) {
-			createQuad(p2, -dx, -dy);
+		if ((bits & backwardmask) - backwardmask == 0) {
+			createQuad(p2, -dx, -dy); // backward
 		}
-		if (k == 0 || texelFetch(adjaTex, ivec3(i, j, k-1), 0).r == 0) {
-			createQuad(p1, dy, dx);
+		if ((bits & forwardmask) - forwardmask == 0) {
+			createQuad(p1, dy, dx); // forward
 		}
-		if (j == height - 1 || texelFetch(adjaTex, ivec3(i, j+1, k), 0).r == 0) {
-			createQuad(p2, -dz, -dx);
+		if ((bits & topmask) - topmask == 0) {
+			createQuad(p2, -dz, -dx); // top
 		}
-		if (j == 0 || texelFetch(adjaTex, ivec3(i, j-1, k), 0).r == 0) {
-			createQuad(p1, dx, dz);
+		if ((bits & bottommask) - bottommask == 0) {
+			createQuad(p1, dx, dz); // bottom
 		}
-		if (i == chunkSize - 1 || texelFetch(adjaTex, ivec3(i+1, j, k), 0).r == 0) {
-			createQuad(p2, -dy, -dz);
+		if ((bits & rightmask) - rightmask == 0) {
+			createQuad(p2, -dy, -dz); // right
 		}
-		if (i == 0 || texelFetch(adjaTex, ivec3(i-1, j, k), 0).r == 0) {
-			createQuad(p1, dz, dy);
+		if ((bits & leftmask) - leftmask == 0) {
+			createQuad(p1, dz, dy); // left
 		}
 	}
 `

@@ -74,7 +74,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	key := v.Pos.GetChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	if chunk, ok := w.chunks[key]; ok {
-		chunk.SetVoxel(v)
+		chunk.SetVoxel(v, 0x3F)
 	}
 }
 
@@ -129,7 +129,7 @@ func (w *World) Render() error {
 					w.chunks[pos] = ch
 				}
 			})
-			sw.StopRecordAverage(fmt.Sprintf("chunk load %v", counter))
+			sw.StopRecordAverage(fmt.Sprintf("Load %v Chunks", counter))
 			// delete old chunks
 			lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
 			lastRng.ForEach(func(pos ChunkPos) {
@@ -143,7 +143,6 @@ func (w *World) Render() error {
 			w.lastChunk = currChunk
 		}
 	}
-	sw := util.Start()
 	culled := 0
 	for _, chunk := range w.chunks {
 		if w.cam.IsWithinFrustum(chunk.Pos.AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
@@ -152,7 +151,6 @@ func (w *World) Render() error {
 			culled++
 		}
 	}
-	sw.StopRecordAverage("frustum culling")
 	// log.Debugf("culled %v / %v chunks", culled, len(w.chunks))
 	return nil
 }

@@ -86,9 +86,10 @@ type Chunk struct {
 
 // NewChunk returns a new Chunk shaped as size X height X size.
 func NewChunk(size, height int, pos ChunkPos) *Chunk {
-	vertSize := 7
+	sw2 := util.Start()
+	vertSize := 8
 	flatData := make([]float32, size*size*height*vertSize)
-	// layout 3+4=7 hard coded in here too
+	// layout 4+4=8 hard coded in here too
 	objs, err := voxgl.NewColoredObject(nil)
 	if err != nil {
 		panic(fmt.Sprint(err))
@@ -105,6 +106,7 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 	for i := 0; i < size; i++ {
 		for j := 0; j < height; j++ {
 			for k := 0; k < size; k++ {
+				sw3 := util.Start()
 				x := chunk.Pos.X + i
 				y := j
 				z := chunk.Pos.Z + k
@@ -113,24 +115,40 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 					Pos:   VoxelPos{x, y, z},
 					Color: Color{r, g, b, 1.0},
 				}
-				chunk.SetVoxel(&v)
+				// left right top bottom forward backward
+				// a worldgenerator should be asked for this info
+				leftmask := 0x20
+				rightmask := 0x10
+				topmask := 0x08
+				bottommask := 0x04
+				forwardmask := 0x02
+				backwardmask := 0x01
+				code := 0
+				if i == 0 {
+					code += leftmask
+				}
+				if i == size-1 {
+					code += rightmask
+				}
+				if j == 0 {
+					code += bottommask
+				}
+				if j == height-1 {
+					code += topmask
+				}
+				if k == 0 {
+					code += forwardmask
+				}
+				if k == size-1 {
+					code += backwardmask
+				}
+				chunk.SetVoxel(&v, float32(code))
+				sw3.StopRecordAverage("Per Voxel Loop")
 			}
 		}
 	}
-
-	// for voxel face culling below
-	buf := make([]byte, size*size*height)
-	for i := range buf {
-		buf[i] = 1
-	}
-	objs.Add3DTexture(int32(size), int32(height), int32(size))
-	err = objs.SetManySpotsOnTexture1(int32(size), int32(height), buf)
-	if err != nil {
-		panic("failed setting 3d tex range")
-	}
-
-	sw.StopRecordAverage("NewChunk total")
-
+	sw.StopRecordAverage("NewChunk Total Voxel loop")
+	sw2.StopRecordAverage("NewChunk")
 	return chunk
 }
 
@@ -156,7 +174,8 @@ func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 }
 
 // SetVoxel updates a voxel's variables in the chunk, if it exists
-func (c *Chunk) SetVoxel(v *Voxel) {
+func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
+	sw := util.Start()
 	if !c.IsWithinChunk(v.Pos) {
 		log.Debugf("%v is not within %v", v, c.Pos)
 		return
@@ -165,9 +184,9 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
 	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
-	off := (i + j*c.size*c.size + k*c.size) * 7
-	if off%7 != 0 {
-		panic("offset not divisible by 7")
+	off := (i + j*c.size*c.size + k*c.size) * 8
+	if off%8 != 0 {
+		panic("offset not divisible by 8")
 	}
 	if off >= len(c.flatData) || off < 0 {
 		panic("offset out of bounds")
@@ -176,25 +195,24 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	c.flatData[off] = x
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
-	c.flatData[off+3] = r
-	c.flatData[off+4] = g
-	c.flatData[off+5] = b
-	c.flatData[off+6] = a
+	c.flatData[off+3] = adjaCode
+	c.flatData[off+4] = r
+	c.flatData[off+5] = g
+	c.flatData[off+6] = b
+	c.flatData[off+7] = a
+
+	sw.StopRecordAverage("SetVoxel (minus octree)")
+	sw = util.Start()
 	c.root = c.root.AddLeaf(v)
+	sw.StopRecordAverage("Octree.AddLeaf")
 	c.dirty = true
-	// sw := util.Start()
-	// // set 1 in adjacency texture
-	// c.objs.SetSpotOnTexture1(int32(i), int32(j), int32(k))
-	// sw.StopRecordAverage("Chunk.SetVoxel")
 }
 
 // Render renders the chunk in OpenGL.
 func (c *Chunk) Render() {
 	if c.dirty {
-		sw := util.Start()
 		c.objs.SetData(c.flatData)
 		c.dirty = false
-		sw.StopRecordAverage("dirty objs")
 	}
 	c.objs.Render()
 }
