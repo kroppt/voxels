@@ -53,7 +53,7 @@ func New() *World {
 	world.chunkExpect = make(map[ChunkPos]struct{})
 	rng.ForEach(func(pos ChunkPos) {
 		world.chunkExpect[pos] = struct{}{}
-		world.LoadChunkAsync(pos) // TODO dont attempt to load a culled chunk
+		world.LoadChunkAsync(pos)
 	})
 
 	world.chunks = chunks
@@ -149,6 +149,40 @@ func (w *World) updateUBO() error {
 	return nil
 }
 
+func (w *World) UpdateChunks() {
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(chunkSize)
+	if currChunk == w.lastChunk {
+		return
+	}
+	// the camera position has moved chunks
+	// load new chunks
+	rng := currChunk.GetSurroundings(chunkRenderDist)
+	counter := 0
+	rng.ForEach(func(pos ChunkPos) {
+		if _, ok := w.chunkExpect[pos]; !ok {
+			// we do not yet expect chunk i,j to be loaded,
+			// but we want to add it as a new one
+			w.LoadChunkAsync(pos)
+			counter++
+		}
+	})
+	// delete old chunks
+	lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
+	lastRng.ForEach(func(pos ChunkPos) {
+		inOld := lastRng.Contains(pos)
+		inNew := rng.Contains(pos)
+		if inOld && !inNew {
+			if _, ok := w.chunks[pos]; ok {
+				// the chunk-to-be-unloaded actually exists
+				w.chunks[pos].Destroy()
+				delete(w.chunks, pos)
+				delete(w.chunkExpect, pos)
+			}
+		}
+	})
+	w.lastChunk = currChunk
+}
+
 // Render renders the chunks of the world in OpenGL.
 // TODO isolate chunk loading and unloading logic.
 func (w *World) Render() error {
@@ -160,38 +194,10 @@ func (w *World) Render() error {
 			return err
 		}
 		w.cam.Clean()
-
-		currChunk := w.cam.AsVoxelPos().GetChunkPos(chunkSize)
-		if currChunk != w.lastChunk {
-			// the camera position has moved chunks
-			// load new chunks
-			rng := currChunk.GetSurroundings(chunkRenderDist)
-			counter := 0
-			rng.ForEach(func(pos ChunkPos) {
-				if _, ok := w.chunkExpect[pos]; !ok {
-					// we do not yet expect chunk i,j to be loaded,
-					// but we want to add it as a new one
-					w.LoadChunkAsync(pos) // TODO dont attempt to load a culled chunk
-					counter++
-				}
-			})
-			// delete old chunks
-			lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
-			lastRng.ForEach(func(pos ChunkPos) {
-				inOld := lastRng.Contains(pos)
-				inNew := rng.Contains(pos)
-				if inOld && !inNew {
-					if _, ok := w.chunks[pos]; ok {
-						// the chunk-to-be-unloaded actually exists
-						w.chunks[pos].Destroy()
-						delete(w.chunks, pos)
-						delete(w.chunkExpect, pos)
-					}
-				}
-			})
-			w.lastChunk = currChunk
-		}
 	}
+
+	w.UpdateChunks()
+
 	culled := 0
 	for _, chunk := range w.chunks {
 		if w.cam.IsWithinFrustum(chunk.AsVoxelPos().AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
