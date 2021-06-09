@@ -184,7 +184,6 @@ func (w *World) UpdateChunks() {
 }
 
 // Render renders the chunks of the world in OpenGL.
-// TODO isolate chunk loading and unloading logic.
 func (w *World) Render() error {
 	w.UpdateChunksAsync()
 
