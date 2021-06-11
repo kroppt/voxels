@@ -7,13 +7,13 @@ import (
 )
 
 func TestNewChunk(t *testing.T) {
-	world.NewChunk(0, 0, world.ChunkPos{})
+	world.NewChunk(0, world.ChunkPos{})
 }
 
 func TestIsWithinChunk(t *testing.T) {
 	t.Run("standard within chunk test", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
 		pos := world.VoxelPos{1, 0, -7}
 		result := chunk.IsWithinChunk(pos)
 		expect := true
@@ -23,7 +23,7 @@ func TestIsWithinChunk(t *testing.T) {
 	})
 	t.Run("minimum within chunk test", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
 		pos := world.VoxelPos{0, 0, -10}
 		result := chunk.IsWithinChunk(pos)
 		expect := true
@@ -33,7 +33,7 @@ func TestIsWithinChunk(t *testing.T) {
 	})
 	t.Run("maximum within chunk test", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
 		pos := world.VoxelPos{4, 0, -6}
 		result := chunk.IsWithinChunk(pos)
 		expect := true
@@ -43,7 +43,7 @@ func TestIsWithinChunk(t *testing.T) {
 	})
 	t.Run("maximum z out of bounds within chunk test", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
 		pos := world.VoxelPos{4, 0, -5}
 		result := chunk.IsWithinChunk(pos)
 		expect := false
@@ -53,7 +53,7 @@ func TestIsWithinChunk(t *testing.T) {
 	})
 	t.Run("maximum x out of bounds within chunk test", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
 		pos := world.VoxelPos{5, 0, -6}
 		result := chunk.IsWithinChunk(pos)
 		expect := false
@@ -63,7 +63,7 @@ func TestIsWithinChunk(t *testing.T) {
 	})
 	t.Run("negative y out of bounds within chunk test", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
 		pos := world.VoxelPos{2, -1, -8}
 		result := chunk.IsWithinChunk(pos)
 		expect := false
@@ -73,8 +73,8 @@ func TestIsWithinChunk(t *testing.T) {
 	})
 	t.Run("too large y out of bounds within chunk test", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
-		pos := world.VoxelPos{2, 1, -8}
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
+		pos := world.VoxelPos{2, 5, -8}
 		result := chunk.IsWithinChunk(pos)
 		expect := false
 		if result != expect {
@@ -86,7 +86,7 @@ func TestIsWithinChunk(t *testing.T) {
 func TestGetRelativeIndices(t *testing.T) {
 	t.Run("", func(t *testing.T) {
 		t.Parallel()
-		chunk := world.NewChunk(5, 1, world.ChunkPos{0, -2})
+		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2})
 		pos := world.VoxelPos{1, 3, -7}
 		localPos := pos.AsLocalChunkPos(*chunk)
 		i, j, k := localPos.X, localPos.Y, localPos.Z

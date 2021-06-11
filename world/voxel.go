@@ -42,22 +42,30 @@ func (pos VoxelPos) AsVec3() glm.Vec3 {
 // given chunkSize.
 func (pos VoxelPos) GetChunkPos(chunkSize int) ChunkPos {
 	x := pos.X
+	y := pos.Y
 	z := pos.Z
 	if pos.X < 0 {
 		x++
+	}
+	if pos.Y < 0 {
+		y++
 	}
 	if pos.Z < 0 {
 		z++
 	}
 	x /= chunkSize
+	y /= chunkSize
 	z /= chunkSize
 	if pos.X < 0 {
 		x--
 	}
+	if pos.Y < 0 {
+		y--
+	}
 	if pos.Z < 0 {
 		z--
 	}
-	return ChunkPos{x, z}
+	return ChunkPos{x, y, z}
 }
 
 // AsLocalChunkPos returns the voxel position relative to the origin of chunk,
@@ -65,7 +73,7 @@ func (pos VoxelPos) GetChunkPos(chunkSize int) ChunkPos {
 func (pos VoxelPos) AsLocalChunkPos(chunk Chunk) VoxelPos {
 	return VoxelPos{
 		X: pos.X - chunk.AsVoxelPos().X,
-		Y: pos.Y, // TODO this will break with 3D chunks
+		Y: pos.Y - chunk.AsVoxelPos().Y,
 		Z: pos.Z - chunk.AsVoxelPos().Z,
 	}
 }

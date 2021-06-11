@@ -26,7 +26,6 @@ type World struct {
 }
 
 const chunkSize = 5
-const chunkHeight = 5
 const chunkRenderDist = 2
 
 // New returns a new world.World.
@@ -93,7 +92,7 @@ func (w *World) LoadChunkAsync(pos ChunkPos) {
 	// immediately set that the chunk is expected to be loaded
 	w.chunkExpect[pos] = struct{}{}
 	go func() {
-		chunk := NewChunk(chunkSize, chunkHeight, pos)
+		chunk := NewChunk(chunkSize, pos)
 		w.chunkChan <- chunk
 	}()
 }
@@ -226,7 +225,7 @@ func (w *World) Render() error {
 
 	culled := 0
 	for _, chunk := range w.chunks {
-		if w.cam.IsWithinFrustum(chunk.AsVoxelPos().AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
+		if w.cam.IsWithinFrustum(chunk.AsVoxelPos().AsVec3(), float32(chunk.size), float32(chunk.size), float32(chunk.size)) {
 			w.cubeMap.Bind()
 			chunk.Render()
 			w.cubeMap.Unbind()
