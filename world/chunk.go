@@ -114,6 +114,7 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 				}
 				// a worldgenerator should be asked for this info
 				var adjMask AdjacentMask
+				var blockType BlockType
 				if i == 0 {
 					adjMask |= AdjacentLeft
 				}
@@ -132,7 +133,14 @@ func NewChunk(size, height int, pos ChunkPos) *Chunk {
 				if k == size-1 {
 					adjMask |= AdjacentBackward
 				}
-				chunk.SetVoxel(&v, adjMask)
+				if j == 0 {
+					blockType = Labeled
+				} else if j == height-1 {
+					blockType = Grass
+				} else {
+					blockType = Dirt
+				}
+				chunk.SetVoxel(&v, adjMask, blockType)
 			}
 		}
 	}
@@ -164,8 +172,16 @@ func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 	return true
 }
 
+type BlockType int32
+
+const (
+	Dirt BlockType = iota
+	Grass
+	Labeled
+)
+
 // AdjacentMask indicates which in which directions there are adjacent voxels.
-type AdjacentMask int
+type AdjacentMask int32
 
 const (
 	AdjacentForward  AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
@@ -182,7 +198,7 @@ const (
 )
 
 // SetVoxel updates a voxel's variables in the chunk, if it exists
-func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask) {
+func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask, btype BlockType) {
 	if !c.IsWithinChunk(v.Pos) {
 		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
 		return
@@ -190,7 +206,7 @@ func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask) {
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	adj := float32(adjMask)
+	vbits := float32(int32(adjMask) | int32(btype<<6))
 	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
 	off := (i + j*c.size*c.size + k*c.size) * 8
 	if off%8 != 0 {
@@ -203,7 +219,7 @@ func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask) {
 	c.flatData[off] = x
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
-	c.flatData[off+3] = adj
+	c.flatData[off+3] = vbits
 	c.flatData[off+4] = r
 	c.flatData[off+5] = g
 	c.flatData[off+6] = b

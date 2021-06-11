@@ -63,7 +63,7 @@ const vertColShader = `
 	#version 420 core
 
 	layout (location = 0) in vec4 pos;
-	layout (location = 1) in vec4 col;
+	layout (location = 1) in vec4 col; // TODO delete me eventually
 
 	out Vertex {
 		vec4 color;
@@ -98,6 +98,7 @@ const geoColShader = `
 	out Vertex {
 		vec4 color;
 		vec3 stdir;
+		flat int blockType;
 	} OUT;
 
 	void createVertex(vec4 p) {
@@ -119,7 +120,8 @@ const geoColShader = `
 	void main() {
 		vec4 origin = gl_in[0].gl_Position;
 
-		// 0011 1111
+		// bottom 6 bits are for adjacency
+		int adjaBits = 6;
 		// bit order = right left top bottom backward forward
 		int rightmask = 0x20;
 		int leftmask = 0x10;
@@ -128,7 +130,10 @@ const geoColShader = `
 		int backwardmask = 0x02;
 		int forwardmask = 0x01;
 		int bits = int(IN[0].vbits);
-		// TODO determine texture from bits
+		
+		// top 26 bits are for block types (for now)
+		int blockmask = 0xFFFFFFC0;
+		OUT.blockType = (blockmask & bits) >> adjaBits;
 
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
@@ -163,6 +168,7 @@ const fragColShader = `
 	in Vertex {
 		vec4 color;
 		vec3 stdir;
+		flat int blockType;
 	} IN;
 	uniform samplerCubeArray cubeMapArray;
 
@@ -170,7 +176,6 @@ const fragColShader = `
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = texture(cubeMapArray, vec4(IN.stdir, 2));// * IN.color;
-		// frag_color = IN.color;
+		frag_color = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));// * IN.color;
 	}
 `

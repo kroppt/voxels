@@ -25,9 +25,9 @@ type World struct {
 	cubeMap     *gfx.CubeMap
 }
 
-const chunkSize = 1
-const chunkHeight = 1
-const chunkRenderDist = 1
+const chunkSize = 5
+const chunkHeight = 5
+const chunkRenderDist = 2
 
 // New returns a new world.World.
 func New() *World {
@@ -146,7 +146,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	key := v.Pos.GetChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	if chunk, ok := w.chunks[key]; ok {
-		chunk.SetVoxel(v, AdjacentAll)
+		chunk.SetVoxel(v, AdjacentAll, Labeled)
 	}
 }
 
