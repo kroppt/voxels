@@ -97,9 +97,12 @@ const geoColShader = `
 
 	out Vertex {
 		vec4 color;
+		vec3 stdir;
 	} OUT;
 
 	void createVertex(vec4 p) {
+		vec3 center = (gl_in[0].gl_Position).xyz + 0.5;
+		OUT.stdir = p.xyz - center;
 		gl_Position = cam.projection * cam.view * p;
 		OUT.color = IN[0].color;
 		EmitVertex();
@@ -114,22 +117,23 @@ const geoColShader = `
 	}
 
 	void main() {
-		vec4 center = gl_in[0].gl_Position;
+		vec4 origin = gl_in[0].gl_Position;
 
 		// 0011 1111
-		// bit order = left right top bottom forward backward
-		int leftmask = 0x20;
-		int rightmask = 0x10;
+		// bit order = right left top bottom backward forward
+		int rightmask = 0x20;
+		int leftmask = 0x10;
 		int topmask = 0x08;
 		int bottommask = 0x04;
-		int forwardmask = 0x02;
-		int backwardmask = 0x01;
+		int backwardmask = 0x02;
+		int forwardmask = 0x01;
 		int bits = int(IN[0].vbits);
+		// TODO determine texture from bits
 
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
 		vec4 dz = vec4(0.0, 0.0, 1.0, 0.0);
-		vec4 p1 = center;
+		vec4 p1 = origin;
 		vec4 p2 = p1 + dx + dy + dz;
 
 		if ((bits & backwardmask) - backwardmask == 0) {
@@ -158,11 +162,14 @@ const fragColShader = `
 
 	in Vertex {
 		vec4 color;
+		vec3 stdir; // TODO make this vec3 with proper z
 	} IN;
+	uniform samplerCube cubemap;
+
 
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = IN.color;
+		frag_color = texture(cubemap, IN.stdir);// * IN.color;
 	}
 `

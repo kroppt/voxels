@@ -9,6 +9,7 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
+	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
@@ -21,11 +22,12 @@ type World struct {
 	chunkExpect map[ChunkPos]struct{}
 	lastChunk   ChunkPos
 	chunkChan   chan *Chunk
+	cubeMap     *gfx.CubeMap
 }
 
-const chunkSize = 16
-const chunkHeight = 5
-const chunkRenderDist = 10
+const chunkSize = 1
+const chunkHeight = 1
+const chunkRenderDist = 1
 
 // New returns a new world.World.
 func New() *World {
@@ -58,7 +60,32 @@ func New() *World {
 
 	world.chunks = chunks
 	world.lastChunk = currChunk
+
+	world.cubeMap = loadSpriteSheet("sprite_sheet.png")
+
 	return world
+}
+
+func loadSpriteSheet(fileName string) *gfx.CubeMap {
+	// TODO get data without texture
+	sprites, err := gfx.NewTextureFromFile(fileName)
+	if err != nil {
+		panic("failed to load sprite sheet")
+	}
+	sprytes := sprites.GetData()
+	// TODO make fancy file format with meta data
+	w := int32(16)
+	h := sprites.GetHeight()
+	layers := h / w
+
+	log.Debugf("w = %v, h = %v, layers = %v", w, h, layers)
+	texAtlas, err := gfx.NewCubeMap(w, layers, sprytes[w*w*4*6*2:], gl.RGBA, 4, 4)
+	if err != nil {
+		panic("failed to create 3d texture")
+	}
+	texAtlas.SetParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST)
+	texAtlas.SetParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	return &texAtlas
 }
 
 // LoadChunkAsync starts a thread that will put the chunk in the chunkChan
@@ -195,12 +222,14 @@ func (w *World) Render() error {
 		w.cam.Clean()
 	}
 
-	w.UpdateChunks()
+	// w.UpdateChunks()
 
 	culled := 0
 	for _, chunk := range w.chunks {
 		if w.cam.IsWithinFrustum(chunk.AsVoxelPos().AsVec3(), float32(chunk.size), float32(chunk.height), float32(chunk.size)) {
+			w.cubeMap.Bind()
 			chunk.Render()
+			w.cubeMap.Unbind()
 		} else {
 			culled++
 		}

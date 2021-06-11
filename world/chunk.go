@@ -168,12 +168,12 @@ func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 type AdjacentMask int
 
 const (
-	AdjacentBackward AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
-	AdjacentForward  AdjacentMask = 0b00000010 // The voxel has a forward adjacency.
+	AdjacentForward  AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
+	AdjacentBackward AdjacentMask = 0b00000010 // The voxel has a forward adjacency.
 	AdjacentBottom   AdjacentMask = 0b00000100 // The voxel has a bottom adjacency.
 	AdjacentTop      AdjacentMask = 0b00001000 // The voxel has a top adjacency.
-	AdjacentRight    AdjacentMask = 0b00010000 // The voxel has a right adjacency.
-	AdjacentLeft     AdjacentMask = 0b00100000 // The voxel has a left adjacency.
+	AdjacentLeft     AdjacentMask = 0b00010000 // The voxel has a right adjacency.
+	AdjacentRight    AdjacentMask = 0b00100000 // The voxel has a left adjacency.
 
 	AdjacentX   = AdjacentRight | AdjacentLeft       // The voxel has adjacencies in the +/-x directions.
 	AdjacentY   = AdjacentTop | AdjacentBottom       // The voxel has adjacencies in the +/-y directions.
