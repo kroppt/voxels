@@ -1,11 +1,13 @@
 package world
 
 import (
+	"fmt"
 	"unsafe"
 
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
+	"github.com/kroppt/voxels/util"
 )
 
 // World tracks the camera and its renderable chunks.
@@ -16,9 +18,9 @@ type World struct {
 	lastChunk ChunkPos
 }
 
-const chunkSize = 10
-const chunkHeight = 1
-const chunkRenderDist = 2
+const chunkSize = 16
+const chunkHeight = 5
+const chunkRenderDist = 10
 
 // New returns a new world.World.
 func New() *World {
@@ -29,13 +31,14 @@ func New() *World {
 	// use binding = 0
 	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
 	cam := NewCameraDefault()
+
 	world := &World{
 		ubo: ubo,
 		cam: cam,
 	}
-	cam.SetPosition(&glm.Vec3{0.5, 2.5, 0.5})
-	cam.LookAt(&glm.Vec3{0.5, 0, 0.5})
 
+	cam.SetPosition(&glm.Vec3{0.5, 0.5, 2})
+	cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
 	currChunk := cam.AsVoxelPos().GetChunkPos(chunkSize)
 	rng := currChunk.GetSurroundings(chunkRenderDist)
 
@@ -71,7 +74,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	key := v.Pos.GetChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	if chunk, ok := w.chunks[key]; ok {
-		chunk.SetVoxel(v)
+		chunk.SetVoxel(v, 0x3F)
 	}
 }
 
@@ -85,20 +88,16 @@ func (w *World) GetCamera() *Camera {
 	return w.cam
 }
 
-func (w *World) updateView() error {
+// TODO Create UBO extraction
+func (w *World) updateUBO() error {
 	cam := *w.GetCamera()
 	view := cam.GetViewMat()
 	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (w *World) updateProj() error {
-	cam := *w.GetCamera()
 	proj := cam.GetProjMat()
-	err := w.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(proj)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
+	err = w.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(view)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
 	if err != nil {
 		return err
 	}
@@ -109,11 +108,7 @@ func (w *World) updateProj() error {
 // TODO isolate chunk loading and unloading logic.
 func (w *World) Render() error {
 	if w.cam.IsDirty() {
-		err := w.updateView()
-		if err != nil {
-			return err
-		}
-		err = w.updateProj()
+		err := w.updateUBO()
 		if err != nil {
 			return err
 		}
@@ -121,16 +116,20 @@ func (w *World) Render() error {
 
 		currChunk := w.cam.AsVoxelPos().GetChunkPos(chunkSize)
 		if currChunk != w.lastChunk {
+			sw := util.Start()
 			// the camera position has moved chunks
 			// load new chunks
 			rng := currChunk.GetSurroundings(chunkRenderDist)
+			counter := 0
 			rng.ForEach(func(pos ChunkPos) {
 				if _, ok := w.chunks[pos]; !ok {
+					counter++
 					// chunk i,j is not in map and should be added
 					ch := NewChunk(chunkSize, chunkHeight, pos)
 					w.chunks[pos] = ch
 				}
 			})
+			sw.StopRecordAverage(fmt.Sprintf("Load %v Chunks", counter))
 			// delete old chunks
 			lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
 			lastRng.ForEach(func(pos ChunkPos) {

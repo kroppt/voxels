@@ -144,7 +144,7 @@ func (app *Application) PostEventActions() {
 	// 	dir := cam.GetLookForward()
 	// 	log.Debugf("Block: %v, dist: %v, pos: %v, look: %v", Block.Pos, dist, eye, dir)
 	// }
-	sw.StopRecordAverage("intersect")
+	sw.StopRecordAverage("Intersect")
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
 
@@ -152,8 +152,9 @@ func (app *Application) PostEventActions() {
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+	sw = util.Start()
 	app.world.Render()
-
+	sw.StopRecordAverage("Total World Render")
 	app.win.GLSwap()
 
 	for glErr := gl.GetError(); glErr != gl.NO_ERROR; glErr = gl.GetError() {

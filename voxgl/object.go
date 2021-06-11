@@ -76,6 +76,6 @@ func (o *Object) Rotate(x, y, z float32) {
 
 // Destroy frees external resources.
 func (o *Object) Destroy() {
-	o.program.Destroy()
+	// o.program.Destroy() // TODO store and delete in world
 	o.vao.Destroy()
 }

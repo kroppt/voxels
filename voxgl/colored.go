@@ -9,31 +9,19 @@ import (
 
 // NewColoredObject returns a newly created Object with the given colors.
 //
-// Vertices should be vertices of format X, Y, Z, R, G, B, A.
+// Vertices should be vertices of format X, Y, Z, AdjacencyBits, R, G, B, A.
 // X, Y, and Z options should be in the range -1.0 to 1.0.
+// AdjacencyBits is a float where the least significant 6 bits
+// represent whether each of the left right top bottom forward backward faces
+// can be seen.
 // R, G, B, and A should be in the range 0.0 to 1.0.
 func NewColoredObject(vertices []float32) (*Object, error) {
-	vshad, err := gfx.NewShader(vertColShader, gl.VERTEX_SHADER)
+	prog, err := GetProgram(vertColShader, fragColShader, geoColShader)
 	if err != nil {
 		return nil, err
 	}
 
-	fshad, err := gfx.NewShader(fragColShader, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return nil, err
-	}
-
-	gshad, err := gfx.NewShader(geoColShader, gl.GEOMETRY_SHADER_ARB)
-	if err != nil {
-		return nil, err
-	}
-
-	prog, err := gfx.NewProgram(vshad, fshad, gshad)
-	if err != nil {
-		return nil, err
-	}
-
-	obj, err := NewObject(prog, vertices, []int32{3, 4})
+	obj, err := NewObject(prog, vertices, []int32{4, 4})
 	if err != nil {
 		return nil, err
 	}
@@ -41,20 +29,52 @@ func NewColoredObject(vertices []float32) (*Object, error) {
 	return obj, nil
 }
 
+var progMap map[string]gfx.Program
+
+func GetProgram(vshadstr, fshadstr, gshadstr string) (gfx.Program, error) {
+	if progMap == nil {
+		progMap = make(map[string]gfx.Program)
+	}
+	key := vshadstr + fshadstr + gshadstr
+	if prog, ok := progMap[key]; ok {
+		return prog, nil
+	}
+	vshad, err := gfx.NewShader(vshadstr, gl.VERTEX_SHADER)
+	if err != nil {
+		return gfx.Program{}, err
+	}
+	fshad, err := gfx.NewShader(fshadstr, gl.FRAGMENT_SHADER)
+	if err != nil {
+		return gfx.Program{}, err
+	}
+	gshad, err := gfx.NewShader(gshadstr, gl.GEOMETRY_SHADER_ARB)
+	if err != nil {
+		return gfx.Program{}, err
+	}
+	prog, err := gfx.NewProgram(vshad, fshad, gshad)
+	if err != nil {
+		return gfx.Program{}, err
+	}
+	progMap[key] = prog
+	return prog, nil
+}
+
 const vertColShader = `
 	#version 420 core
 
-	layout (location = 0) in vec3 pos;
+	layout (location = 0) in vec4 pos;
 	layout (location = 1) in vec4 col;
 
 	out Vertex {
 		vec4 color;
+		float vbits;
 	} OUT;
 
 	void main()
 	{
-		gl_Position = vec4(pos, 1.0f);
+		gl_Position = vec4(pos.xyz, 1.0f);
 		OUT.color = col;
+		OUT.vbits = pos[3];
 	}
 `
 
@@ -62,7 +82,7 @@ const geoColShader = `
 	#version 420 core
 
 	layout(points) in;
-	layout(triangle_strip, max_vertices = 14) out;
+	layout(triangle_strip, max_vertices = 24) out;
 
 	layout (std140, binding = 0) uniform Matrices
 	{
@@ -72,6 +92,7 @@ const geoColShader = `
 
 	in Vertex {
 		vec4 color;
+		float vbits;
 	} IN[];
 
 	out Vertex {
@@ -83,37 +104,52 @@ const geoColShader = `
 		OUT.color = IN[0].color;
 		EmitVertex();
 	}
-	
+
+	void createQuad(vec4 p, vec4 d1, vec4 d2) {
+		createVertex(p);
+		createVertex(p+d1);
+		createVertex(p+d2);
+		createVertex(p+d1+d2);
+		EndPrimitive();
+	}
+
 	void main() {
 		vec4 center = gl_in[0].gl_Position;
+
+		// 0011 1111
+		// bit order = left right top bottom forward backward
+		int leftmask = 0x20;
+		int rightmask = 0x10;
+		int topmask = 0x08;
+		int bottommask = 0x04;
+		int forwardmask = 0x02;
+		int backwardmask = 0x01;
+		int bits = int(IN[0].vbits);
 
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
 		vec4 dz = vec4(0.0, 0.0, 1.0, 0.0);
-
 		vec4 p1 = center;
-		vec4 p2 = center + dx;
-		vec4 p3 = center + dy;
-		vec4 p4 = p2 + dy;
-		vec4 p5 = p1 + dz;
-		vec4 p6 = p2 + dz;
-		vec4 p7 = p3 + dz;
-		vec4 p8 = p4 + dz;
+		vec4 p2 = p1 + dx + dy + dz;
 
-		createVertex(p7);
-		createVertex(p8);
-		createVertex(p5);
-		createVertex(p6);
-		createVertex(p2);
-		createVertex(p8);
-		createVertex(p4);
-		createVertex(p7);
-		createVertex(p3);
-		createVertex(p5);
-		createVertex(p1);
-		createVertex(p2);
-		createVertex(p3);
-		createVertex(p4);
+		if ((bits & backwardmask) - backwardmask == 0) {
+			createQuad(p2, -dx, -dy); // backward
+		}
+		if ((bits & forwardmask) - forwardmask == 0) {
+			createQuad(p1, dy, dx); // forward
+		}
+		if ((bits & topmask) - topmask == 0) {
+			createQuad(p2, -dz, -dx); // top
+		}
+		if ((bits & bottommask) - bottommask == 0) {
+			createQuad(p1, dx, dz); // bottom
+		}
+		if ((bits & rightmask) - rightmask == 0) {
+			createQuad(p2, -dy, -dz); // right
+		}
+		if ((bits & leftmask) - leftmask == 0) {
+			createQuad(p1, dz, dy); // left
+		}
 	}
 `
 
