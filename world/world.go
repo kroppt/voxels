@@ -77,9 +77,9 @@ func loadSpriteSheet(fileName string) *gfx.CubeMap {
 	w := int32(16)
 	h := sprites.GetHeight()
 	layers := h / w
-
+	log.Debug(len(sprytes))
 	log.Debugf("w = %v, h = %v, layers = %v", w, h, layers)
-	texAtlas, err := gfx.NewCubeMap(w, layers, sprytes[w*w*4*6*2:], gl.RGBA, 4, 4)
+	texAtlas, err := gfx.NewCubeMap(w, layers, sprytes, gl.RGBA, 4, 4)
 	if err != nil {
 		panic("failed to create 3d texture")
 	}

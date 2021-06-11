@@ -158,18 +158,19 @@ const geoColShader = `
 `
 
 const fragColShader = `
-	#version 330
+	#version 400
 
 	in Vertex {
 		vec4 color;
-		vec3 stdir; // TODO make this vec3 with proper z
+		vec3 stdir;
 	} IN;
-	uniform samplerCube cubemap;
+	uniform samplerCubeArray cubeMapArray;
 
 
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = texture(cubemap, IN.stdir);// * IN.color;
+		frag_color = texture(cubeMapArray, vec4(IN.stdir, 2));// * IN.color;
+		// frag_color = IN.color;
 	}
 `
