@@ -119,7 +119,6 @@ type Color struct {
 }
 
 // Voxel describes a discrete unit of 3D space.
-// TODO Voxel should not know about VoxelPos
 type Voxel struct {
 	Pos     VoxelPos
 	Color   Color

@@ -146,19 +146,51 @@ func (tree *Octree) AddLeaf(voxel *Voxel) *Octree {
 	for !WithinAABC(curr.aabc, voxel.Pos) {
 		// create bigger bounding box to include the new voxel
 		aabc := ExpandAABC(curr.aabc, voxel.Pos)
-		child := curr
 		ll := &octreeLinkedList{
 			node: curr,
 		}
-		curr = &Octree{
+		newParent := &Octree{
 			aabc:     aabc,
 			children: ll,
 		}
-		child.parent = curr
+		curr.parent = newParent
+		curr = newParent
 	}
 	// voxel must be in the current bounding box
 	curr.addLeafRecurse(voxel)
 	return curr
+}
+
+func (tree *Octree) addChild(child *Octree) {
+	child.parent = tree
+	listNode := &octreeLinkedList{
+		node: child,
+	}
+	head := tree.children
+	if head == nil {
+		tree.children = listNode
+	} else {
+		listNode.next = head
+		tree.children = listNode
+	}
+}
+
+func (tree *Octree) removeChild(node *Octree) {
+	head := tree.children
+	var prev *octreeLinkedList
+	for head != nil {
+		if head.node == node {
+			if prev == nil {
+				// only child is head
+				tree.children = head.next
+			} else {
+				// had siblings
+				prev.next = head.next
+			}
+		}
+		prev = head
+		head = head.next
+	}
 }
 
 // voxel is inside AABC of tree and the tree has at least one child
@@ -179,20 +211,9 @@ func (tree *Octree) addLeafRecurse(voxel *Voxel) {
 
 	aabc := GetChildAABC(tree.aabc, voxel.Pos)
 	newNode := &Octree{
-		aabc:   aabc,
-		parent: tree,
+		aabc: aabc,
 	}
-	newChild := &octreeLinkedList{
-		node: newNode,
-	}
-
-	head := tree.children
-	if head == nil {
-		tree.children = newChild
-	} else {
-		newChild.next = head
-		tree.children = newChild
-	}
+	tree.addChild(newNode)
 
 	if aabc.Size == 1.0 {
 		// node is a leaf
@@ -204,66 +225,51 @@ func (tree *Octree) addLeafRecurse(voxel *Voxel) {
 
 // Remove removes a specified voxel from the tree, and returns whether
 // the root was removed (entire tree cleared)
-func (tree *Octree) Remove(pos VoxelPos) bool {
+func (tree *Octree) Remove(pos VoxelPos) (newRoot *Octree, removed bool) {
 	if tree.voxel != nil && tree.voxel.Pos == pos { // correct leaf
-		if tree.parent == nil {
-			return true
-		}
-		// repair parent's children
-		head := tree.parent.children
-		// var prev *octreeLinkedList
-		for head != nil {
-			if head.node.voxel != nil && head.node.voxel.Pos == pos {
-				// found it
-				// if prev == nil {
-				// 	tree.parent.children = head.next
-				// } else {
-				// 	prev.next = head.next
-				// }
-				// prune upwards
-				return tree.prune() // new root potential
-			}
-			// prev = head
-			head = head.next
-		}
+		return tree.prune(), true
 	} else if tree.voxel == nil { // not a leaf
 		head := tree.children
 		for head != nil {
-			rootRemoved := head.node.Remove(pos)
-			if rootRemoved {
-				return true
+			root, removed := head.node.Remove(pos)
+			if removed {
+				return root, removed
 			}
 			head = head.next
 		}
 	}
 	// wrong leaf, do nothing
-	return false
+	return nil, false
 }
 
-func (tree *Octree) prune() bool {
+func (tree *Octree) getRoot() *Octree {
+	if tree == nil {
+		panic("getRoot of nil tree")
+	} else if tree.parent == nil {
+		return tree.shrinkRoot()
+	} else {
+		return tree.parent.getRoot()
+	}
+}
+
+func (tree *Octree) shrinkRoot() *Octree {
+	if tree.CountChildren() == 1 {
+		return tree.children.node.shrinkRoot()
+	} else {
+		return tree
+	}
+}
+
+func (tree *Octree) prune() *Octree {
 	if tree.parent == nil {
 		// this is the root node
-		return true
+		return nil
 	}
-	// repair parent's children
-	head := tree.parent.children
-	var prev *octreeLinkedList
-	for head != nil {
-		if head.node == tree {
-			// found it
-			if prev == nil {
-				tree.parent.children = head.next
-				if head.next != nil {
-					return false
-				}
-				break
-			} else {
-				prev.next = head.next
-				return false
-			}
-		}
-		prev = head
-		head = head.next
+	// remove self from parent's children
+	tree.parent.removeChild(tree)
+	numChildren := tree.parent.CountChildren()
+	if numChildren == 0 {
+		return tree.parent.prune()
 	}
-	return tree.parent.prune()
+	return tree.getRoot()
 }

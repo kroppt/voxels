@@ -385,15 +385,18 @@ func TestOctreeRemoveRoot(t *testing.T) {
 		root.Remove(world.VoxelPos{0, 0, 1})
 		root.Remove(world.VoxelPos{1, 0, 1})
 		root.Remove(world.VoxelPos{0, 1, 1})
-		result := root.Remove(world.VoxelPos{1, 1, 1})
-		if result != true {
+		result, removed := root.Remove(world.VoxelPos{1, 1, 1})
+		if !removed {
+			t.Fatalf("Expected a voxel to be removed, but root.Remove indicated that none were")
+		}
+		if result != nil {
 			t.Fatalf("expected root to be removed, but wasn't")
 		}
 	})
 }
 
 func TestOctreeDoNotRemoveRoot(t *testing.T) {
-	t.Run("fill 2x2 tree and then remove all", func(t *testing.T) {
+	t.Run("fill 2x2 tree and then remove some, root preserved", func(t *testing.T) {
 		t.Parallel()
 		var root *world.Octree
 		root = root.AddLeaf(&world.Voxel{
@@ -424,8 +427,11 @@ func TestOctreeDoNotRemoveRoot(t *testing.T) {
 		root.Remove(world.VoxelPos{0, 1, 0})
 		root.Remove(world.VoxelPos{0, 1, 1})
 		root.Remove(world.VoxelPos{0, 0, 1})
-		result := root.Remove(world.VoxelPos{1, 1, 1})
-		if result == true {
+		result, removed := root.Remove(world.VoxelPos{1, 1, 1})
+		if !removed {
+			t.Fatalf("Expected a voxel to be removed, but root.Remove indicated that none were")
+		}
+		if result == nil {
 			t.Fatalf("root was removed when it shouldn't have been")
 		}
 	})
@@ -454,8 +460,11 @@ func TestOctreeFastRootBreak(t *testing.T) {
 		root.Remove(world.VoxelPos{0, 1, 0})
 		root.Remove(world.VoxelPos{0, 1, 1})
 		root.Remove(world.VoxelPos{0, 0, 1})
-		result := root.Remove(world.VoxelPos{1, 1, 1})
-		if result != true {
+		result, removed := root.Remove(world.VoxelPos{1, 1, 1})
+		if !removed {
+			t.Fatalf("Expected a voxel to be removed, but root.Remove indicated that none were")
+		}
+		if result != nil {
 			t.Fatalf("expected root to be removed but wasn't")
 		}
 	})
@@ -471,9 +480,81 @@ func TestOctreeFasterRootBreak(t *testing.T) {
 		root = root.AddLeaf(&world.Voxel{
 			Pos: world.VoxelPos{0, 1, 0},
 		})
-		result := root.Remove(world.VoxelPos{0, 0, 0})
-		if result != false {
+		result, removed := root.Remove(world.VoxelPos{0, 0, 0})
+		if !removed {
+			t.Fatalf("Expected a voxel to be removed, but root.Remove indicated that none were")
+		}
+		if result == nil {
 			t.Fatalf("expected root to not be removed but was")
+		}
+	})
+}
+
+func TestOctreeRootSingleShrink(t *testing.T) {
+	t.Run("single shrink", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 1, 1},
+		})
+		result, removed := root.Remove(world.VoxelPos{0, 0, 0})
+		if !removed {
+			t.Fatalf("Expected a voxel to be removed, but root.Remove indicated that none were")
+		}
+		if result.GetAABC().Size != 1 {
+			t.Fatalf("expected root to be size 1 but was %v", result.GetAABC().Size)
+		}
+		if result.GetVoxel().Pos != (world.VoxelPos{1, 1, 1}) {
+			t.Fatalf("expected pos to be {1,1,1} but got %v", result.GetVoxel().Pos)
+		}
+	})
+}
+
+func TestOctreeRootDoubleShrink(t *testing.T) {
+	t.Run("double shrink", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{2, 2, 2},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{3, 3, 3},
+		})
+		result, removed := root.Remove(world.VoxelPos{0, 0, 0})
+		if !removed {
+			t.Fatalf("Expected a voxel to be removed, but root.Remove indicated that none were")
+		}
+		if result.GetAABC().Size != 2 {
+			t.Fatalf("expected root to be size 2 but was %v", result.GetAABC().Size)
+		}
+	})
+}
+
+func TestOctreeNoRootShrink(t *testing.T) {
+	t.Run("no shrink", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 1, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 0, 0},
+		})
+		result, removed := root.Remove(world.VoxelPos{0, 0, 0})
+		if !removed {
+			t.Fatalf("Expected a voxel to be removed, but root.Remove indicated that none were")
+		}
+		if result != root {
+			t.Fatalf("expected the returned root from remove to be exactly the same, but wasn't")
 		}
 	})
 }

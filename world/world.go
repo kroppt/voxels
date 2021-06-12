@@ -143,7 +143,6 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 
 // SetVoxel updates a voxel's variables in the world if the chunk
 // that it would belong to is currently loaded.
-// TODO set should be voxelpos, voxel
 func (w *World) SetVoxel(v *Voxel) {
 	key := v.Pos.GetChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
@@ -218,6 +217,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		Pos:   v,
 		Btype: Air,
 	})
+	chunk.root, _ = chunk.root.Remove(v)
 	{
 		p := VoxelPos{v.X - 1, v.Y, v.Z}
 		k := p.GetChunkPos(chunkSize)
