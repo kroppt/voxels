@@ -349,3 +349,131 @@ func TestOctreeFarCornerDoesntChange(t *testing.T) {
 		}
 	})
 }
+
+func TestOctreeRemoveRoot(t *testing.T) {
+	t.Run("fill 2x2 tree and then remove all", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 1, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 1, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 0, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 1, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 1, 1},
+		})
+		root.Remove(world.VoxelPos{0, 0, 0})
+		root.Remove(world.VoxelPos{1, 0, 0})
+		root.Remove(world.VoxelPos{0, 1, 0})
+		root.Remove(world.VoxelPos{1, 1, 0})
+		root.Remove(world.VoxelPos{0, 0, 1})
+		root.Remove(world.VoxelPos{1, 0, 1})
+		root.Remove(world.VoxelPos{0, 1, 1})
+		result := root.Remove(world.VoxelPos{1, 1, 1})
+		if result != true {
+			t.Fatalf("expected root to be removed, but wasn't")
+		}
+	})
+}
+
+func TestOctreeDoNotRemoveRoot(t *testing.T) {
+	t.Run("fill 2x2 tree and then remove all", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 1, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 1, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 0, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 1, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 1, 1},
+		})
+		root.Remove(world.VoxelPos{0, 0, 0})
+		root.Remove(world.VoxelPos{0, 1, 0})
+		root.Remove(world.VoxelPos{0, 1, 1})
+		root.Remove(world.VoxelPos{0, 0, 1})
+		result := root.Remove(world.VoxelPos{1, 1, 1})
+		if result == true {
+			t.Fatalf("root was removed when it shouldn't have been")
+		}
+	})
+}
+
+func TestOctreeFastRootBreak(t *testing.T) {
+	t.Run("fast way to break remove logic", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 1, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 1, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 1},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{1, 1, 1},
+		})
+		root.Remove(world.VoxelPos{0, 0, 0})
+		root.Remove(world.VoxelPos{0, 1, 0})
+		root.Remove(world.VoxelPos{0, 1, 1})
+		root.Remove(world.VoxelPos{0, 0, 1})
+		result := root.Remove(world.VoxelPos{1, 1, 1})
+		if result != true {
+			t.Fatalf("expected root to be removed but wasn't")
+		}
+	})
+}
+
+func TestOctreeFasterRootBreak(t *testing.T) {
+	t.Run("faster way to break remove logic", func(t *testing.T) {
+		t.Parallel()
+		var root *world.Octree
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 0, 0},
+		})
+		root = root.AddLeaf(&world.Voxel{
+			Pos: world.VoxelPos{0, 1, 0},
+		})
+		result := root.Remove(world.VoxelPos{0, 0, 0})
+		if result != false {
+			t.Fatalf("expected root to not be removed but was")
+		}
+	})
+}
