@@ -11,6 +11,38 @@ type VoxelPos struct {
 	Z int
 }
 
+// VoxelRange is the range of voxels between Min and Max.
+type VoxelRange struct {
+	Min VoxelPos
+	Max VoxelPos
+}
+
+// GetSurroundings returns a range surrounding the position by amount in every
+// direction.
+func (pos VoxelPos) GetSurroundings(amount int) VoxelRange {
+	minx := pos.X - amount
+	maxx := pos.X + amount
+	miny := pos.Y - amount
+	maxy := pos.Y + amount
+	mink := pos.Z - amount
+	maxk := pos.Z + amount
+	return VoxelRange{
+		Min: VoxelPos{minx, miny, mink},
+		Max: VoxelPos{maxx, maxy, maxk},
+	}
+}
+
+// ForEach executes the given function on every position in the this VoxelRange.
+func (rng VoxelRange) ForEach(fn func(pos VoxelPos)) {
+	for x := rng.Min.X; x <= rng.Max.X; x++ {
+		for y := rng.Min.Y; y <= rng.Max.Y; y++ {
+			for z := rng.Min.Z; z <= rng.Max.Z; z++ {
+				fn(VoxelPos{X: x, Y: y, Z: z})
+			}
+		}
+	}
+}
+
 // Add returns this VoxelPos with another VoxelPos added to it.
 func (pos VoxelPos) Add(other VoxelPos) VoxelPos {
 	return VoxelPos{
@@ -87,7 +119,10 @@ type Color struct {
 }
 
 // Voxel describes a discrete unit of 3D space.
+// TODO Voxel should not know about VoxelPos
 type Voxel struct {
-	Pos   VoxelPos
-	Color Color
+	Pos     VoxelPos
+	Color   Color
+	AdjMask AdjacentMask
+	Btype   BlockType
 }

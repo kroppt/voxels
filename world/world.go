@@ -23,6 +23,7 @@ type World struct {
 	lastChunk   ChunkPos
 	chunkChan   chan *Chunk
 	cubeMap     *gfx.CubeMap
+	gen         Generator
 }
 
 const chunkSize = 5
@@ -42,6 +43,7 @@ func New() *World {
 		ubo:       ubo,
 		cam:       cam,
 		chunkChan: make(chan *Chunk),
+		gen:       FlatWorldGenerator{},
 	}
 
 	cam.SetPosition(&glm.Vec3{0.5, 0.5, 2})
@@ -92,7 +94,7 @@ func (w *World) LoadChunkAsync(pos ChunkPos) {
 	// immediately set that the chunk is expected to be loaded
 	w.chunkExpect[pos] = struct{}{}
 	go func() {
-		chunk := NewChunk(chunkSize, pos)
+		chunk := NewChunk(chunkSize, pos, w.gen)
 		w.chunkChan <- chunk
 	}()
 }
@@ -141,11 +143,134 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 
 // SetVoxel updates a voxel's variables in the world if the chunk
 // that it would belong to is currently loaded.
+// TODO set should be voxelpos, voxel
 func (w *World) SetVoxel(v *Voxel) {
 	key := v.Pos.GetChunkPos(chunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
-	if chunk, ok := w.chunks[key]; ok {
-		chunk.SetVoxel(v, AdjacentAll, Labeled)
+	chunk, ok := w.chunks[key]
+	if !ok {
+		return
+	}
+	chunk.SetVoxel(v)
+	{
+		p := VoxelPos{v.Pos.X - 1, v.Pos.Y, v.Pos.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.AddAdjacency(p, AdjacentRight)
+	}
+	{
+		p := VoxelPos{v.Pos.X + 1, v.Pos.Y, v.Pos.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.AddAdjacency(p, AdjacentLeft)
+	}
+	{
+		p := VoxelPos{v.Pos.X, v.Pos.Y - 1, v.Pos.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.AddAdjacency(p, AdjacentTop)
+	}
+	{
+		p := VoxelPos{v.Pos.X, v.Pos.Y + 1, v.Pos.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.AddAdjacency(p, AdjacentBottom)
+	}
+	{
+		p := VoxelPos{v.Pos.X, v.Pos.Y, v.Pos.Z - 1}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.AddAdjacency(p, AdjacentBack)
+	}
+	{
+		p := VoxelPos{v.Pos.X, v.Pos.Y, v.Pos.Z + 1}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.AddAdjacency(p, AdjacentFront)
+	}
+}
+
+func (w *World) RemoveVoxel(v VoxelPos) {
+	key := v.GetChunkPos(chunkSize)
+	chunk, ok := w.chunks[key]
+	if !ok {
+		return
+	}
+	chunk.SetVoxel(&Voxel{
+		Pos:   v,
+		Btype: Air,
+	})
+	{
+		p := VoxelPos{v.X - 1, v.Y, v.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.RemoveAdjacency(p, AdjacentRight)
+	}
+	{
+		p := VoxelPos{v.X + 1, v.Y, v.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.RemoveAdjacency(p, AdjacentLeft)
+	}
+	{
+		p := VoxelPos{v.X, v.Y - 1, v.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.RemoveAdjacency(p, AdjacentTop)
+	}
+	{
+		p := VoxelPos{v.X, v.Y + 1, v.Z}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.RemoveAdjacency(p, AdjacentBottom)
+	}
+	{
+		p := VoxelPos{v.X, v.Y, v.Z - 1}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.RemoveAdjacency(p, AdjacentBack)
+	}
+	{
+		p := VoxelPos{v.X, v.Y, v.Z + 1}
+		k := p.GetChunkPos(chunkSize)
+		ch, ok := w.chunks[k]
+		if !ok {
+			panic("the player unlocked TNT and wiremod")
+		}
+		ch.RemoveAdjacency(p, AdjacentFront)
 	}
 }
 
@@ -221,7 +346,7 @@ func (w *World) Render() error {
 		w.cam.Clean()
 	}
 
-	// w.UpdateChunks()
+	w.UpdateChunks()
 
 	culled := 0
 	for _, chunk := range w.chunks {

@@ -58,11 +58,19 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 }
 
 func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
-	vpos := app.world.GetCamera().AsVoxelPos()
-	app.world.SetVoxel(&world.Voxel{
-		Pos:   vpos,
-		Color: world.Color{R: 1.0, G: 0.0, B: 0.0, A: 1.0},
-	})
+	block, _, ok := app.world.FindLookAtVoxel()
+	if !ok {
+		return
+	}
+	if evt.Y < 0 {
+		app.world.RemoveVoxel(block.Pos)
+	} else {
+		app.world.SetVoxel(&world.Voxel{
+			Pos:   block.Pos,
+			Color: world.Color{R: 1.0, G: 0.0, B: 0.0, A: 1.0},
+			Btype: world.Labeled,
+		})
+	}
 }
 
 func (app *Application) handleQuitEvent(evt *sdl.QuitEvent) {

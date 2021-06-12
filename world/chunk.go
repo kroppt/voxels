@@ -1,8 +1,6 @@
 package world
 
 import (
-	"math/rand"
-
 	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
@@ -98,7 +96,7 @@ type Chunk struct {
 }
 
 // NewChunk returns a new Chunk shaped as size X height X size.
-func NewChunk(size int, pos ChunkPos) *Chunk {
+func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 	vertSize := 8
 	flatData := make([]float32, size*size*size*vertSize)
 	// layout 4+4=8 hard coded in here too
@@ -113,40 +111,8 @@ func NewChunk(size int, pos ChunkPos) *Chunk {
 				x := chunk.AsVoxelPos().X + i
 				y := chunk.AsVoxelPos().Y + j
 				z := chunk.AsVoxelPos().Z + k
-				r, g, b := rand.Float32(), rand.Float32(), rand.Float32()
-				v := Voxel{
-					Pos:   VoxelPos{x, y, z},
-					Color: Color{r, g, b, 1.0},
-				}
-				// a worldgenerator should be asked for this info
-				var adjMask AdjacentMask
-				var blockType BlockType
-				if i == 0 {
-					adjMask |= AdjacentLeft
-				}
-				if i == size-1 {
-					adjMask |= AdjacentRight
-				}
-				if j == 0 {
-					adjMask |= AdjacentBottom
-				}
-				if j == size-1 {
-					adjMask |= AdjacentTop
-				}
-				if k == 0 {
-					adjMask |= AdjacentForward
-				}
-				if k == size-1 {
-					adjMask |= AdjacentBackward
-				}
-				if j == 0 {
-					blockType = Labeled
-				} else if j == size-1 {
-					blockType = Grass
-				} else {
-					blockType = Dirt
-				}
-				chunk.SetVoxel(&v, adjMask, blockType)
+				vox := gen.GenerateAt(x, y, z)
+				chunk.SetVoxel(vox)
 			}
 		}
 	}
@@ -178,7 +144,8 @@ func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 type BlockType int32
 
 const (
-	Dirt BlockType = iota
+	Air BlockType = iota
+	Dirt
 	Grass
 	Labeled
 )
@@ -187,21 +154,21 @@ const (
 type AdjacentMask int32
 
 const (
-	AdjacentForward  AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
-	AdjacentBackward AdjacentMask = 0b00000010 // The voxel has a forward adjacency.
-	AdjacentBottom   AdjacentMask = 0b00000100 // The voxel has a bottom adjacency.
-	AdjacentTop      AdjacentMask = 0b00001000 // The voxel has a top adjacency.
-	AdjacentLeft     AdjacentMask = 0b00010000 // The voxel has a right adjacency.
-	AdjacentRight    AdjacentMask = 0b00100000 // The voxel has a left adjacency.
+	AdjacentFront  AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
+	AdjacentBack   AdjacentMask = 0b00000010 // The voxel has a forward adjacency.
+	AdjacentBottom AdjacentMask = 0b00000100 // The voxel has a bottom adjacency.
+	AdjacentTop    AdjacentMask = 0b00001000 // The voxel has a top adjacency.
+	AdjacentLeft   AdjacentMask = 0b00010000 // The voxel has a right adjacency.
+	AdjacentRight  AdjacentMask = 0b00100000 // The voxel has a left adjacency.
 
-	AdjacentX   = AdjacentRight | AdjacentLeft       // The voxel has adjacencies in the +/-x directions.
-	AdjacentY   = AdjacentTop | AdjacentBottom       // The voxel has adjacencies in the +/-y directions.
-	AdjacentZ   = AdjacentBackward | AdjacentForward // The voxel has adjacencies in the +/-z directions.
-	AdjacentAll = AdjacentX | AdjacentY | AdjacentZ  // The voxel has adjacencies in all directions.
+	AdjacentX   = AdjacentRight | AdjacentLeft      // The voxel has adjacencies in the +/-x directions.
+	AdjacentY   = AdjacentTop | AdjacentBottom      // The voxel has adjacencies in the +/-y directions.
+	AdjacentZ   = AdjacentBack | AdjacentFront      // The voxel has adjacencies in the +/-z directions.
+	AdjacentAll = AdjacentX | AdjacentY | AdjacentZ // The voxel has adjacencies in all directions.
 )
 
 // SetVoxel updates a voxel's variables in the chunk, if it exists
-func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask, btype BlockType) {
+func (c *Chunk) SetVoxel(v *Voxel) {
 	if !c.IsWithinChunk(v.Pos) {
 		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
 		return
@@ -209,7 +176,7 @@ func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask, btype BlockType) {
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	vbits := float32(int32(adjMask) | int32(btype<<6))
+	vbits := float32(int32(v.AdjMask) | int32(v.Btype<<6))
 	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
 	off := (i + j*c.size*c.size + k*c.size) * 8
 	if off%8 != 0 {
@@ -228,7 +195,51 @@ func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask, btype BlockType) {
 	c.flatData[off+6] = b
 	c.flatData[off+7] = a
 
-	c.root = c.root.AddLeaf(v)
+	if v.Btype != Air { // TODO return at top of function?
+		c.root = c.root.AddLeaf(v)
+	}
+	c.dirty = true
+}
+
+// AddAdjacency adds adjacency to a voxel
+func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
+	if !c.IsWithinChunk(v) {
+		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
+		return
+	}
+	localPos := v.AsLocalChunkPos(*c)
+	i, j, k := localPos.X, localPos.Y, localPos.Z
+	off := (i + j*c.size*c.size + k*c.size) * 8
+	vbits := int32(c.flatData[off+3]) | int32(adjMask)
+	if off%8 != 0 {
+		panic("offset not divisible by 8")
+	}
+	if off >= len(c.flatData) || off < 0 {
+		panic("offset out of bounds")
+	}
+
+	c.flatData[off+3] = float32(vbits)
+	c.dirty = true
+}
+
+// RemoveAdjacency remove adjacency from a voxel
+func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
+	if !c.IsWithinChunk(v) {
+		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
+		return
+	}
+	localPos := v.AsLocalChunkPos(*c)
+	i, j, k := localPos.X, localPos.Y, localPos.Z
+	off := (i + j*c.size*c.size + k*c.size) * 8
+	vbits := int32(c.flatData[off+3]) & ^int32(adjMask)
+	if off%8 != 0 {
+		panic("offset not divisible by 8")
+	}
+	if off >= len(c.flatData) || off < 0 {
+		panic("offset out of bounds")
+	}
+
+	c.flatData[off+3] = float32(vbits)
 	c.dirty = true
 }
 
