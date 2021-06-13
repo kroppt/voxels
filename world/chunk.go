@@ -95,11 +95,11 @@ type Chunk struct {
 	size     int
 }
 
+const VertSize = 4
+
 // NewChunk returns a new Chunk shaped as size X height X size.
 func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
-	vertSize := 8
-	flatData := make([]float32, size*size*size*vertSize)
-	// layout 4+4=8 hard coded in here too
+	flatData := make([]float32, size*size*size*VertSize)
 	chunk := &Chunk{
 		Pos:      pos,
 		flatData: flatData,
@@ -177,10 +177,9 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
 	vbits := float32(int32(v.AdjMask) | int32(v.Btype<<6))
-	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
-	off := (i + j*c.size*c.size + k*c.size) * 8
-	if off%8 != 0 {
-		panic("offset not divisible by 8")
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
+	if off%VertSize != 0 {
+		panic("offset not divisible by VertSize")
 	}
 	if off >= len(c.flatData) || off < 0 {
 		panic("offset out of bounds")
@@ -190,10 +189,6 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
 	c.flatData[off+3] = vbits
-	c.flatData[off+4] = r
-	c.flatData[off+5] = g
-	c.flatData[off+6] = b
-	c.flatData[off+7] = a
 
 	if v.Btype != Air { // TODO return at top of function?
 		c.root = c.root.AddLeaf(v)
@@ -209,10 +204,10 @@ func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 	}
 	localPos := v.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	off := (i + j*c.size*c.size + k*c.size) * 8
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	vbits := int32(c.flatData[off+3]) | int32(adjMask)
-	if off%8 != 0 {
-		panic("offset not divisible by 8")
+	if off%VertSize != 0 {
+		panic("offset not divisible by VertSize")
 	}
 	if off >= len(c.flatData) || off < 0 {
 		panic("offset out of bounds")
@@ -230,10 +225,10 @@ func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 	}
 	localPos := v.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	off := (i + j*c.size*c.size + k*c.size) * 8
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	vbits := int32(c.flatData[off+3]) & ^int32(adjMask)
-	if off%8 != 0 {
-		panic("offset not divisible by 8")
+	if off%VertSize != 0 {
+		panic("offset not divisible by VertSize")
 	}
 	if off >= len(c.flatData) || off < 0 {
 		panic("offset out of bounds")

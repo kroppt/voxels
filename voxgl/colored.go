@@ -21,7 +21,7 @@ func NewColoredObject(vertices []float32) (*Object, error) {
 		return nil, err
 	}
 
-	obj, err := NewObject(prog, vertices, []int32{4, 4})
+	obj, err := NewObject(prog, vertices, []int32{4})
 	if err != nil {
 		return nil, err
 	}
@@ -63,17 +63,14 @@ const vertColShader = `
 	#version 420 core
 
 	layout (location = 0) in vec4 pos;
-	layout (location = 1) in vec4 col; // TODO delete me eventually
 
 	out Vertex {
-		vec4 color;
 		float vbits;
 	} OUT;
 
 	void main()
 	{
 		gl_Position = vec4(pos.xyz, 1.0f);
-		OUT.color = col;
 		OUT.vbits = pos[3];
 	}
 `
@@ -91,12 +88,10 @@ const geoColShader = `
 	} cam;
 
 	in Vertex {
-		vec4 color;
 		float vbits;
 	} IN[];
 
 	out Vertex {
-		vec4 color;
 		vec3 stdir;
 		flat int blockType;
 	} OUT;
@@ -105,7 +100,6 @@ const geoColShader = `
 		vec3 center = (gl_in[0].gl_Position).xyz + 0.5;
 		OUT.stdir = p.xyz - center;
 		gl_Position = cam.projection * cam.view * p;
-		OUT.color = IN[0].color;
 		EmitVertex();
 	}
 
@@ -169,7 +163,6 @@ const fragColShader = `
 	#version 400
 
 	in Vertex {
-		vec4 color;
 		vec3 stdir;
 		flat int blockType;
 	} IN;
@@ -179,6 +172,6 @@ const fragColShader = `
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));// * IN.color;
+		frag_color = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));
 	}
 `
