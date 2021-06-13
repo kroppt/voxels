@@ -4,6 +4,7 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/ui"
 	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
@@ -12,14 +13,20 @@ import (
 type Application struct {
 	win     *sdl.Window
 	world   *world.World
+	ui      *ui.UI
 	running bool
 	m1held  bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
+	ui, err := ui.New(&ui.GlGfx{})
+	if err != nil {
+		panic(err.Error())
+	}
 	return &Application{
 		win:   win,
 		world: world.New(),
+		ui:    ui,
 	}, nil
 }
 
@@ -155,6 +162,9 @@ func (app *Application) PostEventActions() {
 	sw = util.Start()
 	app.world.Render()
 	sw.StopRecordAverage("Total World Render")
+
+	app.ui.Render()
+
 	app.win.GLSwap()
 
 	for glErr := gl.GetError(); glErr != gl.NO_ERROR; glErr = gl.GetError() {
