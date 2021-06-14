@@ -93,6 +93,7 @@ type Chunk struct {
 	root     *Octree
 	dirty    bool
 	size     int
+	modified bool
 }
 
 const VertSize = 4
@@ -119,12 +120,50 @@ func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 	return chunk
 }
 
+// NewChunkLoaded returns a pre-loaded chunk
+func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
+	chunk := &Chunk{
+		Pos:      pos,
+		flatData: make([]float32, 4*size*size*size),
+		size:     size,
+	}
+	// rebuild octree
+	maxIdx := 4 * size * size * size
+	for i := 0; i < maxIdx; i += 4 {
+		vbits := flatData[i+3]
+		v := Voxel{
+			Pos: VoxelPos{
+				int(flatData[i]),
+				int(flatData[i+1]),
+				int(flatData[i+2]),
+			},
+			AdjMask: AdjacentMask(vbits & int32(AdjacentAll)),
+			Btype:   BlockType(vbits & ^int32(AdjacentAll)),
+		}
+		if v.Btype != Air {
+			chunk.root = chunk.root.AddLeaf(&v)
+		}
+		chunk.flatData[i] = float32(flatData[i])
+		chunk.flatData[i+1] = float32(flatData[i+1])
+		chunk.flatData[i+2] = float32(flatData[i+2])
+		chunk.flatData[i+3] = float32(vbits)
+
+	}
+	chunk.modified = true
+	chunk.dirty = true
+	return chunk
+}
+
 func (c *Chunk) SetObjs(objs *voxgl.Object) {
 	c.objs = objs
 }
 
 func (c *Chunk) GetRoot() *Octree {
 	return c.root
+}
+
+func (c *Chunk) GetFlatData() []float32 {
+	return c.flatData
 }
 
 // IsWithinChunk returns whether the position is within the chunk
@@ -166,6 +205,10 @@ const (
 	AdjacentZ   = AdjacentBack | AdjacentFront      // The voxel has adjacencies in the +/-z directions.
 	AdjacentAll = AdjacentX | AdjacentY | AdjacentZ // The voxel has adjacencies in all directions.
 )
+
+func (c *Chunk) SetModified() {
+	c.modified = true
+}
 
 // SetVoxel updates a voxel's variables in the chunk, if it exists
 func (c *Chunk) SetVoxel(v *Voxel) {
@@ -215,6 +258,7 @@ func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 
 	c.flatData[off+3] = float32(vbits)
 	c.dirty = true
+	c.modified = true
 }
 
 // RemoveAdjacency remove adjacency from a voxel
@@ -236,6 +280,7 @@ func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 
 	c.flatData[off+3] = float32(vbits)
 	c.dirty = true
+	c.modified = true
 }
 
 // Render renders the chunk in OpenGL.

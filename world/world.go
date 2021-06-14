@@ -9,7 +9,6 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
-	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
@@ -24,10 +23,11 @@ type World struct {
 	chunkChan   chan *Chunk
 	cubeMap     *gfx.CubeMap
 	gen         Generator
+	cache       *Cache
 }
 
-const chunkSize = 5
-const chunkRenderDist = 2
+const ChunkSize = 2
+const chunkRenderDist = 5
 
 // New returns a new world.World.
 func New() *World {
@@ -46,10 +46,16 @@ func New() *World {
 		gen:       FlatWorldGenerator{},
 	}
 
-	cam.SetPosition(&glm.Vec3{0.5, 0.5, 2})
-	cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
-	currChunk := cam.AsVoxelPos().GetChunkPos(chunkSize)
+	cam.SetPosition(&glm.Vec3{0.5, 7.5, 2})
+	// cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
+	currChunk := cam.AsVoxelPos().GetChunkPos(ChunkSize)
 	rng := currChunk.GetSurroundings(chunkRenderDist)
+
+	cache, err := NewCache("world_meta", "world_data")
+	if err != nil {
+		panic(fmt.Sprint(err))
+	}
+	world.cache = cache
 
 	rand.Seed(time.Now().UnixNano())
 	chunks := make(map[ChunkPos]*Chunk)
@@ -61,7 +67,6 @@ func New() *World {
 
 	world.chunks = chunks
 	world.lastChunk = currChunk
-
 	world.cubeMap = loadSpriteSheet("sprite_sheet.png")
 
 	return world
@@ -78,8 +83,8 @@ func loadSpriteSheet(fileName string) *gfx.CubeMap {
 	w := int32(16)
 	h := sprites.GetHeight()
 	layers := h / w
-	log.Debug(len(sprytes))
-	log.Debugf("w = %v, h = %v, layers = %v", w, h, layers)
+	// log.Debug(len(sprytes))
+	// log.Debugf("w = %v, h = %v, layers = %v", w, h, layers)
 	texAtlas, err := gfx.NewCubeMap(w, layers, sprytes, gl.RGBA, 4, 4)
 	if err != nil {
 		panic("failed to create 3d texture")
@@ -94,7 +99,12 @@ func (w *World) LoadChunkAsync(pos ChunkPos) {
 	// immediately set that the chunk is expected to be loaded
 	w.chunkExpect[pos] = struct{}{}
 	go func() {
-		chunk := NewChunk(chunkSize, pos, w.gen)
+		// check cache for a saved chunk
+		chunk, loaded := w.cache.Load(pos)
+		if !loaded {
+			chunk = NewChunk(ChunkSize, pos, w.gen)
+		}
+
 		w.chunkChan <- chunk
 	}()
 }
@@ -144,16 +154,17 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 // SetVoxel updates a voxel's variables in the world if the chunk
 // that it would belong to is currently loaded.
 func (w *World) SetVoxel(v *Voxel) {
-	key := v.Pos.GetChunkPos(chunkSize)
+	key := v.Pos.GetChunkPos(ChunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	chunk, ok := w.chunks[key]
 	if !ok {
 		return
 	}
 	chunk.SetVoxel(v)
+	chunk.SetModified()
 	{
 		p := VoxelPos{v.Pos.X - 1, v.Pos.Y, v.Pos.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -162,7 +173,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	}
 	{
 		p := VoxelPos{v.Pos.X + 1, v.Pos.Y, v.Pos.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -171,7 +182,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	}
 	{
 		p := VoxelPos{v.Pos.X, v.Pos.Y - 1, v.Pos.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -180,7 +191,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	}
 	{
 		p := VoxelPos{v.Pos.X, v.Pos.Y + 1, v.Pos.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -189,7 +200,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	}
 	{
 		p := VoxelPos{v.Pos.X, v.Pos.Y, v.Pos.Z - 1}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -198,7 +209,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	}
 	{
 		p := VoxelPos{v.Pos.X, v.Pos.Y, v.Pos.Z + 1}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -208,7 +219,7 @@ func (w *World) SetVoxel(v *Voxel) {
 }
 
 func (w *World) RemoveVoxel(v VoxelPos) {
-	key := v.GetChunkPos(chunkSize)
+	key := v.GetChunkPos(ChunkSize)
 	chunk, ok := w.chunks[key]
 	if !ok {
 		return
@@ -217,10 +228,11 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		Pos:   v,
 		Btype: Air,
 	})
+	chunk.SetModified()
 	chunk.root, _ = chunk.root.Remove(v)
 	{
 		p := VoxelPos{v.X - 1, v.Y, v.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -229,7 +241,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	}
 	{
 		p := VoxelPos{v.X + 1, v.Y, v.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -238,7 +250,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	}
 	{
 		p := VoxelPos{v.X, v.Y - 1, v.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -247,7 +259,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	}
 	{
 		p := VoxelPos{v.X, v.Y + 1, v.Z}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -256,7 +268,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	}
 	{
 		p := VoxelPos{v.X, v.Y, v.Z - 1}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -265,7 +277,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	}
 	{
 		p := VoxelPos{v.X, v.Y, v.Z + 1}
-		k := p.GetChunkPos(chunkSize)
+		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
@@ -277,6 +289,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 // Destroy frees external resources.
 func (w *World) Destroy() {
 	w.ubo.Destroy()
+	w.cache.Destroy()
 }
 
 // GetCamera returns a reference to the camera.
@@ -301,7 +314,7 @@ func (w *World) updateUBO() error {
 }
 
 func (w *World) UpdateChunks() {
-	currChunk := w.cam.AsVoxelPos().GetChunkPos(chunkSize)
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
 	if currChunk == w.lastChunk {
 		return
 	}
@@ -323,7 +336,11 @@ func (w *World) UpdateChunks() {
 		inOld := lastRng.Contains(pos)
 		inNew := rng.Contains(pos)
 		if inOld && !inNew {
-			if _, ok := w.chunks[pos]; ok {
+			if ch, ok := w.chunks[pos]; ok {
+				// save chunk if modified
+				if ch.modified {
+					w.cache.Save(ch)
+				}
 				// the chunk-to-be-unloaded actually exists
 				w.chunks[pos].Destroy()
 				delete(w.chunks, pos)

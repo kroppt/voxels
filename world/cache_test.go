@@ -1,88 +1,171 @@
 package world_test
 
 import (
-	"io/fs"
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/kroppt/voxels/world"
 )
 
-type MemMapFS struct {
-	files map[string]MemFile
-}
-
-func NewMemMapFS() *MemMapFS {
-	var fs MemMapFS
-	fs.files = make(map[string]MemFile)
-	return &fs
-}
-
-func (m MemMapFS) Open(name string) (fs.File, error) {
-	if file, ok := m.files[name]; ok {
-		return file, nil
+func compareFlatData(d1, d2 []float32) bool {
+	if len(d1) != len(d2) {
+		return false
 	}
-	return nil, fs.ErrNotExist
+	for i := 0; i < len(d1); i++ {
+		if d1[i] != d2[i] {
+			return false
+		}
+	}
+	return true
 }
 
-type MemFile struct {
-}
-
-func (m MemFile) Stat() (fs.FileInfo, error) {
-	return nil, nil
-}
-
-func (m MemFile) Read([]byte) (int, error) {
-	return 0, nil
-}
-
-func (m MemFile) Close() error {
-	return nil
-}
-
-func (m MemFile) Write([]byte) (int, error) {
-	return 0, nil
-}
-
-func TestNewCache(t *testing.T) {
-	cache := world.NewCache(MemMapFS{})
-	if cache == nil {
-		t.Fatal("expected valid cache")
+func TestCache(t *testing.T) {
+	cache, err := world.NewCache("test_meta", "test_data")
+	if err != nil {
+		panic(fmt.Sprintf("failed to init cache: %v", err))
+	}
+	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	}, world.FlatWorldGenerator{})
+	cache.Save(ch)
+	ch2, loaded := cache.Load(world.ChunkPos{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	})
+	if !loaded {
+		t.Fatal("expected chunk to be loaded but was not")
+	}
+	t.Logf("ch: %v", ch)
+	t.Logf("ch2: %v", ch2)
+	cache.Destroy()
+	if !compareFlatData(ch.GetFlatData(), ch2.GetFlatData()) {
+		t.Fatalf("loaded data not same as saved data")
+	}
+	err = os.Remove("test_data")
+	if err != nil {
+		t.Fatalf("failed to remove test_data")
+	}
+	err = os.Remove("test_meta")
+	if err != nil {
+		t.Fatalf("failed to remove test_meta")
 	}
 }
 
-func TestCacheLoad(t *testing.T) {
-	t.Run("empty fs load", func(t *testing.T) {
-		t.Parallel()
-		cache := world.NewCache(MemMapFS{})
-		_, loaded := cache.Load(world.ChunkPos{0, 0, 0})
-		if loaded {
-			t.Fatal("expected load to fail")
-		}
+func TestCacheGetNumChunksMeta(t *testing.T) {
+	cache, err := world.NewCache("test_meta", "test_data")
+	if err != nil {
+		panic(fmt.Sprintf("failed to init cache: %v", err))
+	}
+	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	}, world.FlatWorldGenerator{})
+	cache.Save(ch)
+	ch2 := world.NewChunk(world.ChunkSize, world.ChunkPos{
+		X: 1,
+		Y: 0,
+		Z: 2,
+	}, world.FlatWorldGenerator{})
+	cache.Save(ch2)
+	chunksInFile, success := cache.GetNumChunksInFile()
+	if !success {
+		t.Fatal("failed to check meta file for # chunks")
+	}
+	if chunksInFile != 2 {
+		t.Fatalf("expected 2 chunks in file but got %v", chunksInFile)
+	}
+
+	cache.Destroy()
+	err = os.Remove("test_data")
+	if err != nil {
+		t.Fatalf("failed to remove test_data")
+	}
+	err = os.Remove("test_meta")
+	if err != nil {
+		t.Fatalf("failed to remove test_meta")
+	}
+}
+
+func TestCache2Chunks(t *testing.T) {
+	cache, err := world.NewCache("test_meta", "test_data")
+	if err != nil {
+		panic(fmt.Sprintf("failed to init cache: %v", err))
+	}
+	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	}, world.FlatWorldGenerator{})
+	cache.Save(ch)
+	ch2 := world.NewChunk(world.ChunkSize, world.ChunkPos{
+		X: 1,
+		Y: 0,
+		Z: 2,
+	}, world.FlatWorldGenerator{})
+	cache.Save(ch2)
+	chLoaded, loaded := cache.Load(world.ChunkPos{
+		X: 0,
+		Y: 0,
+		Z: 0,
 	})
-	t.Run("has entries, but not the correct one to load", func(t *testing.T) {
-		t.Parallel()
-		fs := MemMapFS{
-			files: map[string]MemFile{
-				"1": {},
-			},
-		}
-		cache := world.NewCache(fs)
-		_, loaded := cache.Load(world.ChunkPos{0, 0, 0})
-		if loaded {
-			t.Fatal("expected load to fail")
-		}
+	ch2Loaded, loaded2 := cache.Load(world.ChunkPos{
+		X: 1,
+		Y: 0,
+		Z: 2,
 	})
-	t.Run("has entries and loads correct one", func(t *testing.T) {
-		t.Parallel()
-		fs := MemMapFS{
-			files: map[string]MemFile{
-				"chunks": {},
-			},
-		}
-		cache := world.NewCache(fs)
-		_, loaded := cache.Load(world.ChunkPos{0, 0, 0})
-		if !loaded {
-			t.Fatal("expected load to work")
-		}
-	})
+	if !loaded {
+		t.Fatal("expected chunk1 to be loaded but was not")
+	}
+	if !loaded2 {
+		t.Fatal("expected chunk2 to be loaded but was not")
+	}
+	cache.Destroy()
+	if !compareFlatData(ch.GetFlatData(), chLoaded.GetFlatData()) {
+		t.Fatalf("loaded data not same as saved data")
+	}
+	if !compareFlatData(ch2.GetFlatData(), ch2Loaded.GetFlatData()) {
+		t.Fatalf("loaded data not same as saved data")
+	}
+	err = os.Remove("test_data")
+	if err != nil {
+		t.Fatalf("failed to remove test_data")
+	}
+	err = os.Remove("test_meta")
+	if err != nil {
+		t.Fatalf("failed to remove test_meta")
+	}
+}
+
+func TestCacheManyChunks(t *testing.T) {
+	cache, err := world.NewCache("test_meta", "test_data")
+	if err != nil {
+		panic(fmt.Sprintf("failed to init cache: %v", err))
+	}
+	nChunks := 15
+	for i := 0; i < nChunks; i++ {
+		ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+			X: i,
+			Y: i,
+			Z: i,
+		}, world.FlatWorldGenerator{})
+		cache.Save(ch)
+	}
+	resultingNumChunks, success := cache.GetNumChunksInFile()
+	if !success || resultingNumChunks != int32(nChunks) {
+		t.Fatalf("expected %v chunks but got %v", nChunks, resultingNumChunks)
+	}
+	cache.Destroy()
+	err = os.Remove("test_data")
+	if err != nil {
+		t.Fatalf("failed to remove test_data")
+	}
+	err = os.Remove("test_meta")
+	if err != nil {
+		t.Fatalf("failed to remove test_meta")
+	}
 }
