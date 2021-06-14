@@ -32,6 +32,12 @@ func New(win *sdl.Window) (*Application, error) {
 		return nil, err
 	}
 
+	btn := ui.NewButton(gfx)
+	err = uiPtr.AddElement(btn)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Application{
 		win:   win,
 		world: world.New(),

@@ -35,7 +35,8 @@ func (*GfxStub) NewProgram(shaders ...gfx.Shader) (gfx.Program, error) {
 	return gfx.Program{}, nil
 }
 
-func (*GfxStub) ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32) {
+func (*GfxStub) ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32) error {
+	return nil
 }
 
 func (*GfxStub) ProgramBind(program *gfx.Program) {

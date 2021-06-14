@@ -29,8 +29,8 @@ func (g *GlGfx) NewProgram(shaders ...gfx.Shader) (gfx.Program, error) {
 	return gfx.NewProgram(shaders...)
 }
 
-func (g *GlGfx) ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32) {
-	program.UploadUniform(uniformName, data...)
+func (g *GlGfx) ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32) error {
+	return program.UploadUniform(uniformName, data...)
 }
 
 func (g *GlGfx) ProgramBind(program *gfx.Program) {

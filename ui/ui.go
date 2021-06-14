@@ -10,7 +10,6 @@ import (
 // Element is an interface that represents something that is rendered like a UI element.
 type Element interface {
 	GetVAO() *gfx.VAO
-	GetColor() *[4]float32
 }
 
 // UI is a struct all of the Elements that need to be rendered along with the OpenGL Program.
@@ -29,7 +28,7 @@ type Gfx interface {
 	NewProgram(shaders ...gfx.Shader) (gfx.Program, error)
 	ProgramBind(program *gfx.Program)
 	ProgramUnbind(program *gfx.Program)
-	ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32)
+	ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32) error
 }
 
 type f32Point struct {
@@ -75,12 +74,13 @@ func (ui *UI) AddElement(element Element) error {
 
 // Render renders the object.
 func (ui *UI) Render() {
+	gl.Disable(gl.DEPTH_TEST)
 	ui.gfx.ProgramBind(ui.program)
 	for _, element := range ui.elements {
 		ui.gfx.VAODraw(element.GetVAO())
-		ui.gfx.ProgramUploadUniform(ui.program, "color", (*element.GetColor())[:]...)
 	}
 	ui.gfx.ProgramUnbind(ui.program)
+	gl.Enable(gl.DEPTH_TEST)
 }
 
 // Destroy destroys all members of the struct.
@@ -97,20 +97,24 @@ const vertElementShader = `
 	#version 420 core
 
 	layout (location = 0) in vec2 pos;
+	layout (location = 1) in vec4 color;
+
+	out vec4 vertexColor;
 
 	void main() {
 		gl_Position = vec4(pos, 0.0f, 1.0f);
+		vertexColor = color;
 	}
 `
 
 const fragElementShader = `
 	#version 330
 
+	in vec4 vertexColor;
+
 	out vec4 frag_color;
 
-	uniform vec4 color;
-
 	void main() {
-		frag_color = vec4(color[0], color[1], color[2], color[3]);
+		frag_color = vec4(vertexColor);
 	}
 `
