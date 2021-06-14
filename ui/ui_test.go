@@ -62,3 +62,21 @@ func TestNew(t *testing.T) {
 		}
 	})
 }
+
+func TestElements(t *testing.T) {
+	t.Run("successfully adds an element", func(t *testing.T) {
+		stub := &GfxStub{}
+		uiPtr, err := ui.New(stub)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+		bg := ui.NewBackground(stub)
+		if bg.GetVAO() == nil {
+			t.Fatal("Background VAO was nil")
+		}
+		err = uiPtr.AddElement(bg)
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+	})
+}

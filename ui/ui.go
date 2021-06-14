@@ -1,15 +1,23 @@
 package ui
 
 import (
+	"errors"
+
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
 )
 
-// UI is a struct.
+// Element is an interface that represents something that is rendered like a UI element.
+type Element interface {
+	GetVAO() *gfx.VAO
+	GetColor() *[4]float32
+}
+
+// UI is a struct all of the Elements that need to be rendered along with the OpenGL Program.
 type UI struct {
-	vao     *gfx.VAO
-	program *gfx.Program
-	gfx     Gfx
+	elements []Element
+	program  *gfx.Program
+	gfx      Gfx
 }
 
 // Gfx is an interface of the functions being provided.
@@ -31,62 +39,61 @@ type f32Point struct {
 
 // New returns a new ui.UI.
 func New(gfx Gfx) (*UI, error) {
-	layout := []int32{2}
-	posTL := f32Point{-1, 1} // top-left
-	posBL := f32Point{-1, 0} // bottom-left
-	posTR := f32Point{1, 1}  // top-right
-	posBR := f32Point{1, 0}  // bottom-right
-	vertices := []float32{
-		posTL.x, posTL.y,
-		posBL.x, posBL.y,
-		posTR.x, posTR.y,
-		posBR.x, posBR.y,
-	}
 
-	vao := gfx.NewVAO(gl.TRIANGLE_STRIP, layout)
-
-	gfx.VAOLoad(vao, vertices, gl.STATIC_DRAW)
-
-	vshad, err := gfx.NewShader(vertColShader, gl.VERTEX_SHADER)
+	vbgshad, err := gfx.NewShader(vertElementShader, gl.VERTEX_SHADER)
 	if err != nil {
 		return nil, err
 	}
-	fshad, err := gfx.NewShader(fragColShader, gl.FRAGMENT_SHADER)
+	fbgshad, err := gfx.NewShader(fragElementShader, gl.FRAGMENT_SHADER)
 	if err != nil {
 		return nil, err
 	}
-	prog, err := gfx.NewProgram(vshad, fshad)
+	prog, err := gfx.NewProgram(vbgshad, fbgshad)
 	if err != nil {
 		return nil, err
 	}
+
+	elements := make([]Element, 0)
 
 	ui := &UI{
-		vao:     vao,
-		program: &prog,
-		gfx:     gfx,
+		elements: elements,
+		program:  &prog,
+		gfx:      gfx,
 	}
+
 	return ui, nil
+}
+
+// AddElement adds the given UI Element to the rendered UI.
+func (ui *UI) AddElement(element Element) error {
+	if ui.elements == nil {
+		return errors.New("elements is nil")
+	}
+	ui.elements = append(ui.elements, element)
+	return nil
 }
 
 // Render renders the object.
 func (ui *UI) Render() {
 	ui.gfx.ProgramBind(ui.program)
-	ui.gfx.VAODraw(ui.vao)
-	ui.gfx.ProgramUploadUniform(ui.program, "color", 1.0, 0.0, 0.0, 1.0)
+	for _, element := range ui.elements {
+		ui.gfx.VAODraw(element.GetVAO())
+		ui.gfx.ProgramUploadUniform(ui.program, "color", (*element.GetColor())[:]...)
+	}
 	ui.gfx.ProgramUnbind(ui.program)
 }
 
 // Destroy destroys all members of the struct.
 func (ui *UI) Destroy() {
-	if ui.vao != nil {
-		ui.vao.Destroy()
+	for _, element := range ui.elements {
+		element.GetVAO().Destroy()
 	}
 	if ui.program != nil {
 		ui.program.Destroy()
 	}
 }
 
-const vertColShader = `
+const vertElementShader = `
 	#version 420 core
 
 	layout (location = 0) in vec2 pos;
@@ -96,7 +103,7 @@ const vertColShader = `
 	}
 `
 
-const fragColShader = `
+const fragElementShader = `
 	#version 330
 
 	out vec4 frag_color;

@@ -19,14 +19,23 @@ type Application struct {
 }
 
 func New(win *sdl.Window) (*Application, error) {
-	ui, err := ui.New(&ui.GlGfx{})
+	gfx := &ui.GlGfx{}
+
+	uiPtr, err := ui.New(gfx)
 	if err != nil {
 		panic(err.Error())
 	}
+
+	bg := ui.NewBackground(gfx)
+	err = uiPtr.AddElement(bg)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Application{
 		win:   win,
 		world: world.New(),
-		ui:    ui,
+		ui:    uiPtr,
 	}, nil
 }
 
