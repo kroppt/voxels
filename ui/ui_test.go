@@ -8,6 +8,8 @@ import (
 	"github.com/kroppt/voxels/ui"
 )
 
+var _ ui.Gfx = (*GfxStub)(nil)
+
 type GfxStub struct {
 }
 
@@ -22,6 +24,9 @@ func (*GfxStub) VAOLoad(vao *gfx.VAO, data []float32, usage uint32) error {
 	return nil
 }
 
+func (*GfxStub) VAODraw(vao *gfx.VAO) {
+}
+
 func (*GfxStub) NewShader(source string, shaderType uint32) (gfx.Shader, error) {
 	return gfx.Shader{}, nil
 }
@@ -30,8 +35,17 @@ func (*GfxStub) NewProgram(shaders ...gfx.Shader) (gfx.Program, error) {
 	return gfx.Program{}, nil
 }
 
-func TestUINew(t *testing.T) {
-	t.Run("creates a UI wtih a new buffer object", func(t *testing.T) {
+func (*GfxStub) ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32) {
+}
+
+func (*GfxStub) ProgramBind(program *gfx.Program) {
+}
+
+func (*GfxStub) ProgramUnbind(program *gfx.Program) {
+}
+
+func TestNew(t *testing.T) {
+	t.Run("creates a UI with a new buffer object", func(t *testing.T) {
 		stub := &GfxStub{}
 		ui.New(stub)
 		expect := &GfxStub{}

@@ -9,14 +9,19 @@ import (
 type UI struct {
 	vao     *gfx.VAO
 	program *gfx.Program
+	gfx     Gfx
 }
 
 // Gfx is an interface of the functions being provided.
 type Gfx interface {
 	NewVAO(mode uint32, layout []int32) *gfx.VAO
 	VAOLoad(vao *gfx.VAO, data []float32, usage uint32) error
+	VAODraw(vao *gfx.VAO)
 	NewShader(source string, shaderType uint32) (gfx.Shader, error)
 	NewProgram(shaders ...gfx.Shader) (gfx.Program, error)
+	ProgramBind(program *gfx.Program)
+	ProgramUnbind(program *gfx.Program)
+	ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32)
 }
 
 type f32Point struct {
@@ -58,15 +63,17 @@ func New(gfx Gfx) (*UI, error) {
 	ui := &UI{
 		vao:     vao,
 		program: &prog,
+		gfx:     gfx,
 	}
 	return ui, nil
 }
 
 // Render renders the object.
 func (ui *UI) Render() {
-	ui.program.Bind()
-	ui.vao.Draw()
-	ui.program.Unbind()
+	ui.gfx.ProgramBind(ui.program)
+	ui.gfx.VAODraw(ui.vao)
+	ui.gfx.ProgramUploadUniform(ui.program, "color", 1.0, 0.0, 0.0, 1.0)
+	ui.gfx.ProgramUnbind(ui.program)
 }
 
 // Destroy destroys all members of the struct.
@@ -94,7 +101,9 @@ const fragColShader = `
 
 	out vec4 frag_color;
 
+	uniform vec4 color;
+
 	void main() {
-		frag_color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		frag_color = vec4(color[0], color[1], color[2], color[3]);
 	}
 `
