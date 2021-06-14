@@ -163,7 +163,9 @@ func (app *Application) PostEventActions() {
 	app.world.Render()
 	sw.StopRecordAverage("Total World Render")
 
+	sw = util.Start()
 	app.ui.Render()
+	sw.StopRecordAverage("Total UI Render")
 
 	app.win.GLSwap()
 
