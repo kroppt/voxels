@@ -195,10 +195,11 @@ const (
 	AdjacentLeft   AdjacentMask = 0b00010000 // The voxel has a right adjacency.
 	AdjacentRight  AdjacentMask = 0b00100000 // The voxel has a left adjacency.
 
-	AdjacentX   = AdjacentRight | AdjacentLeft      // The voxel has adjacencies in the +/-x directions.
-	AdjacentY   = AdjacentTop | AdjacentBottom      // The voxel has adjacencies in the +/-y directions.
-	AdjacentZ   = AdjacentBack | AdjacentFront      // The voxel has adjacencies in the +/-z directions.
-	AdjacentAll = AdjacentX | AdjacentY | AdjacentZ // The voxel has adjacencies in all directions.
+	AdjacentX    = AdjacentRight | AdjacentLeft      // The voxel has adjacencies in the +/-x directions.
+	AdjacentY    = AdjacentTop | AdjacentBottom      // The voxel has adjacencies in the +/-y directions.
+	AdjacentZ    = AdjacentBack | AdjacentFront      // The voxel has adjacencies in the +/-z directions.
+	AdjacentAll  = AdjacentX | AdjacentY | AdjacentZ // The voxel has adjacencies in all directions.
+	AdjacentNone = 0
 )
 
 func (c *Chunk) SetModified() {

@@ -11,7 +11,7 @@ func (g1 FlatWorldGenerator) GenerateAt(x, y, z int) *Voxel {
 	if y < 0 || y > 5 {
 		return &Voxel{
 			Pos:     VoxelPos{x, y, z},
-			AdjMask: AdjacentAll,
+			AdjMask: AdjacentNone,
 			Btype:   Air,
 		}
 	}
