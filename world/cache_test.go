@@ -20,7 +20,42 @@ func compareFlatData(d1, d2 []float32) bool {
 	return true
 }
 
-func TestCache(t *testing.T) {
+func TestCacheInMemory(t *testing.T) {
+	cache, err := world.NewCache("test_meta", "test_data", 2)
+	if err != nil {
+		panic(fmt.Sprintf("failed to init cache: %v", err))
+	}
+	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	}, world.FlatWorldGenerator{})
+	cache.Save(ch)
+	ch2, loaded := cache.Load(world.ChunkPos{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	})
+	if !loaded {
+		t.Fatal("expected chunk to be loaded but was not")
+	}
+	t.Logf("ch: %v", ch)
+	t.Logf("ch2: %v", ch2)
+	cache.Destroy()
+	if !compareFlatData(ch.GetFlatData(), ch2.GetFlatData()) {
+		t.Fatalf("loaded data not same as saved data")
+	}
+	err = os.Remove("test_data")
+	if err != nil {
+		t.Fatalf("failed to remove test_data")
+	}
+	err = os.Remove("test_meta")
+	if err != nil {
+		t.Fatalf("failed to remove test_meta")
+	}
+}
+
+func TestCacheInFile(t *testing.T) {
 	cache, err := world.NewCache("test_meta", "test_data", 1)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))

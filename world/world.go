@@ -30,7 +30,7 @@ type World struct {
 	cache        *Cache
 }
 
-const ChunkSize = 5
+const ChunkSize = 6
 const chunkRenderDist = 2
 
 // New returns a new world.World.
@@ -309,6 +309,8 @@ func (w *World) requestExpectedChunks() {
 			} else {
 				log.Debugf("Loaded cached chunked %v", key)
 			}
+			// TODO switching these lines changes things
+			// should these two be tied?
 			w.chunkChan <- chunk
 			w.loaded <- key
 		}(key)
@@ -359,6 +361,7 @@ func (w *World) evictUnexpectedChunks() {
 		if _, ok := w.chunkExpect[key]; !ok {
 			if _, loaded := w.chunks[key]; !loaded {
 				// TODO is this possible?
+				panic("not expected and not loaded")
 				continue
 			}
 			w.chunks[key].Destroy()

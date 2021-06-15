@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"sync"
+
+	"github.com/kroppt/voxels/log"
 )
 
 // metadata file:
@@ -43,6 +45,7 @@ func NewCache(metaFileName, dataFileName string, writeThreshold int32) (*Cache, 
 func (c *Cache) Save(ch *Chunk) {
 	c.mu.Lock()
 	c.chunksToBeWritten[ch.Pos] = ch
+	log.Debugf("caching %v", ch.Pos)
 	c.numChunks++
 	if c.numChunks >= c.writeThreshold {
 		c.writeBufferToFile()
@@ -55,9 +58,11 @@ func (c *Cache) Load(pos ChunkPos) (*Chunk, bool) {
 	defer c.mu.Unlock()
 	ch, ok := c.chunksToBeWritten[pos]
 	if ok {
-		delete(c.chunksToBeWritten, pos)
-		c.numChunks--
-		return ch, false
+		// TODO dont delete below, right?
+		// delete(c.chunksToBeWritten, pos)
+		// c.numChunks--
+		log.Debugf("%v loaded directly from cache", pos)
+		return ch, true
 	} else {
 		dataOff, found := c.findChunkVoxelDataOffset(pos)
 		if found {
