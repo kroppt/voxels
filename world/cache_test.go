@@ -21,7 +21,7 @@ func compareFlatData(d1, d2 []float32) bool {
 }
 
 func TestCache(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data")
+	cache, err := world.NewCache("test_meta", "test_data", 1)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -56,7 +56,7 @@ func TestCache(t *testing.T) {
 }
 
 func TestCacheGetNumChunksMeta(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data")
+	cache, err := world.NewCache("test_meta", "test_data", 2)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -92,7 +92,7 @@ func TestCacheGetNumChunksMeta(t *testing.T) {
 }
 
 func TestCache2Chunks(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data")
+	cache, err := world.NewCache("test_meta", "test_data", 2)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -142,7 +142,7 @@ func TestCache2Chunks(t *testing.T) {
 }
 
 func TestCacheManyChunks(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data")
+	cache, err := world.NewCache("test_meta", "test_data", 5)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}

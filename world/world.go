@@ -9,25 +9,29 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
+	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
 
 // World tracks the camera and its renderable chunks.
 type World struct {
-	ubo         *gfx.BufferObject
-	cam         *Camera
-	chunks      map[ChunkPos]*Chunk
-	chunkExpect map[ChunkPos]struct{}
-	lastChunk   ChunkPos
-	chunkChan   chan *Chunk
-	cubeMap     *gfx.CubeMap
-	gen         Generator
-	cache       *Cache
+	ubo          *gfx.BufferObject
+	cam          *Camera
+	chunks       map[ChunkPos]*Chunk
+	chunkExpect  map[ChunkPos]struct{}
+	chunkSaving  map[ChunkPos]struct{}
+	chunkLoading map[ChunkPos]struct{}
+	chunkChan    chan *Chunk
+	saved        chan ChunkPos
+	loaded       chan ChunkPos
+	cubeMap      *gfx.CubeMap
+	gen          Generator
+	cache        *Cache
 }
 
-const ChunkSize = 2
-const chunkRenderDist = 5
+const ChunkSize = 5
+const chunkRenderDist = 2
 
 // New returns a new world.World.
 func New() *World {
@@ -43,15 +47,15 @@ func New() *World {
 		ubo:       ubo,
 		cam:       cam,
 		chunkChan: make(chan *Chunk),
+		saved:     make(chan ChunkPos),
+		loaded:    make(chan ChunkPos),
 		gen:       FlatWorldGenerator{},
 	}
 
 	cam.SetPosition(&glm.Vec3{0.5, 7.5, 2})
 	// cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
-	currChunk := cam.AsVoxelPos().GetChunkPos(ChunkSize)
-	rng := currChunk.GetSurroundings(chunkRenderDist)
 
-	cache, err := NewCache("world_meta", "world_data")
+	cache, err := NewCache("world_meta", "world_data", 10)
 	if err != nil {
 		panic(fmt.Sprint(err))
 	}
@@ -60,14 +64,11 @@ func New() *World {
 	rand.Seed(time.Now().UnixNano())
 	chunks := make(map[ChunkPos]*Chunk)
 	world.chunkExpect = make(map[ChunkPos]struct{})
-	rng.ForEach(func(pos ChunkPos) {
-		world.chunkExpect[pos] = struct{}{}
-		world.LoadChunkAsync(pos)
-	})
+	world.chunkLoading = make(map[ChunkPos]struct{})
 
 	world.chunks = chunks
-	world.lastChunk = currChunk
 	world.cubeMap = loadSpriteSheet("sprite_sheet.png")
+	world.chunkSaving = make(map[ChunkPos]struct{})
 
 	return world
 }
@@ -92,48 +93,6 @@ func loadSpriteSheet(fileName string) *gfx.CubeMap {
 	texAtlas.SetParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST)
 	texAtlas.SetParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST)
 	return &texAtlas
-}
-
-// LoadChunkAsync starts a thread that will put the chunk in the chunkChan
-func (w *World) LoadChunkAsync(pos ChunkPos) {
-	// immediately set that the chunk is expected to be loaded
-	w.chunkExpect[pos] = struct{}{}
-	go func() {
-		// check cache for a saved chunk
-		chunk, loaded := w.cache.Load(pos)
-		if !loaded {
-			chunk = NewChunk(ChunkSize, pos, w.gen)
-		}
-
-		w.chunkChan <- chunk
-	}()
-}
-
-func (w *World) UpdateChunksAsync() {
-	for {
-		select {
-		case ch := <-w.chunkChan:
-			if _, ok := w.chunkExpect[ch.Pos]; ok {
-				// the chunk has arrived and we expected it
-				// give the chunk its object
-				sw := util.Start()
-				objs, err := voxgl.NewColoredObject(nil)
-				if err != nil {
-					panic(fmt.Sprint(err))
-				}
-				ch.SetObjs(objs)
-				w.chunks[ch.Pos] = ch
-				sw.StopRecordAverage("Chunk objs")
-
-			}
-			// the load was too late, chunk already unloaded
-			// before it was even loaded for the first time
-			// do not destroy, because it was never created
-
-		default:
-			return
-		}
-	}
 }
 
 // FindLookAtVoxel determines which voxel is being looked at. It returns the
@@ -224,6 +183,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	if !ok {
 		return
 	}
+	log.Debugf("removing voxel in chunk %v", key)
 	chunk.SetVoxel(&Voxel{
 		Pos:   v,
 		Btype: Air,
@@ -286,12 +246,6 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	}
 }
 
-// Destroy frees external resources.
-func (w *World) Destroy() {
-	w.ubo.Destroy()
-	w.cache.Destroy()
-}
-
 // GetCamera returns a reference to the camera.
 func (w *World) GetCamera() *Camera {
 	return w.cam
@@ -313,47 +267,121 @@ func (w *World) updateUBO() error {
 	return nil
 }
 
-func (w *World) UpdateChunks() {
-	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
-	if currChunk == w.lastChunk {
-		return
+func (w *World) receiveExpectedAsync() {
+	for {
+		select {
+		case ch := <-w.chunkChan:
+			if _, ok := w.chunkExpect[ch.Pos]; ok {
+				// if _, loaded := w.chunks[ch.Pos]; loaded {
+				// 	continue
+				// }
+				// the chunk has arrived and we expected it
+				// give the chunk its object
+				sw := util.Start()
+				objs, err := voxgl.NewColoredObject(nil)
+				if err != nil {
+					panic(fmt.Sprint(err))
+				}
+				ch.SetObjs(objs)
+				w.chunks[ch.Pos] = ch
+				sw.StopRecordAverage("Chunk objs")
+			}
+		default:
+			return
+		}
 	}
-	// the camera position has moved chunks
-	// load new chunks
+}
+
+func (w *World) requestExpectedChunks() {
+	for key := range w.chunkExpect {
+		if _, loaded := w.chunks[key]; loaded {
+			continue
+		}
+		if _, loading := w.chunkLoading[key]; loading {
+			continue
+		}
+		w.chunkLoading[key] = struct{}{}
+		go func(key ChunkPos) {
+			// check cache for a saved chunk
+			chunk, loaded := w.cache.Load(key)
+			if !loaded {
+				chunk = NewChunk(ChunkSize, key, w.gen)
+			} else {
+				log.Debugf("Loaded cached chunked %v", key)
+			}
+			w.chunkChan <- chunk
+			w.loaded <- key
+		}(key)
+	}
+}
+
+func (w *World) checkSavingStatus() {
+	for {
+		select {
+		case key := <-w.saved:
+			delete(w.chunkSaving, key)
+		default:
+			return
+		}
+	}
+}
+
+func (w *World) checkLoadingStatus() {
+	for {
+		select {
+		case key := <-w.loaded:
+			delete(w.chunkLoading, key)
+		default:
+			return
+		}
+	}
+}
+
+// Expected chunks are those that are within the render distance from the
+// chunk that the camera is currently in, and are also not in the process
+// of being saved.
+func (w *World) updateExpectedChunks() {
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
 	rng := currChunk.GetSurroundings(chunkRenderDist)
-	counter := 0
+	w.chunkExpect = make(map[ChunkPos]struct{})
 	rng.ForEach(func(pos ChunkPos) {
-		if _, ok := w.chunkExpect[pos]; !ok {
-			// we do not yet expect chunk i,j to be loaded,
-			// but we want to add it as a new one
-			w.LoadChunkAsync(pos)
-			counter++
+		if _, saving := w.chunkSaving[pos]; !saving {
+			// only expect chunks that are not in the process of saving
+			w.chunkExpect[pos] = struct{}{}
+		} else {
+			log.Debugf("chunk %v is in the process of saving", pos)
 		}
 	})
-	// delete old chunks
-	lastRng := w.lastChunk.GetSurroundings(chunkRenderDist)
-	lastRng.ForEach(func(pos ChunkPos) {
-		inOld := lastRng.Contains(pos)
-		inNew := rng.Contains(pos)
-		if inOld && !inNew {
-			if ch, ok := w.chunks[pos]; ok {
-				// save chunk if modified
-				if ch.modified {
+}
+
+func (w *World) evictUnexpectedChunks() {
+	for key, ch := range w.chunks {
+		if _, ok := w.chunkExpect[key]; !ok {
+			if _, loaded := w.chunks[key]; !loaded {
+				// TODO is this possible?
+				continue
+			}
+			w.chunks[key].Destroy()
+			delete(w.chunks, key)
+			if ch.modified {
+				w.chunkSaving[key] = struct{}{}
+				go func(key ChunkPos, ch *Chunk) {
 					w.cache.Save(ch)
-				}
-				// the chunk-to-be-unloaded actually exists
-				w.chunks[pos].Destroy()
-				delete(w.chunks, pos)
-				delete(w.chunkExpect, pos)
+					w.saved <- key
+				}(key, ch)
 			}
 		}
-	})
-	w.lastChunk = currChunk
+	}
 }
 
 // Render renders the chunks of the world in OpenGL.
 func (w *World) Render() error {
-	w.UpdateChunksAsync()
+	w.evictUnexpectedChunks()
+	w.checkSavingStatus()
+	w.updateExpectedChunks()
+	w.checkLoadingStatus()
+	w.requestExpectedChunks()
+	w.receiveExpectedAsync()
 
 	if w.cam.IsDirty() {
 		err := w.updateUBO()
@@ -362,8 +390,6 @@ func (w *World) Render() error {
 		}
 		w.cam.Clean()
 	}
-
-	w.UpdateChunks()
 
 	culled := 0
 	for _, chunk := range w.chunks {
@@ -377,4 +403,10 @@ func (w *World) Render() error {
 	}
 	// log.Debugf("culled %v / %v chunks", culled, len(w.chunks))
 	return nil
+}
+
+// Destroy frees external resources.
+func (w *World) Destroy() {
+	w.ubo.Destroy()
+	w.cache.Destroy()
 }

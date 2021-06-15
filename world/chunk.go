@@ -149,7 +149,6 @@ func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 		chunk.flatData[i+3] = float32(vbits)
 
 	}
-	chunk.modified = true
 	chunk.dirty = true
 	return chunk
 }
