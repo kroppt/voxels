@@ -21,6 +21,7 @@ type World struct {
 	chunkExpect  map[ChunkPos]struct{}
 	chunkSaving  map[ChunkPos]struct{}
 	chunkLoading map[ChunkPos]struct{}
+	currChunk    ChunkPos
 	chunkChan    chan *Chunk
 	saved        chan ChunkPos
 	loaded       chan ChunkPos
@@ -29,8 +30,8 @@ type World struct {
 	cache        *Cache
 }
 
-const ChunkSize = 3
-const chunkRenderDist = 5
+const ChunkSize = 8
+const chunkRenderDist = 10
 const cacheThreshold = 10
 
 // New returns a new world.World.
@@ -62,14 +63,13 @@ func New() *World {
 	world.cache = cache
 
 	rand.Seed(time.Now().UnixNano())
-	chunks := make(map[ChunkPos]*Chunk)
+	world.chunks = make(map[ChunkPos]*Chunk)
 	world.chunkExpect = make(map[ChunkPos]struct{})
 	world.chunkLoading = make(map[ChunkPos]struct{})
-
-	world.chunks = chunks
-	world.cubeMap = loadSpriteSheet("sprite_sheet.png")
 	world.chunkSaving = make(map[ChunkPos]struct{})
+	world.cubeMap = loadSpriteSheet("sprite_sheet.png")
 
+	world.update()
 	return world
 }
 
@@ -267,14 +267,13 @@ func (w *World) updateUBO() error {
 	return nil
 }
 
+// receiveExpectedAsync reads loaded chunks off the chunk channel, and only adds them
+// to the collection of chunks to be rendered if they are still expected (not late)
 func (w *World) receiveExpectedAsync() {
 	for {
 		select {
 		case ch := <-w.chunkChan:
 			if _, ok := w.chunkExpect[ch.Pos]; ok {
-				// if _, loaded := w.chunks[ch.Pos]; loaded {
-				// 	continue
-				// }
 				// the chunk has arrived and we expected it
 				// give the chunk its object
 				sw := util.Start()
@@ -292,6 +291,30 @@ func (w *World) receiveExpectedAsync() {
 	}
 }
 
+// requestChunk puts in an asynchronous request to the cache for a chunk
+// at a particular ChunkPos to be loaded, which will complete at *some
+// point in the future*, quite possibly when it's no longer expected.
+// When the async call completes, the loaded chunk will be placed on the
+// chunk channel, and the chunk's key will be placed on the loaded channel.
+func (w *World) requestChunk(key ChunkPos) {
+	w.chunkLoading[key] = struct{}{}
+	go func(key ChunkPos) {
+		// check cache for a saved chunk
+		chunk, loaded := w.cache.Load(key)
+		if !loaded {
+			chunk = NewChunk(ChunkSize, key, w.gen)
+		}
+		// TODO switching these lines changes things
+		// should these two be tied?
+		w.chunkChan <- chunk
+		w.loaded <- key
+	}(key)
+}
+
+// requestExpectedChunks places a request for every chunk that is
+// expected, not yet loaded, and not in the process of loading. These
+// checks are in place to ensure that resource-wasting duplicate requests
+// are not made.
 func (w *World) requestExpectedChunks() {
 	for key := range w.chunkExpect {
 		if _, loaded := w.chunks[key]; loaded {
@@ -300,37 +323,34 @@ func (w *World) requestExpectedChunks() {
 		if _, loading := w.chunkLoading[key]; loading {
 			continue
 		}
-		w.chunkLoading[key] = struct{}{}
-		go func(key ChunkPos) {
-			// check cache for a saved chunk
-			chunk, loaded := w.cache.Load(key)
-			if !loaded {
-				chunk = NewChunk(ChunkSize, key, w.gen)
-			}
-			// TODO switching these lines changes things
-			// should these two be tied?
-			w.chunkChan <- chunk
-			w.loaded <- key
-		}(key)
+		w.requestChunk(key)
 	}
 }
 
+// checkSavingStatus reads chunk keys off the saved channel to indicate
+// that a particular chunk has finished saving. More importantly, if the
+// chunk is still within render distance, it marks the chunk as expected and
+// requests the chunk to be loaded.
 func (w *World) checkSavingStatus() {
-	// currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
-	// rng := currChunk.GetSurroundings(chunkRenderDist)
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
+	rng := currChunk.GetSurroundings(chunkRenderDist)
 	for {
 		select {
 		case key := <-w.saved:
 			delete(w.chunkSaving, key)
-			// if rng.Contains(key) {
-			// 	w.chunkExpect[key] = struct{}{}
-			// }
+			if rng.Contains(key) {
+				w.chunkExpect[key] = struct{}{}
+				w.requestChunk(key)
+			}
 		default:
 			return
 		}
 	}
 }
 
+// checkLoadingStatus reads chunk keys off the loaded channel
+// to indicate via the chunkLoading map that a particular chunk is no longer
+// being loaded.
 func (w *World) checkLoadingStatus() {
 	for {
 		select {
@@ -357,6 +377,11 @@ func (w *World) updateExpectedChunks() {
 	})
 }
 
+// evictUnexpectedChunks checks all loaded chunks that are being rendered
+// and removes any that are no longer expected. If they were modified, it
+// puts in an asynchronous request for the chunk to be saved, marking its key
+// as in the process of saving, and indicating completion on the saved channel
+// when it is done.
 func (w *World) evictUnexpectedChunks() {
 	for key, ch := range w.chunks {
 		if _, ok := w.chunkExpect[key]; !ok {
@@ -373,14 +398,23 @@ func (w *World) evictUnexpectedChunks() {
 	}
 }
 
+func (w *World) update() {
+	w.updateExpectedChunks()
+	w.evictUnexpectedChunks()
+	w.requestExpectedChunks()
+}
+
 // Render renders the chunks of the world in OpenGL.
 func (w *World) Render() error {
 	sw := util.Start()
-	w.evictUnexpectedChunks()
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
+	if currChunk != w.currChunk {
+		w.currChunk = currChunk
+		w.update()
+	}
+
 	w.checkSavingStatus()
-	w.updateExpectedChunks()
 	w.checkLoadingStatus()
-	w.requestExpectedChunks()
 	w.receiveExpectedAsync()
 	sw.StopRecordAverage("total update logic")
 
