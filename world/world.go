@@ -9,7 +9,6 @@ import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/gfx"
-	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
@@ -84,8 +83,6 @@ func loadSpriteSheet(fileName string) *gfx.CubeMap {
 	w := int32(16)
 	h := sprites.GetHeight()
 	layers := h / w
-	// log.Debug(len(sprytes))
-	// log.Debugf("w = %v, h = %v, layers = %v", w, h, layers)
 	texAtlas, err := gfx.NewCubeMap(w, layers, sprytes, gl.RGBA, 4, 4)
 	if err != nil {
 		panic("failed to create 3d texture")
@@ -119,6 +116,8 @@ func (w *World) SetVoxel(v *Voxel) {
 	if !ok {
 		return
 	}
+	target := chunk.GetVoxel(v.Pos)
+	v.AdjMask = target.AdjMask
 	chunk.SetVoxel(v)
 	chunk.SetModified()
 	{
@@ -183,7 +182,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	if !ok {
 		return
 	}
-	log.Debugf("removing voxel in chunk %v", key)
+	// log.Debugf("removing voxel in chunk %v", key)
 	chunk.SetVoxel(&Voxel{
 		Pos:   v,
 		Btype: Air,
@@ -306,8 +305,6 @@ func (w *World) requestExpectedChunks() {
 			chunk, loaded := w.cache.Load(key)
 			if !loaded {
 				chunk = NewChunk(ChunkSize, key, w.gen)
-			} else {
-				log.Debugf("Loaded cached chunked %v", key)
 			}
 			// TODO switching these lines changes things
 			// should these two be tied?
@@ -350,8 +347,6 @@ func (w *World) updateExpectedChunks() {
 		if _, saving := w.chunkSaving[pos]; !saving {
 			// only expect chunks that are not in the process of saving
 			w.chunkExpect[pos] = struct{}{}
-		} else {
-			log.Debugf("chunk %v is in the process of saving", pos)
 		}
 	})
 }

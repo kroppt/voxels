@@ -116,3 +116,13 @@ type Voxel struct {
 	AdjMask AdjacentMask
 	Btype   BlockType
 }
+
+// TODO use these two functions around the code base more
+func (v *Voxel) GetVbits() int32 {
+	return int32(v.AdjMask) | int32(v.Btype<<6)
+}
+
+func SeparateVbits(vbits int32) (AdjacentMask, BlockType) {
+	return AdjacentMask(vbits & int32(AdjacentAll)),
+		BlockType(vbits & ^int32(AdjacentAll))
+}

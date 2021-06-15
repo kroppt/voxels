@@ -1,8 +1,9 @@
 package world
 
 import (
+	"fmt"
+
 	"github.com/engoengine/glm"
-	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -209,11 +210,30 @@ func (c *Chunk) SetModified() {
 	c.modified = true
 }
 
+func (c *Chunk) GetVoxel(pos VoxelPos) Voxel {
+	if !c.IsWithinChunk(pos) {
+		panic(fmt.Sprintf("%v is not within %v", pos, c.AsVoxelPos()))
+	}
+	localPos := pos.AsLocalChunkPos(*c)
+	i, j, k := localPos.X, localPos.Y, localPos.Z
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
+	vbits := int32(c.flatData[off+3])
+	adjMask, btype := SeparateVbits(vbits)
+	return Voxel{
+		Pos: VoxelPos{
+			X: int(c.flatData[off]),
+			Y: int(c.flatData[off+1]),
+			Z: int(c.flatData[off+2]),
+		},
+		AdjMask: adjMask,
+		Btype:   btype,
+	}
+}
+
 // SetVoxel updates a voxel's variables in the chunk, if it exists
 func (c *Chunk) SetVoxel(v *Voxel) {
 	if !c.IsWithinChunk(v.Pos) {
-		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
-		return
+		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	localPos := v.Pos.AsLocalChunkPos(*c)
@@ -241,8 +261,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 // AddAdjacency adds adjacency to a voxel
 func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 	if !c.IsWithinChunk(v) {
-		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
-		return
+		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
 	localPos := v.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
@@ -263,8 +282,7 @@ func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 // RemoveAdjacency remove adjacency from a voxel
 func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 	if !c.IsWithinChunk(v) {
-		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
-		return
+		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
 	localPos := v.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
