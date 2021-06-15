@@ -95,6 +95,7 @@ type Chunk struct {
 	dirty    bool
 	size     int
 	modified bool
+	empty    bool
 }
 
 const VertSize = 4
@@ -106,6 +107,7 @@ func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 		Pos:      pos,
 		flatData: flatData,
 		size:     size,
+		empty:    true,
 	}
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
@@ -127,8 +129,8 @@ func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 		Pos:      pos,
 		flatData: make([]float32, 4*size*size*size),
 		size:     size,
+		empty:    true,
 	}
-	// rebuild octree
 	maxIdx := 4 * size * size * size
 	for i := 0; i < maxIdx; i += 4 {
 		vbits := flatData[i+3]
@@ -142,16 +144,8 @@ func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 			AdjMask: adjMask,
 			Btype:   btype,
 		}
-		if v.Btype != Air {
-			chunk.root = chunk.root.AddLeaf(&v)
-		}
-		chunk.flatData[i] = float32(flatData[i])
-		chunk.flatData[i+1] = float32(flatData[i+1])
-		chunk.flatData[i+2] = float32(flatData[i+2])
-		chunk.flatData[i+3] = float32(vbits)
-
+		chunk.SetVoxel(&v)
 	}
-	chunk.dirty = true
 	return chunk
 }
 
@@ -254,6 +248,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 
 	if v.Btype != Air { // TODO return at top of function?
 		c.root = c.root.AddLeaf(v)
+		c.empty = false
 	}
 	c.dirty = true
 }
@@ -301,12 +296,17 @@ func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 }
 
 // Render renders the chunk in OpenGL.
-func (c *Chunk) Render() {
+func (c *Chunk) Render(cam *Camera) {
 	if c.dirty {
 		c.objs.SetData(c.flatData)
 		c.dirty = false
 	}
-	c.objs.Render()
+	if c.empty {
+		return
+	}
+	if cam.IsWithinFrustum(c.AsVoxelPos().AsVec3(), float32(c.size), float32(c.size), float32(c.size)) {
+		c.objs.Render()
+	}
 }
 
 func (c *Chunk) Destroy() {

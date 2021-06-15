@@ -316,10 +316,15 @@ func (w *World) requestExpectedChunks() {
 }
 
 func (w *World) checkSavingStatus() {
+	// currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
+	// rng := currChunk.GetSurroundings(chunkRenderDist)
 	for {
 		select {
 		case key := <-w.saved:
 			delete(w.chunkSaving, key)
+			// if rng.Contains(key) {
+			// 	w.chunkExpect[key] = struct{}{}
+			// }
 		default:
 			return
 		}
@@ -355,11 +360,6 @@ func (w *World) updateExpectedChunks() {
 func (w *World) evictUnexpectedChunks() {
 	for key, ch := range w.chunks {
 		if _, ok := w.chunkExpect[key]; !ok {
-			if _, loaded := w.chunks[key]; !loaded {
-				// TODO is this possible?
-				panic("not expected and not loaded")
-				continue
-			}
 			w.chunks[key].Destroy()
 			delete(w.chunks, key)
 			if ch.modified {
@@ -375,12 +375,14 @@ func (w *World) evictUnexpectedChunks() {
 
 // Render renders the chunks of the world in OpenGL.
 func (w *World) Render() error {
+	sw := util.Start()
 	w.evictUnexpectedChunks()
 	w.checkSavingStatus()
 	w.updateExpectedChunks()
 	w.checkLoadingStatus()
 	w.requestExpectedChunks()
 	w.receiveExpectedAsync()
+	sw.StopRecordAverage("total update logic")
 
 	if w.cam.IsDirty() {
 		err := w.updateUBO()
@@ -390,17 +392,11 @@ func (w *World) Render() error {
 		w.cam.Clean()
 	}
 
-	culled := 0
 	for _, chunk := range w.chunks {
-		if w.cam.IsWithinFrustum(chunk.AsVoxelPos().AsVec3(), float32(chunk.size), float32(chunk.size), float32(chunk.size)) {
-			w.cubeMap.Bind()
-			chunk.Render()
-			w.cubeMap.Unbind()
-		} else {
-			culled++
-		}
+		w.cubeMap.Bind()
+		chunk.Render(w.cam)
+		w.cubeMap.Unbind()
 	}
-	// log.Debugf("culled %v / %v chunks", culled, len(w.chunks))
 	return nil
 }
 

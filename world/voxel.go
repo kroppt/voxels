@@ -124,5 +124,5 @@ func (v *Voxel) GetVbits() int32 {
 
 func SeparateVbits(vbits int32) (AdjacentMask, BlockType) {
 	return AdjacentMask(vbits & int32(AdjacentAll)),
-		BlockType(vbits & ^int32(AdjacentAll))
+		BlockType(vbits >> 6)
 }
