@@ -132,14 +132,15 @@ func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 	maxIdx := 4 * size * size * size
 	for i := 0; i < maxIdx; i += 4 {
 		vbits := flatData[i+3]
+		adjMask, btype := SeparateVbits(vbits)
 		v := Voxel{
 			Pos: VoxelPos{
 				int(flatData[i]),
 				int(flatData[i+1]),
 				int(flatData[i+2]),
 			},
-			AdjMask: AdjacentMask(vbits & int32(AdjacentAll)),
-			Btype:   BlockType(vbits & ^int32(AdjacentAll)),
+			AdjMask: adjMask,
+			Btype:   btype,
 		}
 		if v.Btype != Air {
 			chunk.root = chunk.root.AddLeaf(&v)
@@ -238,7 +239,6 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	vbits := float32(int32(v.AdjMask) | int32(v.Btype<<6))
 	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	if off%VertSize != 0 {
 		panic("offset not divisible by VertSize")
@@ -250,7 +250,7 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	c.flatData[off] = x
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
-	c.flatData[off+3] = vbits
+	c.flatData[off+3] = float32(v.GetVbits())
 
 	if v.Btype != Air { // TODO return at top of function?
 		c.root = c.root.AddLeaf(v)

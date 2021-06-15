@@ -29,8 +29,9 @@ type World struct {
 	cache        *Cache
 }
 
-const ChunkSize = 6
-const chunkRenderDist = 2
+const ChunkSize = 3
+const chunkRenderDist = 5
+const cacheThreshold = 10
 
 // New returns a new world.World.
 func New() *World {
@@ -54,7 +55,7 @@ func New() *World {
 	cam.SetPosition(&glm.Vec3{0.5, 7.5, 2})
 	// cam.LookAt(&glm.Vec3{0.5, 0.5, 0.5})
 
-	cache, err := NewCache("world_meta", "world_data", 10)
+	cache, err := NewCache("world_meta", "world_data", cacheThreshold)
 	if err != nil {
 		panic(fmt.Sprint(err))
 	}
