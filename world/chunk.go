@@ -182,6 +182,8 @@ const (
 	Dirt
 	Grass
 	Labeled
+	Corrupted
+	Stone
 )
 
 // AdjacentMask indicates which in which directions there are adjacent voxels.
