@@ -30,8 +30,8 @@ type World struct {
 	cache        *Cache
 }
 
-const ChunkSize = 8
-const chunkRenderDist = 10
+const ChunkSize = 4
+const chunkRenderDist = 2
 const cacheThreshold = 10
 
 // New returns a new world.World.
@@ -120,7 +120,6 @@ func (w *World) SetVoxel(v *Voxel) {
 	target := chunk.GetVoxel(v.Pos)
 	v.AdjMask = target.AdjMask
 	chunk.SetVoxel(v)
-	chunk.SetModified()
 	{
 		p := VoxelPos{v.Pos.X - 1, v.Pos.Y, v.Pos.Z}
 		k := p.GetChunkPos(ChunkSize)
@@ -188,7 +187,6 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		Pos:   v,
 		Btype: Air,
 	})
-	chunk.SetModified()
 	chunk.root, _ = chunk.root.Remove(v)
 	{
 		p := VoxelPos{v.X - 1, v.Y, v.Z}
