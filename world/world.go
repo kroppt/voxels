@@ -435,5 +435,10 @@ func (w *World) Render() error {
 // Destroy frees external resources.
 func (w *World) Destroy() {
 	w.ubo.Destroy()
+	for _, ch := range w.chunks {
+		if ch.modified {
+			w.cache.Save(ch)
+		}
+	}
 	w.cache.Destroy()
 }
