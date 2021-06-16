@@ -1,13 +1,10 @@
 package world
 
 import (
-	"fmt"
 	"math/rand"
-	"time"
 
 	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/log"
-	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -44,6 +41,15 @@ func (pos ChunkPos) AsVec3() glm.Vec3 {
 		// TODO un hack this, chunks just so happen to start at y=0
 		float32(0.0),
 		float32(pos.Z),
+	}
+}
+
+func (c *Chunk) AsVoxelPos() VoxelPos {
+	scaled := c.Pos.Mul(c.size)
+	return VoxelPos{
+		X: scaled.X,
+		Y: 0, // TODO hacked
+		Z: scaled.Z,
 	}
 }
 
@@ -86,70 +92,55 @@ type Chunk struct {
 
 // NewChunk returns a new Chunk shaped as size X height X size.
 func NewChunk(size, height int, pos ChunkPos) *Chunk {
-	sw2 := util.Start()
 	vertSize := 8
 	flatData := make([]float32, size*size*height*vertSize)
 	// layout 4+4=8 hard coded in here too
-	objs, err := voxgl.NewColoredObject(nil)
-	if err != nil {
-		panic(fmt.Sprint(err))
-	}
 	chunk := &Chunk{
-		Pos:      pos.Mul(size),
-		objs:     objs,
+		Pos:      pos,
 		flatData: flatData,
 		size:     size,
 		height:   height,
 	}
-	sw := util.Start()
-	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < size; i++ {
 		for j := 0; j < height; j++ {
 			for k := 0; k < size; k++ {
-				sw3 := util.Start()
-				x := chunk.Pos.X + i
+				x := chunk.AsVoxelPos().X + i
 				y := j
-				z := chunk.Pos.Z + k
+				z := chunk.AsVoxelPos().Z + k
 				r, g, b := rand.Float32(), rand.Float32(), rand.Float32()
 				v := Voxel{
 					Pos:   VoxelPos{x, y, z},
 					Color: Color{r, g, b, 1.0},
 				}
-				// left right top bottom forward backward
 				// a worldgenerator should be asked for this info
-				leftmask := 0x20
-				rightmask := 0x10
-				topmask := 0x08
-				bottommask := 0x04
-				forwardmask := 0x02
-				backwardmask := 0x01
-				code := 0
+				var adjMask AdjacentMask
 				if i == 0 {
-					code += leftmask
+					adjMask |= AdjacentLeft
 				}
 				if i == size-1 {
-					code += rightmask
+					adjMask |= AdjacentRight
 				}
 				if j == 0 {
-					code += bottommask
+					adjMask |= AdjacentBottom
 				}
 				if j == height-1 {
-					code += topmask
+					adjMask |= AdjacentTop
 				}
 				if k == 0 {
-					code += forwardmask
+					adjMask |= AdjacentForward
 				}
 				if k == size-1 {
-					code += backwardmask
+					adjMask |= AdjacentBackward
 				}
-				chunk.SetVoxel(&v, float32(code))
-				sw3.StopRecordAverage("Per Voxel Loop")
+				chunk.SetVoxel(&v, adjMask)
 			}
 		}
 	}
-	sw.StopRecordAverage("NewChunk Total Voxel loop")
-	sw2.StopRecordAverage("NewChunk")
 	return chunk
+}
+
+func (c *Chunk) SetObjs(objs *voxgl.Object) {
+	c.objs = objs
 }
 
 func (c *Chunk) GetRoot() *Octree {
@@ -158,11 +149,11 @@ func (c *Chunk) GetRoot() *Octree {
 
 // IsWithinChunk returns whether the position is within the chunk
 func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
-	if pos.X < c.Pos.X || pos.Z < c.Pos.Z {
+	if pos.X < c.AsVoxelPos().X || pos.Z < c.AsVoxelPos().Z {
 		//pos is below x or z chunk bounds
 		return false
 	}
-	if pos.X >= c.Pos.X+c.size || pos.Z >= c.Pos.Z+c.size {
+	if pos.X >= c.AsVoxelPos().X+c.size || pos.Z >= c.AsVoxelPos().Z+c.size {
 		// pos is above x or z chunk bounds
 		return false
 	}
@@ -173,16 +164,33 @@ func (c *Chunk) IsWithinChunk(pos VoxelPos) bool {
 	return true
 }
 
+// AdjacentMask indicates which in which directions there are adjacent voxels.
+type AdjacentMask int
+
+const (
+	AdjacentBackward AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
+	AdjacentForward  AdjacentMask = 0b00000010 // The voxel has a forward adjacency.
+	AdjacentBottom   AdjacentMask = 0b00000100 // The voxel has a bottom adjacency.
+	AdjacentTop      AdjacentMask = 0b00001000 // The voxel has a top adjacency.
+	AdjacentRight    AdjacentMask = 0b00010000 // The voxel has a right adjacency.
+	AdjacentLeft     AdjacentMask = 0b00100000 // The voxel has a left adjacency.
+
+	AdjacentX   = AdjacentRight | AdjacentLeft       // The voxel has adjacencies in the +/-x directions.
+	AdjacentY   = AdjacentTop | AdjacentBottom       // The voxel has adjacencies in the +/-y directions.
+	AdjacentZ   = AdjacentBackward | AdjacentForward // The voxel has adjacencies in the +/-z directions.
+	AdjacentAll = AdjacentX | AdjacentY | AdjacentZ  // The voxel has adjacencies in all directions.
+)
+
 // SetVoxel updates a voxel's variables in the chunk, if it exists
-func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
-	sw := util.Start()
+func (c *Chunk) SetVoxel(v *Voxel, adjMask AdjacentMask) {
 	if !c.IsWithinChunk(v.Pos) {
-		log.Debugf("%v is not within %v", v, c.Pos)
+		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
 		return
 	}
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
+	adj := float32(adjMask)
 	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
 	off := (i + j*c.size*c.size + k*c.size) * 8
 	if off%8 != 0 {
@@ -195,16 +203,13 @@ func (c *Chunk) SetVoxel(v *Voxel, adjaCode float32) {
 	c.flatData[off] = x
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
-	c.flatData[off+3] = adjaCode
+	c.flatData[off+3] = adj
 	c.flatData[off+4] = r
 	c.flatData[off+5] = g
 	c.flatData[off+6] = b
 	c.flatData[off+7] = a
 
-	sw.StopRecordAverage("SetVoxel (minus octree)")
-	sw = util.Start()
 	c.root = c.root.AddLeaf(v)
-	sw.StopRecordAverage("Octree.AddLeaf")
 	c.dirty = true
 }
 
