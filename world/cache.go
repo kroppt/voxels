@@ -75,21 +75,12 @@ func readChunkMetadata(f *os.File, byteOff int64) (int, int, int, int32, error) 
 		return 0, 0, 0, 0, err
 	}
 	readBuf := bytes.NewBuffer(b)
-	err = binary.Read(readBuf, binary.BigEndian, &x)
-	if err != nil {
-		return 0, 0, 0, 0, err
-	}
-	err = binary.Read(readBuf, binary.BigEndian, &y)
-	if err != nil {
-		return 0, 0, 0, 0, err
-	}
-	err = binary.Read(readBuf, binary.BigEndian, &z)
-	if err != nil {
-		return 0, 0, 0, 0, err
-	}
-	err = binary.Read(readBuf, binary.BigEndian, &offset)
-	if err != nil {
-		return 0, 0, 0, 0, err
+	vals := []interface{}{&x, &y, &z, &offset}
+	for _, val := range vals {
+		err = binary.Read(readBuf, binary.BigEndian, val)
+		if err != nil {
+			return 0, 0, 0, 0, err
+		}
 	}
 	return int(x), int(y), int(z), offset, nil
 }
@@ -116,21 +107,12 @@ func (c *Cache) readChunkVoxelData(byteOff int64) []int32 {
 
 func (c *Cache) writeChunkMetadata(byteOff int64, p ChunkPos, dataOff int32) error {
 	var writeBuf bytes.Buffer
-	writeErr := binary.Write(&writeBuf, binary.BigEndian, int32(p.X))
-	if writeErr != nil {
-		return writeErr
-	}
-	writeErr = binary.Write(&writeBuf, binary.BigEndian, int32(p.Y))
-	if writeErr != nil {
-		return writeErr
-	}
-	writeErr = binary.Write(&writeBuf, binary.BigEndian, int32(p.Z))
-	if writeErr != nil {
-		return writeErr
-	}
-	writeErr = binary.Write(&writeBuf, binary.BigEndian, int32(dataOff))
-	if writeErr != nil {
-		return writeErr
+	vals := []interface{}{int32(p.X), int32(p.Y), int32(p.Z), int32(dataOff)}
+	for _, val := range vals {
+		writeErr := binary.Write(&writeBuf, binary.BigEndian, val)
+		if writeErr != nil {
+			return writeErr
+		}
 	}
 	n, err := c.metaFile.WriteAt(writeBuf.Bytes(), byteOff)
 	if err != nil || n != 16 {
