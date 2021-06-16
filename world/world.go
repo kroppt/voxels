@@ -31,7 +31,7 @@ type World struct {
 }
 
 const ChunkSize = 4
-const chunkRenderDist = 2
+const chunkRenderDist = 5
 const cacheThreshold = 10
 
 // New returns a new world.World.
@@ -120,59 +120,25 @@ func (w *World) SetVoxel(v *Voxel) {
 	target := chunk.GetVoxel(v.Pos)
 	v.AdjMask = target.AdjMask
 	chunk.SetVoxel(v)
-	{
-		p := VoxelPos{v.Pos.X - 1, v.Pos.Y, v.Pos.Z}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.AddAdjacency(p, AdjacentRight)
+	sides := []struct {
+		off VoxelPos
+		adj AdjacentMask
+	}{
+		{VoxelPos{-1, 0, 0}, AdjacentRight},
+		{VoxelPos{1, 0, 0}, AdjacentLeft},
+		{VoxelPos{0, -1, 0}, AdjacentTop},
+		{VoxelPos{0, 1, 0}, AdjacentBottom},
+		{VoxelPos{0, 0, -1}, AdjacentBack},
+		{VoxelPos{0, 0, 1}, AdjacentFront},
 	}
-	{
-		p := VoxelPos{v.Pos.X + 1, v.Pos.Y, v.Pos.Z}
+	for _, side := range sides {
+		p := v.Pos.Add(side.off)
 		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
 		}
-		ch.AddAdjacency(p, AdjacentLeft)
-	}
-	{
-		p := VoxelPos{v.Pos.X, v.Pos.Y - 1, v.Pos.Z}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.AddAdjacency(p, AdjacentTop)
-	}
-	{
-		p := VoxelPos{v.Pos.X, v.Pos.Y + 1, v.Pos.Z}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.AddAdjacency(p, AdjacentBottom)
-	}
-	{
-		p := VoxelPos{v.Pos.X, v.Pos.Y, v.Pos.Z - 1}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.AddAdjacency(p, AdjacentBack)
-	}
-	{
-		p := VoxelPos{v.Pos.X, v.Pos.Y, v.Pos.Z + 1}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.AddAdjacency(p, AdjacentFront)
+		ch.AddAdjacency(p, side.adj)
 	}
 }
 
@@ -184,63 +150,30 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	}
 	// log.Debugf("removing voxel in chunk %v", key)
 	chunk.SetVoxel(&Voxel{
-		Pos:   v,
-		Btype: Air,
+		Pos:     v,
+		Btype:   Air,
+		AdjMask: AdjacentNone,
 	})
 	chunk.root, _ = chunk.root.Remove(v)
-	{
-		p := VoxelPos{v.X - 1, v.Y, v.Z}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.RemoveAdjacency(p, AdjacentRight)
+	sides := []struct {
+		off VoxelPos
+		adj AdjacentMask
+	}{
+		{VoxelPos{-1, 0, 0}, AdjacentRight},
+		{VoxelPos{1, 0, 0}, AdjacentLeft},
+		{VoxelPos{0, -1, 0}, AdjacentTop},
+		{VoxelPos{0, 1, 0}, AdjacentBottom},
+		{VoxelPos{0, 0, -1}, AdjacentBack},
+		{VoxelPos{0, 0, 1}, AdjacentFront},
 	}
-	{
-		p := VoxelPos{v.X + 1, v.Y, v.Z}
+	for _, side := range sides {
+		p := v.Add(side.off)
 		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
 			panic("the player unlocked TNT and wiremod")
 		}
-		ch.RemoveAdjacency(p, AdjacentLeft)
-	}
-	{
-		p := VoxelPos{v.X, v.Y - 1, v.Z}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.RemoveAdjacency(p, AdjacentTop)
-	}
-	{
-		p := VoxelPos{v.X, v.Y + 1, v.Z}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.RemoveAdjacency(p, AdjacentBottom)
-	}
-	{
-		p := VoxelPos{v.X, v.Y, v.Z - 1}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.RemoveAdjacency(p, AdjacentBack)
-	}
-	{
-		p := VoxelPos{v.X, v.Y, v.Z + 1}
-		k := p.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
-		if !ok {
-			panic("the player unlocked TNT and wiremod")
-		}
-		ch.RemoveAdjacency(p, AdjacentFront)
+		ch.RemoveAdjacency(p, side.adj)
 	}
 }
 
