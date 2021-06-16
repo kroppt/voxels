@@ -21,13 +21,18 @@ type World struct {
 	chunkExpect  map[ChunkPos]struct{}
 	chunkSaving  map[ChunkPos]struct{}
 	chunkLoading map[ChunkPos]struct{}
-	currChunk    ChunkPos
-	chunkChan    chan *Chunk
-	saved        chan ChunkPos
-	loaded       chan ChunkPos
-	cubeMap      *gfx.CubeMap
-	gen          Generator
-	cache        *Cache
+	pendingMods  map[ChunkPos][]struct {
+		pos     VoxelPos
+		adjDiff AdjacentMask
+		add     bool
+	}
+	currChunk ChunkPos
+	chunkChan chan *Chunk
+	saved     chan ChunkPos
+	loaded    chan ChunkPos
+	cubeMap   *gfx.CubeMap
+	gen       Generator
+	cache     *Cache
 }
 
 const ChunkSize = 4
@@ -67,6 +72,12 @@ func New() *World {
 	world.chunkExpect = make(map[ChunkPos]struct{})
 	world.chunkLoading = make(map[ChunkPos]struct{})
 	world.chunkSaving = make(map[ChunkPos]struct{})
+	world.pendingMods = make(map[ChunkPos][]struct {
+		pos     VoxelPos
+		adjDiff AdjacentMask
+		add     bool
+	})
+
 	world.cubeMap = loadSpriteSheet("sprite_sheet.png")
 
 	world.update()
@@ -136,9 +147,21 @@ func (w *World) SetVoxel(v *Voxel) {
 		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
-			panic("the player unlocked TNT and wiremod")
+			w.pendingMods[k] = append(w.pendingMods[k], struct {
+				pos     VoxelPos
+				adjDiff AdjacentMask
+				add     bool
+			}{
+				pos:     p,
+				adjDiff: side.adj,
+				add:     true,
+			})
+			if _, loading := w.chunkLoading[k]; !loading {
+				w.requestChunk(k)
+			}
+		} else {
+			ch.AddAdjacency(p, side.adj)
 		}
-		ch.AddAdjacency(p, side.adj)
 	}
 }
 
@@ -171,9 +194,21 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		k := p.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
-			panic("the player unlocked TNT and wiremod")
+			w.pendingMods[k] = append(w.pendingMods[k], struct {
+				pos     VoxelPos
+				adjDiff AdjacentMask
+				add     bool
+			}{
+				pos:     p,
+				adjDiff: side.adj,
+				add:     false,
+			})
+			if _, loading := w.chunkLoading[k]; !loading {
+				w.requestChunk(k)
+			}
+		} else {
+			ch.RemoveAdjacency(p, side.adj)
 		}
-		ch.RemoveAdjacency(p, side.adj)
 	}
 }
 
@@ -214,7 +249,10 @@ func (w *World) receiveExpectedAsync() {
 				}
 				ch.SetObjs(objs)
 				w.chunks[ch.Pos] = ch
-				sw.StopRecordAverage("Chunk objs")
+				if _, hasPending := w.pendingMods[ch.Pos]; hasPending {
+					w.applyPendingMods(ch)
+				}
+				sw.StopRecordAverage("Chunk objs + pending mods")
 			}
 		default:
 			return
@@ -277,6 +315,21 @@ func (w *World) checkSavingStatus() {
 			return
 		}
 	}
+}
+
+func (w *World) applyPendingMods(ch *Chunk) {
+	mods, ok := w.pendingMods[ch.Pos]
+	if !ok {
+		panic("improper use of applyPendingMods - chunk had no pending operations")
+	}
+	for _, mod := range mods {
+		if mod.add {
+			ch.AddAdjacency(mod.pos, mod.adjDiff)
+		} else {
+			ch.RemoveAdjacency(mod.pos, mod.adjDiff)
+		}
+	}
+	delete(w.pendingMods, ch.Pos)
 }
 
 // checkLoadingStatus reads chunk keys off the loaded channel
@@ -368,6 +421,21 @@ func (w *World) Render() error {
 // Destroy frees external resources.
 func (w *World) Destroy() {
 	w.ubo.Destroy()
+	// TODO make a more well defined cleanup routine
+	for key := range w.pendingMods {
+		if ch, ok := w.chunks[key]; !ok {
+			chunk, loaded := w.cache.Load(key)
+			if !loaded {
+				chunk = NewChunk(ChunkSize, key, w.gen)
+			}
+			w.applyPendingMods(chunk)
+			w.cache.Save(chunk)
+		} else {
+			w.applyPendingMods(ch)
+			w.cache.Save(ch)
+			delete(w.chunks, key)
+		}
+	}
 	for _, ch := range w.chunks {
 		if ch.modified {
 			w.cache.Save(ch)
