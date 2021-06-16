@@ -63,7 +63,7 @@ const vertColShader = `
 	#version 420 core
 
 	layout (location = 0) in vec4 pos;
-	layout (location = 1) in vec4 col;
+	layout (location = 1) in vec4 col; // TODO delete me eventually
 
 	out Vertex {
 		vec4 color;
@@ -97,9 +97,13 @@ const geoColShader = `
 
 	out Vertex {
 		vec4 color;
+		vec3 stdir;
+		flat int blockType;
 	} OUT;
 
 	void createVertex(vec4 p) {
+		vec3 center = (gl_in[0].gl_Position).xyz + 0.5;
+		OUT.stdir = p.xyz - center;
 		gl_Position = cam.projection * cam.view * p;
 		OUT.color = IN[0].color;
 		EmitVertex();
@@ -114,22 +118,27 @@ const geoColShader = `
 	}
 
 	void main() {
-		vec4 center = gl_in[0].gl_Position;
+		vec4 origin = gl_in[0].gl_Position;
 
-		// 0011 1111
-		// bit order = left right top bottom forward backward
-		int leftmask = 0x20;
-		int rightmask = 0x10;
+		// bottom 6 bits are for adjacency
+		int adjaBits = 6;
+		// bit order = right left top bottom backward forward
+		int rightmask = 0x20;
+		int leftmask = 0x10;
 		int topmask = 0x08;
 		int bottommask = 0x04;
-		int forwardmask = 0x02;
-		int backwardmask = 0x01;
+		int backwardmask = 0x02;
+		int forwardmask = 0x01;
 		int bits = int(IN[0].vbits);
+		
+		// top 26 bits are for block types (for now)
+		int blockmask = 0xFFFFFFC0;
+		OUT.blockType = (blockmask & bits) >> adjaBits;
 
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
 		vec4 dz = vec4(0.0, 0.0, 1.0, 0.0);
-		vec4 p1 = center;
+		vec4 p1 = origin;
 		vec4 p2 = p1 + dx + dy + dz;
 
 		if ((bits & backwardmask) - backwardmask == 0) {
@@ -154,15 +163,19 @@ const geoColShader = `
 `
 
 const fragColShader = `
-	#version 330
+	#version 400
 
 	in Vertex {
 		vec4 color;
+		vec3 stdir;
+		flat int blockType;
 	} IN;
+	uniform samplerCubeArray cubeMapArray;
+
 
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = IN.color;
+		frag_color = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));// * IN.color;
 	}
 `
