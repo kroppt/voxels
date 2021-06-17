@@ -3,6 +3,7 @@ package world
 import (
 	"fmt"
 	"math/rand"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -33,6 +34,8 @@ type World struct {
 	cubeMap       *gfx.CubeMap
 	gen           Generator
 	cache         *Cache
+	cacheLock     sync.Mutex
+	cancel        bool
 	selectedVoxel *voxgl.Object
 	selected      bool
 	crosshair     *voxgl.Crosshair
@@ -65,6 +68,7 @@ func New() *World {
 		loaded:    make(chan ChunkPos),
 		gen:       FlatWorldGenerator{},
 		crosshair: crosshair,
+		cacheLock: sync.Mutex{},
 	}
 
 	cam.SetPosition(&glm.Vec3{0.5, 7.5, 2})
@@ -187,9 +191,6 @@ func (w *World) SetVoxel(v *Voxel) {
 				adjDiff: side.adj,
 				add:     true,
 			})
-			if _, loading := w.chunkLoading[k]; !loading {
-				w.requestChunk(k)
-			}
 		} else {
 			ch.AddAdjacency(p, side.adj)
 		}
@@ -234,9 +235,6 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 				adjDiff: side.adj,
 				add:     false,
 			})
-			if _, loading := w.chunkLoading[k]; !loading {
-				w.requestChunk(k)
-			}
 		} else {
 			ch.RemoveAdjacency(p, side.adj)
 		}
@@ -296,11 +294,25 @@ func (w *World) receiveExpectedAsync() {
 // point in the future*, quite possibly when it's no longer expected.
 // When the async call completes, the loaded chunk will be placed on the
 // chunk channel, and the chunk's key will be placed on the loaded channel.
+// A request to any chunk that is already loaded, loading, or saving will
+// be ignored.
 func (w *World) requestChunk(key ChunkPos) {
+	_, loaded := w.chunks[key]
+	_, loading := w.chunkLoading[key]
+	_, saving := w.chunkSaving[key]
+	if loaded || loading || saving {
+		return
+	}
 	w.chunkLoading[key] = struct{}{}
 	go func(key ChunkPos) {
 		// check cache for a saved chunk
+		w.cacheLock.Lock()
+		if w.cancel {
+			w.cacheLock.Unlock()
+			return
+		}
 		chunk, loaded := w.cache.Load(key)
+		w.cacheLock.Unlock()
 		if !loaded {
 			chunk = NewChunk(ChunkSize, key, w.gen)
 		}
@@ -311,18 +323,11 @@ func (w *World) requestChunk(key ChunkPos) {
 	}(key)
 }
 
-// requestExpectedChunks places a request for every chunk that is
-// expected, not yet loaded, and not in the process of loading. These
-// checks are in place to ensure that resource-wasting duplicate requests
-// are not made.
+// requestExpectedChunks attempts to request every expected chunk
+// Note that in requestChunk, it will ignore requests to loaded,
+// loading or saving chunks.
 func (w *World) requestExpectedChunks() {
 	for key := range w.chunkExpect {
-		if _, loaded := w.chunks[key]; loaded {
-			continue
-		}
-		if _, loading := w.chunkLoading[key]; loading {
-			continue
-		}
 		w.requestChunk(key)
 	}
 }
@@ -405,7 +410,13 @@ func (w *World) evictUnexpectedChunks() {
 			if ch.modified {
 				w.chunkSaving[key] = struct{}{}
 				go func(key ChunkPos, ch *Chunk) {
+					w.cacheLock.Lock()
+					if w.cancel {
+						w.cacheLock.Unlock()
+						return
+					}
 					w.cache.Save(ch)
+					w.cacheLock.Unlock()
 					w.saved <- key
 				}(key, ch)
 			}
@@ -462,6 +473,8 @@ func (w *World) Render() error {
 func (w *World) Destroy() {
 	w.ubo.Destroy()
 	// TODO make a more well defined cleanup routine
+	w.cancel = true
+	w.cacheLock.Lock()
 	for key := range w.pendingMods {
 		if ch, ok := w.chunks[key]; !ok {
 			chunk, loaded := w.cache.Load(key)
@@ -482,4 +495,5 @@ func (w *World) Destroy() {
 		}
 	}
 	w.cache.Destroy()
+	w.cacheLock.Unlock()
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"sync"
 )
 
 // metadata file:
@@ -14,7 +13,6 @@ import (
 // chunk data file:
 // vx|vy|vz|vbits|vx|vy|vz|vbits|vx|vy|vz|vbits|
 type Cache struct {
-	mu                sync.Mutex
 	chunksToBeWritten map[ChunkPos]*Chunk
 	metaFile          *os.File
 	dataFile          *os.File
@@ -32,7 +30,6 @@ func NewCache(metaFileName, dataFileName string, writeThreshold int32) (*Cache, 
 		return nil, err
 	}
 	return &Cache{
-		mu:                sync.Mutex{},
 		metaFile:          meta,
 		dataFile:          data,
 		chunksToBeWritten: make(map[ChunkPos]*Chunk),
@@ -41,18 +38,14 @@ func NewCache(metaFileName, dataFileName string, writeThreshold int32) (*Cache, 
 }
 
 func (c *Cache) Save(ch *Chunk) {
-	c.mu.Lock()
 	c.chunksToBeWritten[ch.Pos] = ch
 	c.numChunks++
 	if c.numChunks >= c.writeThreshold {
 		c.writeBufferToFile()
 	}
-	c.mu.Unlock()
 }
 
 func (c *Cache) Load(pos ChunkPos) (*Chunk, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	ch, ok := c.chunksToBeWritten[pos]
 	if ok {
 		ch.dirty = true
@@ -253,9 +246,7 @@ func (c *Cache) findChunkVoxelDataOffset(pos ChunkPos) (int32, bool) {
 }
 
 func (c *Cache) Destroy() {
-	c.mu.Lock()
 	c.writeBufferToFile()
 	c.metaFile.Close()
 	c.dataFile.Close()
-	c.mu.Unlock()
 }
