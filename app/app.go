@@ -26,13 +26,14 @@ func New(win *sdl.Window) (*Application, error) {
 		panic(err.Error())
 	}
 
-	bg := ui.NewBackground(gfx)
+	w, h := win.GetSize()
+	bg := ui.NewBackground(gfx, w, h)
 	err = uiPtr.AddElement(bg)
 	if err != nil {
 		return nil, err
 	}
 
-	btn := ui.NewButton(gfx)
+	btn := ui.NewButton(gfx, bg, w, h)
 	err = uiPtr.AddElement(btn)
 	if err != nil {
 		return nil, err

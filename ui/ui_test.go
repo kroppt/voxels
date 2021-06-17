@@ -71,7 +71,7 @@ func TestElements(t *testing.T) {
 		if err != nil {
 			t.Fatal(err.Error())
 		}
-		bg := ui.NewBackground(stub)
+		bg := ui.NewBackground(stub, 0, 0)
 		if bg.GetVAO() == nil {
 			t.Fatal("Background VAO was nil")
 		}

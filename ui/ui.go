@@ -10,6 +10,7 @@ import (
 // Element is an interface that represents something that is rendered like a UI element.
 type Element interface {
 	GetVAO() *gfx.VAO
+	ReloadPosition(screenWidth, screenHeight int32)
 }
 
 // UI is a struct all of the Elements that need to be rendered along with the OpenGL Program.
@@ -60,6 +61,8 @@ func New(gfx Gfx) (*UI, error) {
 		gfx:      gfx,
 	}
 
+	ui.gfx.ProgramUploadUniform(ui.program, "screenSize", float32(1920), float32(1080))
+
 	return ui, nil
 }
 
@@ -96,12 +99,16 @@ func (ui *UI) Destroy() {
 const vertElementShader = `
 	#version 420 core
 
-	layout (location = 0) in vec2 pos;
+	layout (location = 0) in vec2 pixelPos;
 	layout (location = 1) in vec4 color;
 
 	out vec4 vertexColor;
 
+	// (width, height)
+	uniform vec2 screenSize;
+
 	void main() {
+		vec2 pos = 2.0f * vec2(pixelPos[0] / screenSize[0], pixelPos[1] / screenSize[1]) - 1.0f;
 		gl_Position = vec4(pos, 0.0f, 1.0f);
 		vertexColor = color;
 	}
