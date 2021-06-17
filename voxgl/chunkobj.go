@@ -1,5 +1,3 @@
-// +build !test
-
 package voxgl
 
 import (
@@ -7,7 +5,7 @@ import (
 	"github.com/kroppt/gfx"
 )
 
-// NewColoredObject returns a newly created Object with the given colors.
+// NewChunkObject returns a newly created Object with the given colors.
 //
 // Vertices should be vertices of format X, Y, Z, AdjacencyBits, R, G, B, A.
 // X, Y, and Z options should be in the range -1.0 to 1.0.
@@ -15,7 +13,7 @@ import (
 // represent whether each of the left right top bottom forward backward faces
 // can be seen.
 // R, G, B, and A should be in the range 0.0 to 1.0.
-func NewColoredObject(vertices []float32) (*Object, error) {
+func NewChunkObject(vertices []float32) (*Object, error) {
 	prog, err := GetProgram(vertColShader, fragColShader, geoColShader)
 	if err != nil {
 		return nil, err

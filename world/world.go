@@ -26,18 +26,22 @@ type World struct {
 		adjDiff AdjacentMask
 		add     bool
 	}
-	currChunk ChunkPos
-	chunkChan chan *Chunk
-	saved     chan ChunkPos
-	loaded    chan ChunkPos
-	cubeMap   *gfx.CubeMap
-	gen       Generator
-	cache     *Cache
+	currChunk     ChunkPos
+	chunkChan     chan *Chunk
+	saved         chan ChunkPos
+	loaded        chan ChunkPos
+	cubeMap       *gfx.CubeMap
+	gen           Generator
+	cache         *Cache
+	selectedVoxel *voxgl.Object
+	selected      bool
+	crosshair     *voxgl.Crosshair
 }
 
 const ChunkSize = 4
 const chunkRenderDist = 5
 const cacheThreshold = 10
+const selectionDist = 10
 
 // New returns a new world.World.
 func New() *World {
@@ -48,6 +52,10 @@ func New() *World {
 	// use binding = 0
 	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
 	cam := NewCameraDefault()
+	crosshair, err := voxgl.NewCrosshair(0.03, cam.aspect)
+	if err != nil {
+		panic(fmt.Sprintf("failed to make crosshair: %v", err))
+	}
 
 	world := &World{
 		ubo:       ubo,
@@ -56,6 +64,7 @@ func New() *World {
 		saved:     make(chan ChunkPos),
 		loaded:    make(chan ChunkPos),
 		gen:       FlatWorldGenerator{},
+		crosshair: crosshair,
 	}
 
 	cam.SetPosition(&glm.Vec3{0.5, 7.5, 2})
@@ -77,6 +86,10 @@ func New() *World {
 		adjDiff AdjacentMask
 		add     bool
 	})
+	world.selectedVoxel, err = voxgl.NewFrame(nil)
+	if err != nil {
+		panic(fmt.Sprintf("error creating NewFrame: %v", err))
+	}
 
 	world.cubeMap = loadSpriteSheet("sprite_sheet.png")
 
@@ -117,6 +130,24 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 		}
 	}
 	return bestVox, bestDist, bestVox != nil
+}
+
+func (w *World) updateSelectedVoxel() {
+	v, dist, found := w.FindLookAtVoxel()
+	if !found || dist > selectionDist {
+		w.selected = false
+		return
+	} else {
+		w.selected = true
+	}
+	key := v.Pos.GetChunkPos(ChunkSize)
+	ch, ok := w.chunks[key]
+	if !ok {
+		panic("expected look at voxel to be in a loaded chunk")
+	}
+	vox := ch.GetVoxel(v.Pos)
+	pos := vox.Pos.AsVec3()
+	w.selectedVoxel.SetData([]float32{pos.X(), pos.Y(), pos.Z(), float32(vox.GetVbits())})
 }
 
 // SetVoxel updates a voxel's variables in the world if the chunk
@@ -243,7 +274,7 @@ func (w *World) receiveExpectedAsync() {
 				// the chunk has arrived and we expected it
 				// give the chunk its object
 				sw := util.Start()
-				objs, err := voxgl.NewColoredObject(nil)
+				objs, err := voxgl.NewChunkObject(nil)
 				if err != nil {
 					panic(fmt.Sprint(err))
 				}
@@ -415,6 +446,15 @@ func (w *World) Render() error {
 		chunk.Render(w.cam)
 		w.cubeMap.Unbind()
 	}
+	gl.LineWidth(2)
+	gl.Disable(gl.DEPTH_TEST)
+	w.updateSelectedVoxel()
+	if w.selected {
+		w.selectedVoxel.Render()
+	}
+	w.crosshair.Render()
+	gl.Enable(gl.DEPTH_TEST)
+
 	return nil
 }
 
