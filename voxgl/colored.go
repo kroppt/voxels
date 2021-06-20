@@ -134,29 +134,32 @@ const geoColShader = `
 		// top 26 bits are for block types (for now)
 		int blockmask = 0xFFFFFFC0;
 		OUT.blockType = (blockmask & bits) >> adjaBits;
-
+		if (OUT.blockType == 0) {
+			return; // render nothing if air block
+		}
+		
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
 		vec4 dz = vec4(0.0, 0.0, 1.0, 0.0);
 		vec4 p1 = origin;
 		vec4 p2 = p1 + dx + dy + dz;
 
-		if ((bits & backwardmask) - backwardmask == 0) {
+		if ((bits & backwardmask) - backwardmask != 0) {
 			createQuad(p2, -dx, -dy); // backward
 		}
-		if ((bits & forwardmask) - forwardmask == 0) {
+		if ((bits & forwardmask) - forwardmask != 0) {
 			createQuad(p1, dy, dx); // forward
 		}
-		if ((bits & topmask) - topmask == 0) {
+		if ((bits & topmask) - topmask != 0) {
 			createQuad(p2, -dz, -dx); // top
 		}
-		if ((bits & bottommask) - bottommask == 0) {
+		if ((bits & bottommask) - bottommask != 0) {
 			createQuad(p1, dx, dz); // bottom
 		}
-		if ((bits & rightmask) - rightmask == 0) {
+		if ((bits & rightmask) - rightmask != 0) {
 			createQuad(p2, -dy, -dz); // right
 		}
-		if ((bits & leftmask) - leftmask == 0) {
+		if ((bits & leftmask) - leftmask != 0) {
 			createQuad(p1, dz, dy); // left
 		}
 	}

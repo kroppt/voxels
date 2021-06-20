@@ -11,6 +11,38 @@ type VoxelPos struct {
 	Z int
 }
 
+// VoxelRange is the range of voxels between Min and Max.
+type VoxelRange struct {
+	Min VoxelPos
+	Max VoxelPos
+}
+
+// GetSurroundings returns a range surrounding the position by amount in every
+// direction.
+func (pos VoxelPos) GetSurroundings(amount int) VoxelRange {
+	minx := pos.X - amount
+	maxx := pos.X + amount
+	miny := pos.Y - amount
+	maxy := pos.Y + amount
+	mink := pos.Z - amount
+	maxk := pos.Z + amount
+	return VoxelRange{
+		Min: VoxelPos{minx, miny, mink},
+		Max: VoxelPos{maxx, maxy, maxk},
+	}
+}
+
+// ForEach executes the given function on every position in the this VoxelRange.
+func (rng VoxelRange) ForEach(fn func(pos VoxelPos)) {
+	for x := rng.Min.X; x <= rng.Max.X; x++ {
+		for y := rng.Min.Y; y <= rng.Max.Y; y++ {
+			for z := rng.Min.Z; z <= rng.Max.Z; z++ {
+				fn(VoxelPos{X: x, Y: y, Z: z})
+			}
+		}
+	}
+}
+
 // Add returns this VoxelPos with another VoxelPos added to it.
 func (pos VoxelPos) Add(other VoxelPos) VoxelPos {
 	return VoxelPos{
@@ -42,22 +74,30 @@ func (pos VoxelPos) AsVec3() glm.Vec3 {
 // given chunkSize.
 func (pos VoxelPos) GetChunkPos(chunkSize int) ChunkPos {
 	x := pos.X
+	y := pos.Y
 	z := pos.Z
 	if pos.X < 0 {
 		x++
+	}
+	if pos.Y < 0 {
+		y++
 	}
 	if pos.Z < 0 {
 		z++
 	}
 	x /= chunkSize
+	y /= chunkSize
 	z /= chunkSize
 	if pos.X < 0 {
 		x--
 	}
+	if pos.Y < 0 {
+		y--
+	}
 	if pos.Z < 0 {
 		z--
 	}
-	return ChunkPos{x, z}
+	return ChunkPos{x, y, z}
 }
 
 // AsLocalChunkPos returns the voxel position relative to the origin of chunk,
@@ -65,7 +105,7 @@ func (pos VoxelPos) GetChunkPos(chunkSize int) ChunkPos {
 func (pos VoxelPos) AsLocalChunkPos(chunk Chunk) VoxelPos {
 	return VoxelPos{
 		X: pos.X - chunk.AsVoxelPos().X,
-		Y: pos.Y, // TODO this will break with 3D chunks
+		Y: pos.Y - chunk.AsVoxelPos().Y,
 		Z: pos.Z - chunk.AsVoxelPos().Z,
 	}
 }
@@ -80,6 +120,8 @@ type Color struct {
 
 // Voxel describes a discrete unit of 3D space.
 type Voxel struct {
-	Pos   VoxelPos
-	Color Color
+	Pos     VoxelPos
+	Color   Color
+	AdjMask AdjacentMask
+	Btype   BlockType
 }
