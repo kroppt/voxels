@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/engoengine/glm"
-	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -89,16 +88,15 @@ func (rng ChunkRange) Contains(pos ChunkPos) bool {
 
 // Chunk manages a size X height X size region of voxels.
 type Chunk struct {
-	Pos       ChunkPos
-	flatData  []float32
-	lights    map[VoxelPos]struct{}
-	objs      *voxgl.Object
-	root      *Octree
-	dirty     bool
-	size      int
-	modified  bool
-	empty     bool
-	lightPass int32
+	Pos      ChunkPos
+	flatData []float32
+	lights   map[VoxelPos]struct{}
+	objs     *voxgl.Object
+	root     *Octree
+	dirty    bool
+	size     int
+	modified bool
+	empty    bool
 }
 
 const VertSize = 5
@@ -125,7 +123,6 @@ func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 			}
 		}
 	}
-	chunk.lightingAlgo()
 	return chunk
 }
 
@@ -153,7 +150,6 @@ func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 		}
 		chunk.SetVoxel(&v)
 	}
-	chunk.lightingAlgo()
 	return chunk
 }
 
@@ -216,121 +212,46 @@ const (
 type LightMask uint32
 
 const (
-	MaxLightValue        = 5
-	ExploredMask  uint32 = 1 << 30
+	//TODO these two values need to be hard coded in the shader
+	// where should the uniform upload be so its only done once??
+	// (-> world should really own the program)
+	MaxLightValue = 8
+	BitsPerMask   = 4
 
-	LightFront  LightMask = 0b1111           // The voxel's front face lighting bits.
-	LightBack   LightMask = LightFront << 4  // The voxel's back face lighting bits.
-	LightBottom LightMask = LightFront << 8  // The voxel's bottom face lighting bits.
-	LightTop    LightMask = LightFront << 12 // The voxel's top face lighting bits.
-	LightLeft   LightMask = LightFront << 16 // The voxel's left face lighting bits.
-	LightRight  LightMask = LightFront << 20 // The voxel's right face lighting bits.
-	LightValue  LightMask = LightFront << 24
-	LightAll              = LightFront | LightBack | LightBottom | LightTop | LightLeft | LightRight
+	LightFront  LightMask = 0b1111                          // The voxel's front face lighting bits.
+	LightBack   LightMask = LightFront << BitsPerMask       // The voxel's back face lighting bits.
+	LightBottom LightMask = LightFront << (BitsPerMask * 2) // The voxel's bottom face lighting bits.
+	LightTop    LightMask = LightFront << (BitsPerMask * 3) // The voxel's top face lighting bits.
+	LightLeft   LightMask = LightFront << (BitsPerMask * 4) // The voxel's left face lighting bits.
+	LightRight  LightMask = LightFront << (BitsPerMask * 5) // The voxel's right face lighting bits.
+	LightValue  LightMask = LightFront << (BitsPerMask * 6)
+	LightAll              = LightFront | LightBack | LightBottom | LightTop | LightLeft | LightRight | LightValue
 )
+
+func GetLightMaskName(mask LightMask) string {
+	switch mask {
+	case LightFront:
+		return "LightFront"
+	case LightBack:
+		return "LightBack"
+	case LightBottom:
+		return "LightBottom"
+	case LightTop:
+		return "LightTop"
+	case LightLeft:
+		return "LightLeft"
+	case LightRight:
+		return "LightRight"
+	default:
+		panic("improper usage of GetLightMaskName")
+	}
+}
 
 func (c *Chunk) SetModified() {
 	c.modified = true
 }
 
-func (c *Chunk) lightingAlgo() {
-	for lightPos := range c.lights {
-		// TODO extract hard coded max lighting value, especially when
-		// we might want to change this maximum to increase the range
-		c.lightFrom(lightPos, MaxLightValue)
-		// TODO avoid resetting by storing identifier for light block to know if it owns the explored bit
-		// identifier could be local coordinate
-		for i := 0; i < c.size; i++ {
-			for j := 0; j < c.size; j++ {
-				for k := 0; k < c.size; k++ {
-					p := VoxelPos{
-						X: c.AsVoxelPos().X + i,
-						Y: c.AsVoxelPos().Y + j,
-						Z: c.AsVoxelPos().Z + k,
-					}
-					v := c.GetVoxel(p)
-					v.SetLightValue(0, LightValue)
-					c.SetVoxel(&v)
-				}
-			}
-		}
-	}
-}
-
-func (c *Chunk) lightFrom(p VoxelPos, value uint32) {
-	if value < 0 || value > MaxLightValue || !c.IsWithinChunk(p) {
-		panic("improper usage: bad lighting value or p outside chunk")
-	}
-	if value == 0 {
-		return
-	}
-	currBlock := c.GetVoxel(p)
-	if currBlock.GetLightValue(LightLeft) >= value {
-		return
-	}
-	if currBlock.Btype == Air {
-		currBlock.SetLightValue(value, LightLeft)
-		c.SetVoxel(&currBlock)
-	}
-	dirs := []struct {
-		off  VoxelPos
-		face LightMask
-	}{
-		{VoxelPos{-1, 0, 0}, LightRight},
-		{VoxelPos{1, 0, 0}, LightLeft},
-		{VoxelPos{0, -1, 0}, LightTop},
-		{VoxelPos{0, 1, 0}, LightBottom},
-		{VoxelPos{0, 0, -1}, LightBack},
-		{VoxelPos{0, 0, 1}, LightFront},
-	}
-	for _, dir := range dirs {
-		offP := p.Add(dir.off)
-		if c.IsWithinChunk(offP) {
-			adjBlock := c.GetVoxel(offP)
-			if adjBlock.Btype == Air {
-				// continue search down open path
-				c.lightFrom(offP, value-1)
-			} else {
-				// path is blocked off, apply lighting value to the face
-				if adjBlock.GetLightValue(dir.face) < value {
-					log.Debugf("Setting face %v of %v to value %v", dir.face, offP, value)
-					adjBlock.SetLightValue(value, dir.face)
-					c.SetVoxel(&adjBlock)
-				}
-			}
-		} else {
-			// TODO lighting across chunks
-			// just within for now
-		}
-	}
-}
-
-func (c *Chunk) GetVoxel(pos VoxelPos) Voxel {
-	if !c.IsWithinChunk(pos) {
-		panic(fmt.Sprintf("%v is not within %v", pos, c.AsVoxelPos()))
-	}
-	localPos := pos.AsLocalChunkPos(*c)
-	i, j, k := localPos.X, localPos.Y, localPos.Z
-	off := (i + j*c.size*c.size + k*c.size) * VertSize
-	vbits := int32(c.flatData[off+3])
-	adjMask, btype := SeparateVbits(vbits)
-	lbits := uint32(c.flatData[off+4])
-	explored, lightBits := SeparateLbits(lbits)
-	return Voxel{
-		Pos: VoxelPos{
-			X: int(c.flatData[off]),
-			Y: int(c.flatData[off+1]),
-			Z: int(c.flatData[off+2]),
-		},
-		AdjMask:   adjMask,
-		Btype:     btype,
-		Explored:  explored,
-		LightBits: lightBits,
-	}
-}
-
-// SetVoxel updates a voxel's variables in the chunk, if it exists
-func (c *Chunk) SetVoxel(v *Voxel) {
+func (c *Chunk) SetVoxelFlatData(v Voxel) {
 	if !c.IsWithinChunk(v.Pos) {
 		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
@@ -345,18 +266,47 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 		panic("offset out of bounds")
 	}
 
-	oldVox := c.GetVoxel(v.Pos)
-	if v.Btype == Light {
-		c.lights[v.Pos] = struct{}{}
-	} else if oldVox.Btype == Light && v.Btype != Light {
-		delete(c.lights, v.Pos)
-	}
-
 	c.flatData[off] = x
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
 	c.flatData[off+3] = float32(v.GetVbits())
 	c.flatData[off+4] = float32(v.GetLbits())
+
+	c.dirty = true
+}
+
+func (c *Chunk) GetVoxelFromFlatData(pos VoxelPos) Voxel {
+	if !c.IsWithinChunk(pos) {
+		panic(fmt.Sprintf("%v is not within %v", pos, c.AsVoxelPos()))
+	}
+	localPos := pos.AsLocalChunkPos(*c)
+	i, j, k := localPos.X, localPos.Y, localPos.Z
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
+	vbits := int32(c.flatData[off+3])
+	adjMask, btype := SeparateVbits(vbits)
+	lbits := uint32(c.flatData[off+4])
+	lightBits := SeparateLbits(lbits)
+	return Voxel{
+		Pos: VoxelPos{
+			X: int(c.flatData[off]),
+			Y: int(c.flatData[off+1]),
+			Z: int(c.flatData[off+2]),
+		},
+		AdjMask:   adjMask,
+		Btype:     btype,
+		LightBits: lightBits,
+	}
+}
+
+// SetVoxel updates a voxel's variables in the chunk, if it exists
+func (c *Chunk) SetVoxel(v *Voxel) {
+	oldVox := c.GetVoxelFromFlatData(v.Pos)
+	c.SetVoxelFlatData(*v)
+	if v.Btype == Light {
+		c.lights[v.Pos] = struct{}{}
+	} else if oldVox.Btype == Light && v.Btype != Light {
+		delete(c.lights, v.Pos)
+	}
 
 	if v.Btype != Air {
 		c.root = c.root.AddLeaf(v)

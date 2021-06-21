@@ -118,7 +118,6 @@ type Voxel struct {
 	Pos       VoxelPos
 	AdjMask   AdjacentMask
 	Btype     BlockType
-	Explored  uint32
 	LightBits uint32
 }
 
@@ -148,12 +147,9 @@ func SeparateVbits(vbits int32) (AdjacentMask, BlockType) {
 }
 
 func (v *Voxel) GetLbits() uint32 {
-	return v.LightBits | v.Explored<<30
+	return v.LightBits
 }
 
-func SeparateLbits(lbits uint32) (explored uint32, lightBits uint32) {
-	offExplored := bits.TrailingZeros32(ExploredMask)
-	explored = (lbits & ExploredMask) >> uint32(offExplored)
-	lightBits = lbits & uint32(LightAll)
-	return
+func SeparateLbits(lbits uint32) uint32 {
+	return lbits & uint32(LightAll)
 }

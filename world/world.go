@@ -41,8 +41,8 @@ type World struct {
 	crosshair     *voxgl.Crosshair
 }
 
-const ChunkSize = 3
-const chunkRenderDist = 5
+const ChunkSize = 4
+const chunkRenderDist = 3
 const cacheThreshold = 10
 const selectionDist = 10
 
@@ -149,7 +149,7 @@ func (w *World) updateSelectedVoxel() {
 	if !ok {
 		panic("expected look at voxel to be in a loaded chunk")
 	}
-	vox := ch.GetVoxel(v.Pos)
+	vox := ch.GetVoxelFromFlatData(v.Pos)
 	pos := vox.Pos.AsVec3()
 	w.selectedVoxel.SetData([]float32{pos.X(), pos.Y(), pos.Z(), float32(vox.GetVbits())})
 }
@@ -163,7 +163,7 @@ func (w *World) SetVoxel(v *Voxel) {
 	if !ok {
 		return
 	}
-	target := chunk.GetVoxel(v.Pos)
+	target := chunk.GetVoxelFromFlatData(v.Pos)
 	v.AdjMask = target.AdjMask
 	chunk.SetVoxel(v)
 	sides := []struct {
@@ -196,7 +196,7 @@ func (w *World) SetVoxel(v *Voxel) {
 		}
 	}
 	// TODO do this in a goroutine
-	chunk.lightingAlgo()
+	w.updateLighting()
 }
 
 func (w *World) RemoveVoxel(v VoxelPos) {
@@ -206,6 +206,9 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		return
 	}
 	// log.Debugf("removing voxel in chunk %v", key)
+	// TODO setting voxel to air and removing node from octree are tied
+	// together in a "delete voxel" operation, this should be more well defined
+	// inside chunk.go in a single function call
 	chunk.SetVoxel(&Voxel{
 		Pos:     v,
 		Btype:   Air,
@@ -242,7 +245,7 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		}
 	}
 	// TODO do this in a goroutine
-	chunk.lightingAlgo()
+	w.updateLighting()
 }
 
 // GetCamera returns a reference to the camera.
@@ -266,6 +269,106 @@ func (w *World) updateUBO() error {
 	return nil
 }
 
+func (w *World) updateLighting() {
+	for _, ch := range w.chunks {
+		for i := 0; i < ch.size; i++ {
+			for j := 0; j < ch.size; j++ {
+				for k := 0; k < ch.size; k++ {
+					p := VoxelPos{
+						X: ch.AsVoxelPos().X + i,
+						Y: ch.AsVoxelPos().Y + j,
+						Z: ch.AsVoxelPos().Z + k,
+					}
+					v := ch.GetVoxelFromFlatData(p)
+					v.LightBits = 0
+					ch.SetVoxel(&v)
+				}
+			}
+		}
+	}
+	for _, ch := range w.chunks {
+		for lightPos := range ch.lights {
+			v := ch.GetVoxelFromFlatData(lightPos)
+			v.SetLightValue(MaxLightValue, LightLeft)
+			v.SetLightValue(MaxLightValue, LightRight)
+			v.SetLightValue(MaxLightValue, LightBack)
+			v.SetLightValue(MaxLightValue, LightFront)
+			v.SetLightValue(MaxLightValue, LightTop)
+			v.SetLightValue(MaxLightValue, LightBottom)
+			ch.SetVoxel(&v)
+
+			w.lightFrom(ch, lightPos, MaxLightValue)
+			// TODO avoid resetting by storing identifier for light block to know if it owns the explored bit
+			// identifier could be local coordinate
+			// log.Debug(ch)
+		}
+	}
+	for _, ch := range w.chunks {
+		for i := 0; i < ch.size; i++ {
+			for j := 0; j < ch.size; j++ {
+				for k := 0; k < ch.size; k++ {
+					p := VoxelPos{
+						X: ch.AsVoxelPos().X + i,
+						Y: ch.AsVoxelPos().Y + j,
+						Z: ch.AsVoxelPos().Z + k,
+					}
+					v := ch.GetVoxelFromFlatData(p)
+					v.SetLightValue(0, LightValue)
+					ch.SetVoxel(&v)
+				}
+			}
+		}
+	}
+}
+
+func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32) {
+	if value < 0 || value > MaxLightValue || !c.IsWithinChunk(p) {
+		panic("improper usage: bad lighting value or p outside chunk")
+	}
+	if value == 0 {
+		return
+	}
+	currBlock := c.GetVoxelFromFlatData(p)
+	if currBlock.GetLightValue(LightValue) >= value {
+		return
+	}
+	if currBlock.Btype == Air {
+		currBlock.SetLightValue(value, LightValue)
+		c.SetVoxel(&currBlock)
+	}
+	dirs := []struct {
+		off  VoxelPos
+		face LightMask
+	}{
+		{VoxelPos{-1, 0, 0}, LightRight},
+		{VoxelPos{1, 0, 0}, LightLeft},
+		{VoxelPos{0, -1, 0}, LightTop},
+		{VoxelPos{0, 1, 0}, LightBottom},
+		{VoxelPos{0, 0, -1}, LightBack},
+		{VoxelPos{0, 0, 1}, LightFront},
+	}
+	for _, dir := range dirs {
+		offP := p.Add(dir.off)
+		offKey := offP.GetChunkPos(ChunkSize)
+		if offCh, ok := w.chunks[offKey]; ok {
+			adjBlock := offCh.GetVoxelFromFlatData(offP)
+			if adjBlock.Btype == Air {
+				// continue search down open path
+				w.lightFrom(offCh, offP, value-1)
+			} else {
+				// path is blocked off, apply lighting value to the face
+				if adjBlock.GetLightValue(dir.face) < value {
+					// log.Debugf("Setting face %v of %v to value %v", GetLightMaskName(dir.face), offP, value)
+					adjBlock.SetLightValue(value, dir.face)
+					offCh.SetVoxel(&adjBlock)
+				}
+			}
+		} else {
+			// do nothing intentionally
+		}
+	}
+}
+
 // receiveExpectedAsync reads loaded chunks off the chunk channel, and only adds them
 // to the collection of chunks to be rendered if they are still expected (not late)
 func (w *World) receiveExpectedAsync() {
@@ -285,6 +388,8 @@ func (w *World) receiveExpectedAsync() {
 				if _, hasPending := w.pendingMods[ch.Pos]; hasPending {
 					w.applyPendingMods(ch)
 				}
+				// TODO do this in a goroutine
+				w.updateLighting()
 				sw.StopRecordAverage("Chunk objs + pending mods")
 			}
 		default:

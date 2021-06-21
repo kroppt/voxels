@@ -135,12 +135,13 @@ const geoColShader = `
 			return; // render nothing if air block
 		}
 
+		uint nMaskBits = 4;
 		uint lightFrontMask   = 15;         // The voxel's front face lighting bits.
-		uint lightBackMask    = lightFrontMask << 4;  // The voxel's back face lighting bits.
-		uint lightBottomMask  = lightFrontMask << 8; // The voxel's bottom face lighting bits.
-		uint lightTopMask     = lightFrontMask << 12; // The voxel's top face lighting bits.
-		uint lightLeftMask    = lightFrontMask << 16; // The voxel's left face lighting bits.
-		uint lightRightMask   = lightFrontMask << 20; // The voxel's right face lighting bits.
+		uint lightBackMask    = lightFrontMask << nMaskBits;  // The voxel's back face lighting bits.
+		uint lightBottomMask  = lightFrontMask << (nMaskBits*2); // The voxel's bottom face lighting bits.
+		uint lightTopMask     = lightFrontMask << (nMaskBits*3); // The voxel's top face lighting bits.
+		uint lightLeftMask    = lightFrontMask << (nMaskBits*4); // The voxel's left face lighting bits.
+		uint lightRightMask   = lightFrontMask << (nMaskBits*5); // The voxel's right face lighting bits.
 		uint lbits = uint(IN[0].lighting);
 
 		
@@ -151,7 +152,7 @@ const geoColShader = `
 		vec4 p2 = p1 + dx + dy + dz;
 
 		if ((bits & backwardmask) - backwardmask != 0) {
-			OUT.faceLight = (lbits & lightBackMask) >> 5;
+			OUT.faceLight = (lbits & lightBackMask) >> nMaskBits;
 			createQuad(p2, -dx, -dy); // backward
 		}
 		if ((bits & forwardmask) - forwardmask != 0) {
@@ -159,19 +160,19 @@ const geoColShader = `
 			createQuad(p1, dy, dx); // forward
 		}
 		if ((bits & topmask) - topmask != 0) {
-			OUT.faceLight = (lbits & lightTopMask) >> 15;
+			OUT.faceLight = (lbits & lightTopMask) >> (nMaskBits*3);
 			createQuad(p2, -dz, -dx); // top
 		}
 		if ((bits & bottommask) - bottommask != 0) {
-			OUT.faceLight = (lbits & lightBottomMask) >> 10;
+			OUT.faceLight = (lbits & lightBottomMask) >> (nMaskBits*2);
 			createQuad(p1, dx, dz); // bottom
 		}
 		if ((bits & rightmask) - rightmask != 0) {
-			OUT.faceLight = (lbits & lightRightMask) >> 25;
+			OUT.faceLight = (lbits & lightRightMask) >> (nMaskBits*5);
 			createQuad(p2, -dy, -dz); // right
 		}
 		if ((bits & leftmask) - leftmask != 0) {
-			OUT.faceLight = (lbits & lightLeftMask) >> 20;
+			OUT.faceLight = (lbits & lightLeftMask) >> (nMaskBits*4);
 			createQuad(p1, dz, dy); // left
 		}
 	}
@@ -191,7 +192,7 @@ const fragColShader = `
 	out vec4 frag_color;
 
 	void main() {
-		uint maxFaceLight = 5;
+		uint maxFaceLight = 8;
 		uint correctedFaceLight = IN.faceLight;
 		if (correctedFaceLight == 0) {
 			correctedFaceLight = 1;
