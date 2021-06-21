@@ -1,6 +1,9 @@
 package world
 
 import (
+	"fmt"
+	"math/bits"
+
 	"github.com/engoengine/glm"
 )
 
@@ -112,9 +115,27 @@ func (pos VoxelPos) AsLocalChunkPos(chunk Chunk) VoxelPos {
 
 // Voxel describes a discrete unit of 3D space.
 type Voxel struct {
-	Pos     VoxelPos
-	AdjMask AdjacentMask
-	Btype   BlockType
+	Pos       VoxelPos
+	AdjMask   AdjacentMask
+	Btype     BlockType
+	Explored  uint32
+	LightBits uint32
+}
+
+func (v *Voxel) SetLightValue(value uint32, mask LightMask) {
+	if value < 0 || value > 15 {
+		panic(fmt.Sprintf("%v is an invalid light value", value))
+	}
+	v.LightBits &= ^uint32(mask)
+	off := bits.TrailingZeros32(uint32(mask))
+	value <<= off
+	v.LightBits |= value
+}
+
+func (v *Voxel) GetLightValue(mask LightMask) uint32 {
+	off := bits.TrailingZeros32(uint32(mask))
+	bits := v.LightBits & uint32(mask)
+	return bits >> off
 }
 
 func (v *Voxel) GetVbits() int32 {
@@ -124,4 +145,15 @@ func (v *Voxel) GetVbits() int32 {
 func SeparateVbits(vbits int32) (AdjacentMask, BlockType) {
 	return AdjacentMask(vbits & int32(AdjacentAll)),
 		BlockType(vbits >> 6)
+}
+
+func (v *Voxel) GetLbits() uint32 {
+	return v.LightBits | v.Explored<<30
+}
+
+func SeparateLbits(lbits uint32) (explored uint32, lightBits uint32) {
+	offExplored := bits.TrailingZeros32(ExploredMask)
+	explored = (lbits & ExploredMask) >> uint32(offExplored)
+	lightBits = lbits & uint32(LightAll)
+	return
 }

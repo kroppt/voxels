@@ -41,7 +41,7 @@ type World struct {
 	crosshair     *voxgl.Crosshair
 }
 
-const ChunkSize = 4
+const ChunkSize = 3
 const chunkRenderDist = 5
 const cacheThreshold = 10
 const selectionDist = 10
@@ -195,6 +195,8 @@ func (w *World) SetVoxel(v *Voxel) {
 			ch.AddAdjacency(p, side.adj)
 		}
 	}
+	// TODO do this in a goroutine
+	chunk.lightingAlgo()
 }
 
 func (w *World) RemoveVoxel(v VoxelPos) {
@@ -239,6 +241,8 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 			ch.RemoveAdjacency(p, side.adj)
 		}
 	}
+	// TODO do this in a goroutine
+	chunk.lightingAlgo()
 }
 
 // GetCamera returns a reference to the camera.

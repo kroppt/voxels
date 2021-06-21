@@ -67,7 +67,7 @@ func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
 	} else {
 		app.world.SetVoxel(&world.Voxel{
 			Pos:   block.Pos,
-			Btype: world.Labeled,
+			Btype: world.Light,
 		})
 	}
 }

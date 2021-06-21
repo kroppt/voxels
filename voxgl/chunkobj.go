@@ -19,7 +19,7 @@ func NewChunkObject(vertices []float32) (*Object, error) {
 		return nil, err
 	}
 
-	obj, err := NewObject(prog, vertices, []int32{4})
+	obj, err := NewObject(prog, vertices, []int32{4, 1})
 	if err != nil {
 		return nil, err
 	}
@@ -61,15 +61,18 @@ const vertColShader = `
 	#version 420 core
 
 	layout (location = 0) in vec4 pos;
+	layout (location = 1) in float lighting;
 
 	out Vertex {
 		float vbits;
+		float lighting;
 	} OUT;
 
 	void main()
 	{
 		gl_Position = vec4(pos.xyz, 1.0f);
 		OUT.vbits = pos[3];
+		OUT.lighting = lighting;
 	}
 `
 
@@ -87,11 +90,13 @@ const geoColShader = `
 
 	in Vertex {
 		float vbits;
+		float lighting;
 	} IN[];
 
 	out Vertex {
 		vec3 stdir;
 		flat int blockType;
+		flat uint faceLight;
 	} OUT;
 
 	void createVertex(vec4 p) {
@@ -129,6 +134,15 @@ const geoColShader = `
 		if (OUT.blockType == 0) {
 			return; // render nothing if air block
 		}
+
+		uint lightFrontMask   = 15;         // The voxel's front face lighting bits.
+		uint lightBackMask    = lightFrontMask << 4;  // The voxel's back face lighting bits.
+		uint lightBottomMask  = lightFrontMask << 8; // The voxel's bottom face lighting bits.
+		uint lightTopMask     = lightFrontMask << 12; // The voxel's top face lighting bits.
+		uint lightLeftMask    = lightFrontMask << 16; // The voxel's left face lighting bits.
+		uint lightRightMask   = lightFrontMask << 20; // The voxel's right face lighting bits.
+		uint lbits = uint(IN[0].lighting);
+
 		
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
@@ -137,21 +151,27 @@ const geoColShader = `
 		vec4 p2 = p1 + dx + dy + dz;
 
 		if ((bits & backwardmask) - backwardmask != 0) {
+			OUT.faceLight = (lbits & lightBackMask) >> 5;
 			createQuad(p2, -dx, -dy); // backward
 		}
 		if ((bits & forwardmask) - forwardmask != 0) {
+			OUT.faceLight = lbits & lightFrontMask;
 			createQuad(p1, dy, dx); // forward
 		}
 		if ((bits & topmask) - topmask != 0) {
+			OUT.faceLight = (lbits & lightTopMask) >> 15;
 			createQuad(p2, -dz, -dx); // top
 		}
 		if ((bits & bottommask) - bottommask != 0) {
+			OUT.faceLight = (lbits & lightBottomMask) >> 10;
 			createQuad(p1, dx, dz); // bottom
 		}
 		if ((bits & rightmask) - rightmask != 0) {
+			OUT.faceLight = (lbits & lightRightMask) >> 25;
 			createQuad(p2, -dy, -dz); // right
 		}
 		if ((bits & leftmask) - leftmask != 0) {
+			OUT.faceLight = (lbits & lightLeftMask) >> 20;
 			createQuad(p1, dz, dy); // left
 		}
 	}
@@ -163,6 +183,7 @@ const fragColShader = `
 	in Vertex {
 		vec3 stdir;
 		flat int blockType;
+		flat uint faceLight;
 	} IN;
 	uniform samplerCubeArray cubeMapArray;
 
@@ -170,6 +191,13 @@ const fragColShader = `
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));
+		uint maxFaceLight = 5;
+		uint correctedFaceLight = IN.faceLight;
+		if (correctedFaceLight == 0) {
+			correctedFaceLight = 1;
+		}
+		float lightFrac = float(correctedFaceLight) / float(maxFaceLight);
+		vec4 fullBright = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));
+		frag_color = vec4(fullBright.xyz * lightFrac, fullBright.w);
 	}
 `

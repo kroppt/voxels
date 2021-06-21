@@ -79,7 +79,8 @@ func readChunkMetadata(f *os.File, byteOff int64) (int, int, int, int32, error) 
 }
 
 func (c *Cache) readChunkVoxelData(byteOff int64) []int32 {
-	size := ChunkSize * ChunkSize * ChunkSize * 16
+	bytesPerData := 4
+	size := ChunkSize * ChunkSize * ChunkSize * CacheVertSize * bytesPerData
 	b := make([]byte, size)
 	n, err := c.dataFile.ReadAt(b, byteOff)
 	if err != nil || n != size {
@@ -87,7 +88,7 @@ func (c *Cache) readChunkVoxelData(byteOff int64) []int32 {
 	}
 
 	readBuf := bytes.NewBuffer(b)
-	numInts := ChunkSize * ChunkSize * ChunkSize * 4
+	numInts := ChunkSize * ChunkSize * ChunkSize * CacheVertSize
 	flatData := make([]int32, numInts)
 	for i := 0; i < numInts; i++ {
 		err = binary.Read(readBuf, binary.BigEndian, &flatData[i])
@@ -116,11 +117,13 @@ func (c *Cache) writeChunkMetadata(byteOff int64, p ChunkPos, dataOff int32) err
 
 func (c *Cache) writeChunkVoxelData(byteOff int64, ch *Chunk) error {
 	var writeBuf bytes.Buffer
-	maxIdx := 4 * ChunkSize * ChunkSize * ChunkSize
-	for i := 0; i < maxIdx; i++ {
-		writeErr := binary.Write(&writeBuf, binary.BigEndian, int32(ch.flatData[i]))
-		if writeErr != nil {
-			return writeErr
+	maxIdx := VertSize * ChunkSize * ChunkSize * ChunkSize
+	for i := 0; i < maxIdx; i += VertSize {
+		for j := 0; j < CacheVertSize; j++ {
+			writeErr := binary.Write(&writeBuf, binary.BigEndian, int32(ch.flatData[i+j]))
+			if writeErr != nil {
+				return writeErr
+			}
 		}
 	}
 	n, err := c.dataFile.WriteAt(writeBuf.Bytes(), int64(byteOff))
