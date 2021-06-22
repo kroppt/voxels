@@ -155,6 +155,8 @@ func (w *World) updateSelectedVoxel() {
 // SetVoxel updates a voxel's variables in the world if the chunk
 // that it would belong to is currently loaded.
 func (w *World) SetVoxel(v *Voxel) {
+	// TODO setting a voxel to air is *similar* to removing, but not the same
+	// -> what would setting a voxel to air do here? should this be prevented?
 	key := v.Pos.GetChunkPos(ChunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
 	chunk, ok := w.chunks[key]
@@ -182,15 +184,28 @@ func (w *World) SetVoxel(v *Voxel) {
 			ch.AddAdjacency(mod.off, mod.adjDiff)
 		}
 	}
-	// TODO do this in a goroutine
-	// w.updateLighting()
+
+	if v.Btype == Light {
+		v := chunk.GetVoxelFromFlatData(v.Pos)
+		v.SetLightValue(MaxLightValue, LightLeft)
+		v.SetLightValue(MaxLightValue, LightRight)
+		v.SetLightValue(MaxLightValue, LightBack)
+		v.SetLightValue(MaxLightValue, LightFront)
+		v.SetLightValue(MaxLightValue, LightTop)
+		v.SetLightValue(MaxLightValue, LightBottom)
+		chunk.SetVoxel(&v)
+
+		w.lightFrom(chunk, v.Pos, MaxLightValue, v.Pos)
+	}
+	// TODO setting a light block to something else, update lighting
 }
 
 func (w *World) RemoveVoxel(v VoxelPos) {
 	key := v.GetChunkPos(ChunkSize)
 	chunk, ok := w.chunks[key]
 	if !ok {
-		return
+		// TODO programmer error?
+		panic(fmt.Sprintf("tried to remove a voxel (%v) that belongs to an unloaded chunk (how did you do this?)", v))
 	}
 	// log.Debugf("removing voxel in chunk %v", key)
 	// TODO setting voxel to air and removing node from octree are tied
@@ -220,8 +235,17 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 			ch.RemoveAdjacency(mod.off, mod.adjDiff)
 		}
 	}
-	// TODO do this in a goroutine
-	// w.updateLighting()
+
+	// this is required because lesser-light sources might remain
+	// if the stronger light source was removed, so the book keeping
+	// needs to be calculated
+	if chunk.GetVoxelFromFlatData(v).Btype == Light {
+		w.lightRemoveFrom(chunk, v, v)
+	}
+	srcMap := chunk.lightRefs[v]
+	for src, val := range srcMap {
+		w.lightFrom(chunk, v, val, src)
+	}
 }
 
 // GetCamera returns a reference to the camera.
@@ -245,102 +269,85 @@ func (w *World) updateUBO() error {
 	return nil
 }
 
-func (w *World) updateLighting() {
-	for _, ch := range w.chunks {
-		for i := 0; i < ch.size; i++ {
-			for j := 0; j < ch.size; j++ {
-				for k := 0; k < ch.size; k++ {
-					p := VoxelPos{
-						X: ch.AsVoxelPos().X + i,
-						Y: ch.AsVoxelPos().Y + j,
-						Z: ch.AsVoxelPos().Z + k,
-					}
-					v := ch.GetVoxelFromFlatData(p)
-					v.LightBits = 0
-					ch.SetVoxel(&v)
-				}
-			}
-		}
-	}
-	for _, ch := range w.chunks {
-		for lightPos := range ch.lights {
-			v := ch.GetVoxelFromFlatData(lightPos)
-			v.SetLightValue(MaxLightValue, LightLeft)
-			v.SetLightValue(MaxLightValue, LightRight)
-			v.SetLightValue(MaxLightValue, LightBack)
-			v.SetLightValue(MaxLightValue, LightFront)
-			v.SetLightValue(MaxLightValue, LightTop)
-			v.SetLightValue(MaxLightValue, LightBottom)
-			ch.SetVoxel(&v)
+// TODO when/where will this be used? chunk constructor?
+func (w *World) updateAllLights(ch *Chunk) {
+	for lightPos := range ch.lights {
+		v := ch.GetVoxelFromFlatData(lightPos)
+		v.SetLightValue(MaxLightValue, LightLeft)
+		v.SetLightValue(MaxLightValue, LightRight)
+		v.SetLightValue(MaxLightValue, LightBack)
+		v.SetLightValue(MaxLightValue, LightFront)
+		v.SetLightValue(MaxLightValue, LightTop)
+		v.SetLightValue(MaxLightValue, LightBottom)
+		ch.SetVoxel(&v)
 
-			w.lightFrom(ch, lightPos, MaxLightValue)
-			// TODO avoid resetting by storing identifier for light block to know if it owns the explored bit
-			// identifier could be local coordinate
-			// log.Debug(ch)
-		}
+		w.lightFrom(ch, lightPos, MaxLightValue, lightPos)
 	}
-	for _, ch := range w.chunks {
-		for i := 0; i < ch.size; i++ {
-			for j := 0; j < ch.size; j++ {
-				for k := 0; k < ch.size; k++ {
-					p := VoxelPos{
-						X: ch.AsVoxelPos().X + i,
-						Y: ch.AsVoxelPos().Y + j,
-						Z: ch.AsVoxelPos().Z + k,
-					}
-					v := ch.GetVoxelFromFlatData(p)
-					v.SetLightValue(0, LightValue)
-					ch.SetVoxel(&v)
-				}
-			}
+}
+
+func (w *World) lightRemoveFrom(c *Chunk, p VoxelPos, src VoxelPos) {
+	if !c.IsWithinChunk(p) {
+		panic("improper usage: p outside chunk")
+	}
+	if !c.HasSource(p, src) {
+		return
+	}
+	offs := []VoxelPos{
+		{-1, 0, 0},
+		{1, 0, 0},
+		{0, -1, 0},
+		{0, 1, 0},
+		{0, 0, -1},
+		{0, 0, 1},
+	}
+	for _, off := range offs {
+		offP := p.Add(off)
+		offKey := offP.GetChunkPos(ChunkSize)
+		if offCh, ok := w.chunks[offKey]; ok {
+			offCh.DeleteSource(offP, src)
+			w.lightRemoveFrom(c, offP, src)
+		} else {
+			// the unloaded chunks don't save this state, so it doesn't need to be fixed
 		}
 	}
 }
 
-func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32) {
+func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32, src VoxelPos) {
 	if value < 0 || value > MaxLightValue || !c.IsWithinChunk(p) {
 		panic("improper usage: bad lighting value or p outside chunk")
 	}
-	if value == 0 {
+	if value == 0 || c.HasSource(p, src) {
 		return
+	} else {
+		c.AddSource(p, src, value)
 	}
-	currBlock := c.GetVoxelFromFlatData(p)
-	if currBlock.GetLightValue(LightValue) >= value {
-		return
+
+	mods := []LightMod{
+		{VoxelPos{-1, 0, 0}, src, value, LightRight},
+		{VoxelPos{1, 0, 0}, src, value, LightLeft},
+		{VoxelPos{0, -1, 0}, src, value, LightTop},
+		{VoxelPos{0, 1, 0}, src, value, LightBottom},
+		{VoxelPos{0, 0, -1}, src, value, LightBack},
+		{VoxelPos{0, 0, 1}, src, value, LightFront},
 	}
-	if currBlock.Btype == Air {
-		currBlock.SetLightValue(value, LightValue)
-		c.SetVoxel(&currBlock)
-	}
-	dirs := []struct {
-		off  VoxelPos
-		face LightMask
-	}{
-		{VoxelPos{-1, 0, 0}, LightRight},
-		{VoxelPos{1, 0, 0}, LightLeft},
-		{VoxelPos{0, -1, 0}, LightTop},
-		{VoxelPos{0, 1, 0}, LightBottom},
-		{VoxelPos{0, 0, -1}, LightBack},
-		{VoxelPos{0, 0, 1}, LightFront},
-	}
-	for _, dir := range dirs {
-		offP := p.Add(dir.off)
-		offKey := offP.GetChunkPos(ChunkSize)
+	for _, mod := range mods {
+		mod.pos = p.Add(mod.pos)
+		offKey := mod.pos.GetChunkPos(ChunkSize)
 		if offCh, ok := w.chunks[offKey]; ok {
-			adjBlock := offCh.GetVoxelFromFlatData(offP)
+			adjBlock := offCh.GetVoxelFromFlatData(mod.pos)
 			if adjBlock.Btype == Air {
 				// continue search down open path
-				w.lightFrom(offCh, offP, value-1)
+				w.lightFrom(offCh, mod.pos, value-1, src)
 			} else {
-				// path is blocked off, apply lighting value to the face
-				if adjBlock.GetLightValue(dir.face) < value {
-					// log.Debugf("Setting face %v of %v to value %v", GetLightMaskName(dir.face), offP, value)
-					adjBlock.SetLightValue(value, dir.face)
+				// path is blocked off, apply lighting value to the face *if brighter*
+				if adjBlock.GetLightValue(mod.face) < value {
+					// log.Debugf("Setting face %v of %v to value %v", GetLightMaskName(dir.face), dir.pos, value)
+					adjBlock.SetLightValue(value, mod.face)
 					offCh.SetVoxel(&adjBlock)
 				}
 			}
 		} else {
-			// do nothing intentionally
+			w.pendingFuncs[offKey] = append(w.pendingFuncs[offKey], w.lightModFn(mod))
 		}
 	}
 }
@@ -361,6 +368,7 @@ func (w *World) receiveExpectedAsync() {
 				}
 				ch.SetObjs(objs)
 				w.chunks[ch.Pos] = ch
+				w.updateAllLights(ch)
 				w.applyPendingMods(ch)
 
 				// TODO do this in a goroutine
@@ -452,6 +460,33 @@ func adjModFn(mod AdjMod) func(*Chunk) {
 			ch.AddAdjacency(mod.off, mod.adjDiff)
 		} else {
 			ch.RemoveAdjacency(mod.off, mod.adjDiff)
+		}
+	}
+}
+
+type LightMod struct {
+	pos    VoxelPos
+	source VoxelPos
+	value  uint32
+	// face is for edge case of mod immediately running into solid block
+	face LightMask
+}
+
+// TODO delete mod??
+func (w *World) lightModFn(mod LightMod) func(*Chunk) {
+	return func(ch *Chunk) {
+		// TODO hack below because world.lightFrom is not supposed to be called
+		// on a solid (non-Air) block, which it might be in this case. So, I decided
+		// to write the check here instead of hacking this special case into that func
+		adjBlock := ch.GetVoxelFromFlatData(mod.pos)
+		if adjBlock.Btype == Air {
+			w.lightFrom(ch, mod.pos, mod.value, mod.source)
+		} else {
+			// path is blocked off, apply lighting value to the face *if brighter*
+			if adjBlock.GetLightValue(mod.face) < mod.value {
+				adjBlock.SetLightValue(mod.value, mod.face)
+				ch.SetVoxel(&adjBlock)
+			}
 		}
 	}
 }

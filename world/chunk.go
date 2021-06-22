@@ -88,15 +88,16 @@ func (rng ChunkRange) Contains(pos ChunkPos) bool {
 
 // Chunk manages a size X height X size region of voxels.
 type Chunk struct {
-	Pos      ChunkPos
-	flatData []float32
-	lights   map[VoxelPos]struct{}
-	objs     *voxgl.Object
-	root     *Octree
-	dirty    bool
-	size     int
-	modified bool
-	empty    bool
+	Pos       ChunkPos
+	flatData  []float32
+	lights    map[VoxelPos]struct{}
+	lightRefs map[VoxelPos]map[VoxelPos]uint32
+	objs      *voxgl.Object
+	root      *Octree
+	dirty     bool
+	size      int
+	modified  bool
+	empty     bool
 }
 
 const VertSize = 5
@@ -106,11 +107,12 @@ const CacheVertSize = 4
 func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 	flatData := make([]float32, size*size*size*VertSize)
 	chunk := &Chunk{
-		Pos:      pos,
-		flatData: flatData,
-		size:     size,
-		empty:    true,
-		lights:   make(map[VoxelPos]struct{}),
+		Pos:       pos,
+		flatData:  flatData,
+		size:      size,
+		empty:     true,
+		lights:    make(map[VoxelPos]struct{}),
+		lightRefs: map[VoxelPos]map[VoxelPos]uint32{},
 	}
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
@@ -120,6 +122,7 @@ func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 				z := chunk.AsVoxelPos().Z + k
 				vox := gen.GenerateAt(x, y, z)
 				chunk.SetVoxel(vox)
+				chunk.lightRefs[vox.Pos] = make(map[VoxelPos]uint32)
 			}
 		}
 	}
@@ -129,11 +132,12 @@ func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 // NewChunkLoaded returns a pre-loaded chunk
 func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 	chunk := &Chunk{
-		Pos:      pos,
-		flatData: make([]float32, VertSize*size*size*size),
-		size:     size,
-		empty:    true,
-		lights:   make(map[VoxelPos]struct{}),
+		Pos:       pos,
+		flatData:  make([]float32, VertSize*size*size*size),
+		size:      size,
+		empty:     true,
+		lights:    make(map[VoxelPos]struct{}),
+		lightRefs: map[VoxelPos]map[VoxelPos]uint32{},
 	}
 	maxIdx := CacheVertSize * size * size * size
 	for i := 0; i < maxIdx; i += CacheVertSize {
@@ -149,12 +153,44 @@ func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 			Btype:   btype,
 		}
 		chunk.SetVoxel(&v)
+		chunk.lightRefs[v.Pos] = make(map[VoxelPos]uint32)
 	}
 	return chunk
 }
 
 func (c *Chunk) SetObjs(objs *voxgl.Object) {
 	c.objs = objs
+}
+
+func (c *Chunk) GetBrightestSource(p VoxelPos) (VoxelPos, uint32, bool) {
+	if !c.IsWithinChunk(p) {
+		panic(fmt.Sprintf("%v is not within chunk %v", p, c.AsVoxelPos()))
+	}
+	var largest uint32
+	var found bool
+	var best VoxelPos
+	if srcMap, ok := c.lightRefs[p]; ok {
+		for src, val := range srcMap {
+			if val > largest || !found {
+				best = src
+				found = true
+			}
+		}
+	}
+	return best, largest, found
+}
+
+func (c *Chunk) AddSource(p VoxelPos, src VoxelPos, val uint32) {
+	c.lightRefs[p][src] = val
+}
+
+func (c *Chunk) HasSource(p VoxelPos, src VoxelPos) bool {
+	_, ok := c.lightRefs[p][src]
+	return ok
+}
+
+func (c *Chunk) DeleteSource(p VoxelPos, src VoxelPos) {
+	delete(c.lightRefs[p], src)
 }
 
 func (c *Chunk) GetRoot() *Octree {
