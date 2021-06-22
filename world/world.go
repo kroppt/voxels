@@ -16,17 +16,13 @@ import (
 
 // World tracks the camera and its renderable chunks.
 type World struct {
-	ubo          *gfx.BufferObject
-	cam          *Camera
-	chunks       map[ChunkPos]*Chunk
-	chunkExpect  map[ChunkPos]struct{}
-	chunkSaving  map[ChunkPos]struct{}
-	chunkLoading map[ChunkPos]struct{}
-	pendingMods  map[ChunkPos][]struct {
-		pos     VoxelPos
-		adjDiff AdjacentMask
-		add     bool
-	}
+	ubo           *gfx.BufferObject
+	cam           *Camera
+	chunks        map[ChunkPos]*Chunk
+	chunkExpect   map[ChunkPos]struct{}
+	chunkSaving   map[ChunkPos]struct{}
+	chunkLoading  map[ChunkPos]struct{}
+	pendingFuncs  map[ChunkPos][]func(*Chunk)
 	currChunk     ChunkPos
 	chunkChan     chan *Chunk
 	saved         chan ChunkPos
@@ -39,6 +35,12 @@ type World struct {
 	selectedVoxel *voxgl.Object
 	selected      bool
 	crosshair     *voxgl.Crosshair
+}
+
+type AdjMod struct {
+	off     VoxelPos
+	adjDiff AdjacentMask
+	add     bool
 }
 
 const ChunkSize = 4
@@ -85,11 +87,7 @@ func New() *World {
 	world.chunkExpect = make(map[ChunkPos]struct{})
 	world.chunkLoading = make(map[ChunkPos]struct{})
 	world.chunkSaving = make(map[ChunkPos]struct{})
-	world.pendingMods = make(map[ChunkPos][]struct {
-		pos     VoxelPos
-		adjDiff AdjacentMask
-		add     bool
-	})
+	world.pendingFuncs = make(map[ChunkPos][]func(*Chunk))
 	world.selectedVoxel, err = voxgl.NewFrame(nil)
 	if err != nil {
 		panic(fmt.Sprintf("error creating NewFrame: %v", err))
@@ -166,37 +164,26 @@ func (w *World) SetVoxel(v *Voxel) {
 	target := chunk.GetVoxelFromFlatData(v.Pos)
 	v.AdjMask = target.AdjMask
 	chunk.SetVoxel(v)
-	sides := []struct {
-		off VoxelPos
-		adj AdjacentMask
-	}{
-		{VoxelPos{-1, 0, 0}, AdjacentRight},
-		{VoxelPos{1, 0, 0}, AdjacentLeft},
-		{VoxelPos{0, -1, 0}, AdjacentTop},
-		{VoxelPos{0, 1, 0}, AdjacentBottom},
-		{VoxelPos{0, 0, -1}, AdjacentBack},
-		{VoxelPos{0, 0, 1}, AdjacentFront},
+	mods := []AdjMod{
+		{VoxelPos{-1, 0, 0}, AdjacentRight, true},
+		{VoxelPos{1, 0, 0}, AdjacentLeft, true},
+		{VoxelPos{0, -1, 0}, AdjacentTop, true},
+		{VoxelPos{0, 1, 0}, AdjacentBottom, true},
+		{VoxelPos{0, 0, -1}, AdjacentBack, true},
+		{VoxelPos{0, 0, 1}, AdjacentFront, true},
 	}
-	for _, side := range sides {
-		p := v.Pos.Add(side.off)
-		k := p.GetChunkPos(ChunkSize)
+	for _, mod := range mods {
+		mod.off = mod.off.Add(v.Pos)
+		k := mod.off.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
-			w.pendingMods[k] = append(w.pendingMods[k], struct {
-				pos     VoxelPos
-				adjDiff AdjacentMask
-				add     bool
-			}{
-				pos:     p,
-				adjDiff: side.adj,
-				add:     true,
-			})
+			w.pendingFuncs[k] = append(w.pendingFuncs[k], adjModFn(mod))
 		} else {
-			ch.AddAdjacency(p, side.adj)
+			ch.AddAdjacency(mod.off, mod.adjDiff)
 		}
 	}
 	// TODO do this in a goroutine
-	w.updateLighting()
+	// w.updateLighting()
 }
 
 func (w *World) RemoveVoxel(v VoxelPos) {
@@ -215,37 +202,26 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		AdjMask: AdjacentNone,
 	})
 	chunk.root, _ = chunk.root.Remove(v)
-	sides := []struct {
-		off VoxelPos
-		adj AdjacentMask
-	}{
-		{VoxelPos{-1, 0, 0}, AdjacentRight},
-		{VoxelPos{1, 0, 0}, AdjacentLeft},
-		{VoxelPos{0, -1, 0}, AdjacentTop},
-		{VoxelPos{0, 1, 0}, AdjacentBottom},
-		{VoxelPos{0, 0, -1}, AdjacentBack},
-		{VoxelPos{0, 0, 1}, AdjacentFront},
+	mods := []AdjMod{
+		{VoxelPos{-1, 0, 0}, AdjacentRight, false},
+		{VoxelPos{1, 0, 0}, AdjacentLeft, false},
+		{VoxelPos{0, -1, 0}, AdjacentTop, false},
+		{VoxelPos{0, 1, 0}, AdjacentBottom, false},
+		{VoxelPos{0, 0, -1}, AdjacentBack, false},
+		{VoxelPos{0, 0, 1}, AdjacentFront, false},
 	}
-	for _, side := range sides {
-		p := v.Add(side.off)
-		k := p.GetChunkPos(ChunkSize)
+	for _, mod := range mods {
+		mod.off = mod.off.Add(v)
+		k := mod.off.GetChunkPos(ChunkSize)
 		ch, ok := w.chunks[k]
 		if !ok {
-			w.pendingMods[k] = append(w.pendingMods[k], struct {
-				pos     VoxelPos
-				adjDiff AdjacentMask
-				add     bool
-			}{
-				pos:     p,
-				adjDiff: side.adj,
-				add:     false,
-			})
+			w.pendingFuncs[k] = append(w.pendingFuncs[k], adjModFn(mod))
 		} else {
-			ch.RemoveAdjacency(p, side.adj)
+			ch.RemoveAdjacency(mod.off, mod.adjDiff)
 		}
 	}
 	// TODO do this in a goroutine
-	w.updateLighting()
+	// w.updateLighting()
 }
 
 // GetCamera returns a reference to the camera.
@@ -385,11 +361,10 @@ func (w *World) receiveExpectedAsync() {
 				}
 				ch.SetObjs(objs)
 				w.chunks[ch.Pos] = ch
-				if _, hasPending := w.pendingMods[ch.Pos]; hasPending {
-					w.applyPendingMods(ch)
-				}
+				w.applyPendingMods(ch)
+
 				// TODO do this in a goroutine
-				w.updateLighting()
+				// w.updateLighting()
 				sw.StopRecordAverage("Chunk objs + pending mods")
 			}
 		default:
@@ -463,18 +438,22 @@ func (w *World) checkSavingStatus() {
 }
 
 func (w *World) applyPendingMods(ch *Chunk) {
-	mods, ok := w.pendingMods[ch.Pos]
-	if !ok {
-		panic("improper use of applyPendingMods - chunk had no pending operations")
+	if fns, hasPending := w.pendingFuncs[ch.Pos]; hasPending {
+		for _, fn := range fns {
+			fn(ch)
+		}
+		delete(w.pendingFuncs, ch.Pos)
 	}
-	for _, mod := range mods {
+}
+
+func adjModFn(mod AdjMod) func(*Chunk) {
+	return func(ch *Chunk) {
 		if mod.add {
-			ch.AddAdjacency(mod.pos, mod.adjDiff)
+			ch.AddAdjacency(mod.off, mod.adjDiff)
 		} else {
-			ch.RemoveAdjacency(mod.pos, mod.adjDiff)
+			ch.RemoveAdjacency(mod.off, mod.adjDiff)
 		}
 	}
-	delete(w.pendingMods, ch.Pos)
 }
 
 // checkLoadingStatus reads chunk keys off the loaded channel
@@ -578,13 +557,11 @@ func (w *World) Render() error {
 	return nil
 }
 
-// Destroy frees external resources.
-func (w *World) Destroy() {
-	w.ubo.Destroy()
+func (w *World) saveRoutine() {
 	// TODO make a more well defined cleanup routine
 	w.cancel = true
 	w.cacheLock.Lock()
-	for key := range w.pendingMods {
+	for key := range w.pendingFuncs {
 		if ch, ok := w.chunks[key]; !ok {
 			chunk, loaded := w.cache.Load(key)
 			if !loaded {
@@ -604,5 +581,11 @@ func (w *World) Destroy() {
 		}
 	}
 	w.cache.Destroy()
+}
+
+// Destroy frees external resources.
+func (w *World) Destroy() {
+	w.ubo.Destroy()
+	w.saveRoutine()
 	w.cacheLock.Unlock()
 }
