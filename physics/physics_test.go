@@ -32,6 +32,11 @@ func TestVelocityAsPosition(t *testing.T) {
 			time.Second * 5,
 			physics.Pos{glm.Vec3{0, -5, 0}},
 		},
+		{
+			physics.Vel{glm.Vec3{0, 0, 2}},
+			time.Millisecond * 500,
+			physics.Pos{glm.Vec3{0, 0, 1}},
+		},
 	}
 
 	for _, tC := range testCases {
@@ -71,6 +76,11 @@ func TestAccelerationAsVelocity(t *testing.T) {
 			physics.Acc{glm.Vec3{0, -1, 0}},
 			time.Second * 5,
 			physics.Vel{glm.Vec3{0, -5, 0}},
+		},
+		{
+			physics.Acc{glm.Vec3{0, 0, 2}},
+			time.Millisecond * 500,
+			physics.Vel{glm.Vec3{0, 0, 1}},
 		},
 	}
 
