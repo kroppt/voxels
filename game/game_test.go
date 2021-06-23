@@ -67,7 +67,7 @@ func TestTickDuration(t *testing.T) {
 		g := game.New(osTimeNow)
 		expect := time.Duration(0)
 
-		actual := g.TickDuration()
+		actual := g.GetTickDuration()
 
 		if actual != expect {
 			t.Fatalf("expected %v but got %v", expect, actual)
@@ -84,7 +84,7 @@ func TestTickDuration(t *testing.T) {
 
 		now = now.Add(time.Second)
 		g.NextTick()
-		actual := g.TickDuration()
+		actual := g.GetTickDuration()
 
 		if actual != expect {
 			t.Fatalf("expected %v but got %v", expect, actual)

@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// Game handles high-level details of the game.
 type Game struct {
 	now      func() time.Time
 	tick     int
@@ -11,6 +12,7 @@ type Game struct {
 	thisTick time.Time
 }
 
+// New returns a new Game.
 func New(now func() time.Time) *Game {
 	currTime := now()
 	return &Game{
@@ -21,16 +23,19 @@ func New(now func() time.Time) *Game {
 	}
 }
 
+// GetTick gets the current tick count.
 func (g *Game) GetTick() int {
 	return g.tick
 }
 
+// NextTick iterates the game to the next tick.
 func (g *Game) NextTick() {
 	g.lastTick = g.thisTick
 	g.thisTick = g.now()
 	g.tick++
 }
 
-func (g *Game) TickDuration() time.Duration {
+// GetTickDuration returns the duration the current tick is responsible for.
+func (g *Game) GetTickDuration() time.Duration {
 	return g.thisTick.Sub(g.lastTick)
 }
