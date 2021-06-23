@@ -96,8 +96,8 @@ type Chunk struct {
 	root      *Octree
 	dirty     bool
 	size      int
-	modified  bool
-	empty     bool
+	// TODO should should know about empty?
+	empty bool
 }
 
 const VertSize = 5
@@ -283,10 +283,6 @@ func GetLightMaskName(mask LightMask) string {
 	}
 }
 
-func (c *Chunk) SetModified() {
-	c.modified = true
-}
-
 func (c *Chunk) SetVoxelFlatData(v Voxel) {
 	if !c.IsWithinChunk(v.Pos) {
 		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
@@ -370,7 +366,6 @@ func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 
 	c.flatData[off+3] = float32(vbits)
 	c.dirty = true
-	c.modified = true
 }
 
 // RemoveAdjacency remove adjacency from a voxel
@@ -391,7 +386,6 @@ func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 
 	c.flatData[off+3] = float32(vbits)
 	c.dirty = true
-	c.modified = true
 }
 
 // Render renders the chunk in OpenGL.

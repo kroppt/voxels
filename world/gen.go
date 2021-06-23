@@ -22,10 +22,18 @@ func (g1 FlatWorldGenerator) GenerateAt(x, y, z int) *Voxel {
 			Btype:   Labeled,
 		}
 	} else if y == 6 {
-		return &Voxel{
-			Pos:     VoxelPos{x, y, z},
-			AdjMask: AdjacentAll & ^AdjacentTop,
-			Btype:   Grass,
+		if x == 0 && z == 0 {
+			return &Voxel{
+				Pos:     VoxelPos{x, y, z},
+				AdjMask: AdjacentAll & ^AdjacentTop,
+				Btype:   Light,
+			}
+		} else {
+			return &Voxel{
+				Pos:     VoxelPos{x, y, z},
+				AdjMask: AdjacentAll & ^AdjacentTop,
+				Btype:   Grass,
+			}
 		}
 	} else if y == 1 || y == 2 {
 		return &Voxel{

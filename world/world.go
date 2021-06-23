@@ -16,25 +16,32 @@ import (
 
 // World tracks the camera and its renderable chunks.
 type World struct {
-	ubo           *gfx.BufferObject
-	cam           *Camera
-	chunks        map[ChunkPos]*Chunk
-	chunkExpect   map[ChunkPos]struct{}
-	chunkSaving   map[ChunkPos]struct{}
-	chunkLoading  map[ChunkPos]struct{}
-	pendingFuncs  map[ChunkPos][]func(*Chunk)
-	currChunk     ChunkPos
-	chunkChan     chan *Chunk
-	saved         chan ChunkPos
-	loaded        chan ChunkPos
-	cubeMap       *gfx.CubeMap
-	gen           Generator
-	cache         *Cache
-	cacheLock     sync.Mutex
-	cancel        bool
-	selectedVoxel *voxgl.Object
-	selected      bool
-	crosshair     *voxgl.Crosshair
+	ubo               *gfx.BufferObject
+	cam               *Camera
+	chunksLoaded      map[ChunkPos]*LoadedChunk
+	chunkExpectRender map[ChunkPos]struct{}
+	chunkExpect       map[ChunkPos]struct{}
+	chunkSaving       map[ChunkPos]struct{}
+	chunkLoading      map[ChunkPos]struct{}
+	currChunk         ChunkPos
+	chunkChan         chan *Chunk
+	saved             chan ChunkPos
+	loaded            chan ChunkPos
+	cubeMap           *gfx.CubeMap
+	gen               Generator
+	cache             *Cache
+	cacheLock         sync.Mutex
+	cancel            bool
+	selectedVoxel     *voxgl.Object
+	selected          bool
+	crosshair         *voxgl.Crosshair
+}
+
+type LoadedChunk struct {
+	chunk    *Chunk
+	modified bool
+	doRender bool
+	relight  bool
 }
 
 type AdjMod struct {
@@ -45,6 +52,9 @@ type AdjMod struct {
 
 const ChunkSize = 4
 const chunkRenderDist = 3
+
+// chunkRenderBuffer gaurantees a minimum radius of area of effect operations
+const chunkRenderBuffer = 1
 const cacheThreshold = 10
 const selectionDist = 10
 
@@ -83,11 +93,13 @@ func New() *World {
 	world.cache = cache
 
 	rand.Seed(time.Now().UnixNano())
-	world.chunks = make(map[ChunkPos]*Chunk)
+
+	world.chunksLoaded = map[ChunkPos]*LoadedChunk{}
+	world.chunkExpectRender = make(map[ChunkPos]struct{})
 	world.chunkExpect = make(map[ChunkPos]struct{})
-	world.chunkLoading = make(map[ChunkPos]struct{})
 	world.chunkSaving = make(map[ChunkPos]struct{})
-	world.pendingFuncs = make(map[ChunkPos][]func(*Chunk))
+	world.chunkLoading = make(map[ChunkPos]struct{})
+
 	world.selectedVoxel, err = voxgl.NewFrame(nil)
 	if err != nil {
 		panic(fmt.Sprintf("error creating NewFrame: %v", err))
@@ -124,8 +136,11 @@ func loadSpriteSheet(fileName string) *gfx.CubeMap {
 func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 	var bestVox *Voxel
 	var bestDist float32
-	for _, chunk := range w.chunks {
-		vox, dist, hit := chunk.root.FindClosestIntersect(w.cam)
+	for _, loadedCh := range w.chunksLoaded {
+		if !loadedCh.doRender {
+			continue
+		}
+		vox, dist, hit := loadedCh.chunk.root.FindClosestIntersect(w.cam)
 		if hit && (dist < bestDist || bestVox == nil) {
 			bestVox = vox
 			bestDist = dist
@@ -143,11 +158,11 @@ func (w *World) updateSelectedVoxel() {
 		w.selected = true
 	}
 	key := v.Pos.GetChunkPos(ChunkSize)
-	ch, ok := w.chunks[key]
+	loadedCh, ok := w.chunksLoaded[key]
 	if !ok {
 		panic("expected look at voxel to be in a loaded chunk")
 	}
-	vox := ch.GetVoxelFromFlatData(v.Pos)
+	vox := loadedCh.chunk.GetVoxelFromFlatData(v.Pos)
 	pos := vox.Pos.AsVec3()
 	w.selectedVoxel.SetData([]float32{pos.X(), pos.Y(), pos.Z(), float32(vox.GetVbits())})
 }
@@ -159,10 +174,11 @@ func (w *World) SetVoxel(v *Voxel) {
 	// -> what would setting a voxel to air do here? should this be prevented?
 	key := v.Pos.GetChunkPos(ChunkSize)
 	// log.Debugf("Adding voxel at %v in chunk %v", v.Pos, key)
-	chunk, ok := w.chunks[key]
+	loadedCh, ok := w.chunksLoaded[key]
 	if !ok {
-		return
+		panic(fmt.Sprintf("tried to set a voxel (%v) that belongs to an unrendered chunk", v.Pos))
 	}
+	chunk := loadedCh.chunk
 	target := chunk.GetVoxelFromFlatData(v.Pos)
 	v.AdjMask = target.AdjMask
 	chunk.SetVoxel(v)
@@ -177,36 +193,37 @@ func (w *World) SetVoxel(v *Voxel) {
 	for _, mod := range mods {
 		mod.off = mod.off.Add(v.Pos)
 		k := mod.off.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
+		ch, ok := w.chunksLoaded[k]
 		if !ok {
-			w.pendingFuncs[k] = append(w.pendingFuncs[k], adjModFn(mod))
+			panic("not currently handling pending mods to unloaded chunks")
 		} else {
-			ch.AddAdjacency(mod.off, mod.adjDiff)
+			ch.chunk.AddAdjacency(mod.off, mod.adjDiff)
+			ch.modified = true
 		}
 	}
 
-	if v.Btype == Light {
-		v := chunk.GetVoxelFromFlatData(v.Pos)
-		v.SetLightValue(MaxLightValue, LightLeft)
-		v.SetLightValue(MaxLightValue, LightRight)
-		v.SetLightValue(MaxLightValue, LightBack)
-		v.SetLightValue(MaxLightValue, LightFront)
-		v.SetLightValue(MaxLightValue, LightTop)
-		v.SetLightValue(MaxLightValue, LightBottom)
-		chunk.SetVoxel(&v)
+	// if v.Btype == Light {
+	// 	v := chunk.GetVoxelFromFlatData(v.Pos)
+	// 	v.SetLightValue(MaxLightValue, LightLeft)
+	// 	v.SetLightValue(MaxLightValue, LightRight)
+	// 	v.SetLightValue(MaxLightValue, LightBack)
+	// 	v.SetLightValue(MaxLightValue, LightFront)
+	// 	v.SetLightValue(MaxLightValue, LightTop)
+	// 	v.SetLightValue(MaxLightValue, LightBottom)
+	// 	chunk.SetVoxel(&v)
 
-		w.lightFrom(chunk, v.Pos, MaxLightValue, v.Pos)
-	}
+	// 	w.lightFrom(chunk, v.Pos, MaxLightValue, v.Pos)
+	// }
 	// TODO setting a light block to something else, update lighting
 }
 
 func (w *World) RemoveVoxel(v VoxelPos) {
 	key := v.GetChunkPos(ChunkSize)
-	chunk, ok := w.chunks[key]
+	loadedCh, ok := w.chunksLoaded[key]
 	if !ok {
-		// TODO programmer error?
-		panic(fmt.Sprintf("tried to remove a voxel (%v) that belongs to an unloaded chunk (how did you do this?)", v))
+		panic(fmt.Sprintf("tried to remove a voxel (%v) that belongs to an unrendered chunk", v))
 	}
+	chunk := loadedCh.chunk
 	// log.Debugf("removing voxel in chunk %v", key)
 	// TODO setting voxel to air and removing node from octree are tied
 	// together in a "delete voxel" operation, this should be more well defined
@@ -228,24 +245,25 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 	for _, mod := range mods {
 		mod.off = mod.off.Add(v)
 		k := mod.off.GetChunkPos(ChunkSize)
-		ch, ok := w.chunks[k]
+		ch, ok := w.chunksLoaded[k]
 		if !ok {
-			w.pendingFuncs[k] = append(w.pendingFuncs[k], adjModFn(mod))
+			panic("not currently handling pending mods to unloaded chunks")
 		} else {
-			ch.RemoveAdjacency(mod.off, mod.adjDiff)
+			ch.chunk.RemoveAdjacency(mod.off, mod.adjDiff)
+			ch.modified = true
 		}
 	}
 
 	// this is required because lesser-light sources might remain
 	// if the stronger light source was removed, so the book keeping
 	// needs to be calculated
-	if chunk.GetVoxelFromFlatData(v).Btype == Light {
-		w.lightRemoveFrom(chunk, v, v)
-	}
-	srcMap := chunk.lightRefs[v]
-	for src, val := range srcMap {
-		w.lightFrom(chunk, v, val, src)
-	}
+	// if chunk.GetVoxelFromFlatData(v).Btype == Light {
+	// 	w.lightRemoveFrom(chunk, v, v)
+	// }
+	// srcMap := chunk.lightRefs[v]
+	// for src, val := range srcMap {
+	// 	w.lightFrom(chunk, v, val, src)
+	// }
 }
 
 // GetCamera returns a reference to the camera.
@@ -285,31 +303,38 @@ func (w *World) updateAllLights(ch *Chunk) {
 	}
 }
 
-func (w *World) lightRemoveFrom(c *Chunk, p VoxelPos, src VoxelPos) {
-	if !c.IsWithinChunk(p) {
-		panic("improper usage: p outside chunk")
-	}
-	if !c.HasSource(p, src) {
-		return
-	}
-	offs := []VoxelPos{
-		{-1, 0, 0},
-		{1, 0, 0},
-		{0, -1, 0},
-		{0, 1, 0},
-		{0, 0, -1},
-		{0, 0, 1},
-	}
-	for _, off := range offs {
-		offP := p.Add(off)
-		offKey := offP.GetChunkPos(ChunkSize)
-		if offCh, ok := w.chunks[offKey]; ok {
-			offCh.DeleteSource(offP, src)
-			w.lightRemoveFrom(c, offP, src)
-		} else {
-			// the unloaded chunks don't save this state, so it doesn't need to be fixed
-		}
-	}
+// func (w *World) lightRemoveFrom(c *Chunk, p VoxelPos, src VoxelPos) {
+// 	if !c.IsWithinChunk(p) {
+// 		panic("improper usage: p outside chunk")
+// 	}
+// 	if !c.HasSource(p, src) {
+// 		return
+// 	}
+// 	offs := []VoxelPos{
+// 		{-1, 0, 0},
+// 		{1, 0, 0},
+// 		{0, -1, 0},
+// 		{0, 1, 0},
+// 		{0, 0, -1},
+// 		{0, 0, 1},
+// 	}
+// 	for _, off := range offs {
+// 		offP := p.Add(off)
+// 		offKey := offP.GetChunkPos(ChunkSize)
+// 		if offCh, ok := w.chunksLoaded[offKey]; ok {
+// 			offCh.chunk.DeleteSource(offP, src)
+// 			w.lightRemoveFrom(c, offP, src)
+// 		} else {
+// 			// the unloaded chunks don't save this state, so it doesn't need to be fixed
+// 		}
+// 	}
+// }
+
+type LightMod struct {
+	pos   VoxelPos
+	src   VoxelPos
+	value uint32
+	face  LightMask
 }
 
 func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32, src VoxelPos) {
@@ -333,7 +358,8 @@ func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32, src VoxelPos) {
 	for _, mod := range mods {
 		mod.pos = p.Add(mod.pos)
 		offKey := mod.pos.GetChunkPos(ChunkSize)
-		if offCh, ok := w.chunks[offKey]; ok {
+		if loadedCh, ok := w.chunksLoaded[offKey]; ok {
+			offCh := loadedCh.chunk
 			adjBlock := offCh.GetVoxelFromFlatData(mod.pos)
 			if adjBlock.Btype == Air {
 				// continue search down open path
@@ -347,9 +373,31 @@ func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32, src VoxelPos) {
 				}
 			}
 		} else {
-			w.pendingFuncs[offKey] = append(w.pendingFuncs[offKey], w.lightModFn(mod))
+			// panic("not currently handling pending mods to chunks past the extra loaded chunks")
 		}
 	}
+}
+
+func (w *World) isWithinRenderDist(key ChunkPos) bool {
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
+	rng := currChunk.GetSurroundings(chunkRenderDist)
+	return rng.Contains(key)
+}
+
+func (w *World) hasSurroundingChunks(key ChunkPos) bool {
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
+	// loadedRng handles the edge case for buffered, invisible
+	// chunks that aren't expected to have chunks beyond them
+	// loaded before they run their lighting algorithm.
+	loadedRng := currChunk.GetSurroundings(chunkRenderBuffer)
+	localBufRng := key.GetSurroundings(chunkRenderBuffer)
+	var missing bool
+	localBufRng.ForEach(func(pos ChunkPos) {
+		if _, ok := w.chunksLoaded[pos]; !ok && loadedRng.Contains(pos) {
+			missing = true
+		}
+	})
+	return !missing
 }
 
 // receiveExpectedAsync reads loaded chunks off the chunk channel, and only adds them
@@ -361,19 +409,29 @@ func (w *World) receiveExpectedAsync() {
 			if _, ok := w.chunkExpect[ch.Pos]; ok {
 				// the chunk has arrived and we expected it
 				// give the chunk its object
-				sw := util.Start()
 				objs, err := voxgl.NewChunkObject(nil)
 				if err != nil {
 					panic(fmt.Sprint(err))
 				}
 				ch.SetObjs(objs)
-				w.chunks[ch.Pos] = ch
-				w.updateAllLights(ch)
-				w.applyPendingMods(ch)
 
-				// TODO do this in a goroutine
-				// w.updateLighting()
-				sw.StopRecordAverage("Chunk objs + pending mods")
+				w.chunksLoaded[ch.Pos] = &LoadedChunk{
+					chunk:    ch,
+					modified: false,
+					relight:  true,
+					doRender: w.isWithinRenderDist(ch.Pos),
+				}
+
+				// check waiting list to see if this arrival
+				// completed a different chunk's surroundings
+				// TODO only check within buffer-range of arriving chunk
+				for key, loadedCh := range w.chunksLoaded {
+					if loadedCh.relight && w.hasSurroundingChunks(key) {
+						w.updateAllLights(loadedCh.chunk)
+						loadedCh.relight = false
+					}
+				}
+
 			}
 		default:
 			return
@@ -389,7 +447,7 @@ func (w *World) receiveExpectedAsync() {
 // A request to any chunk that is already loaded, loading, or saving will
 // be ignored.
 func (w *World) requestChunk(key ChunkPos) {
-	_, loaded := w.chunks[key]
+	_, loaded := w.chunksLoaded[key]
 	_, loading := w.chunkLoading[key]
 	_, saving := w.chunkSaving[key]
 	if loaded || loading || saving {
@@ -408,6 +466,10 @@ func (w *World) requestChunk(key ChunkPos) {
 		if !loaded {
 			chunk = NewChunk(ChunkSize, key, w.gen)
 		}
+
+		// TODO wait for surrounding extra chunks to load for lighting
+		// only if this is a renderable chunk
+
 		// TODO switching these lines changes things
 		// should these two be tied?
 		w.chunkChan <- chunk
@@ -429,64 +491,12 @@ func (w *World) requestExpectedChunks() {
 // chunk is still within render distance, it marks the chunk as expected and
 // requests the chunk to be loaded.
 func (w *World) checkSavingStatus() {
-	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
-	rng := currChunk.GetSurroundings(chunkRenderDist)
 	for {
 		select {
 		case key := <-w.saved:
 			delete(w.chunkSaving, key)
-			if rng.Contains(key) {
-				w.chunkExpect[key] = struct{}{}
-				w.requestChunk(key)
-			}
 		default:
 			return
-		}
-	}
-}
-
-func (w *World) applyPendingMods(ch *Chunk) {
-	if fns, hasPending := w.pendingFuncs[ch.Pos]; hasPending {
-		for _, fn := range fns {
-			fn(ch)
-		}
-		delete(w.pendingFuncs, ch.Pos)
-	}
-}
-
-func adjModFn(mod AdjMod) func(*Chunk) {
-	return func(ch *Chunk) {
-		if mod.add {
-			ch.AddAdjacency(mod.off, mod.adjDiff)
-		} else {
-			ch.RemoveAdjacency(mod.off, mod.adjDiff)
-		}
-	}
-}
-
-type LightMod struct {
-	pos    VoxelPos
-	source VoxelPos
-	value  uint32
-	// face is for edge case of mod immediately running into solid block
-	face LightMask
-}
-
-// TODO delete mod??
-func (w *World) lightModFn(mod LightMod) func(*Chunk) {
-	return func(ch *Chunk) {
-		// TODO hack below because world.lightFrom is not supposed to be called
-		// on a solid (non-Air) block, which it might be in this case. So, I decided
-		// to write the check here instead of hacking this special case into that func
-		adjBlock := ch.GetVoxelFromFlatData(mod.pos)
-		if adjBlock.Btype == Air {
-			w.lightFrom(ch, mod.pos, mod.value, mod.source)
-		} else {
-			// path is blocked off, apply lighting value to the face *if brighter*
-			if adjBlock.GetLightValue(mod.face) < mod.value {
-				adjBlock.SetLightValue(mod.value, mod.face)
-				ch.SetVoxel(&adjBlock)
-			}
 		}
 	}
 }
@@ -509,8 +519,9 @@ func (w *World) checkLoadingStatus() {
 // chunk that the camera is currently in, and are also not in the process
 // of being saved.
 func (w *World) updateExpectedChunks() {
+	// slightly larger range for chunks that should be loaded
 	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
-	rng := currChunk.GetSurroundings(chunkRenderDist)
+	rng := currChunk.GetSurroundings(chunkRenderDist + chunkRenderBuffer)
 	w.chunkExpect = make(map[ChunkPos]struct{})
 	rng.ForEach(func(pos ChunkPos) {
 		if _, saving := w.chunkSaving[pos]; !saving {
@@ -526,11 +537,11 @@ func (w *World) updateExpectedChunks() {
 // as in the process of saving, and indicating completion on the saved channel
 // when it is done.
 func (w *World) evictUnexpectedChunks() {
-	for key, ch := range w.chunks {
+	for key, loadedCh := range w.chunksLoaded {
 		if _, ok := w.chunkExpect[key]; !ok {
-			w.chunks[key].Destroy()
-			delete(w.chunks, key)
-			if ch.modified {
+			w.chunksLoaded[key].chunk.Destroy()
+			delete(w.chunksLoaded, key)
+			if loadedCh.modified {
 				w.chunkSaving[key] = struct{}{}
 				go func(key ChunkPos, ch *Chunk) {
 					w.cacheLock.Lock()
@@ -541,8 +552,18 @@ func (w *World) evictUnexpectedChunks() {
 					w.cache.Save(ch)
 					w.cacheLock.Unlock()
 					w.saved <- key
-				}(key, ch)
+				}(key, loadedCh.chunk)
 			}
+		} else {
+			// TODO rename evictUnexpectedChunks to account for this logic?
+			shouldRender := w.isWithinRenderDist(key)
+			if !loadedCh.doRender && shouldRender {
+				// this chunk was a buffer chunk and has moved into render dist
+				// TODO is it possible that everything already arrived at this point,
+				// so no arrival will ever trigger this relight?
+				loadedCh.relight = true
+			}
+			loadedCh.doRender = shouldRender
 		}
 	}
 }
@@ -575,10 +596,12 @@ func (w *World) Render() error {
 		w.cam.Clean()
 	}
 
-	for _, chunk := range w.chunks {
-		w.cubeMap.Bind()
-		chunk.Render(w.cam)
-		w.cubeMap.Unbind()
+	for _, loadedCh := range w.chunksLoaded {
+		if loadedCh.doRender {
+			w.cubeMap.Bind()
+			loadedCh.chunk.Render(w.cam)
+			w.cubeMap.Unbind()
+		}
 	}
 	gl.LineWidth(2)
 	gl.Disable(gl.DEPTH_TEST)
@@ -593,34 +616,20 @@ func (w *World) Render() error {
 }
 
 func (w *World) saveRoutine() {
-	// TODO make a more well defined cleanup routine
 	w.cancel = true
 	w.cacheLock.Lock()
-	for key := range w.pendingFuncs {
-		if ch, ok := w.chunks[key]; !ok {
-			chunk, loaded := w.cache.Load(key)
-			if !loaded {
-				chunk = NewChunk(ChunkSize, key, w.gen)
-			}
-			w.applyPendingMods(chunk)
-			w.cache.Save(chunk)
-		} else {
-			w.applyPendingMods(ch)
-			w.cache.Save(ch)
-			delete(w.chunks, key)
-		}
-	}
-	for _, ch := range w.chunks {
+	// TODO chunksloaded, not just to render, because invisible loaded chunks could be modified too
+	for _, ch := range w.chunksLoaded {
 		if ch.modified {
-			w.cache.Save(ch)
+			w.cache.Save(ch.chunk)
 		}
 	}
 	w.cache.Destroy()
+	w.cacheLock.Unlock()
 }
 
 // Destroy frees external resources.
 func (w *World) Destroy() {
 	w.ubo.Destroy()
 	w.saveRoutine()
-	w.cacheLock.Unlock()
 }
