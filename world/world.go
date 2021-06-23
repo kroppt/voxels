@@ -341,10 +341,10 @@ func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32, src VoxelPos) {
 	if value < 0 || value > MaxLightValue || !c.IsWithinChunk(p) {
 		panic("improper usage: bad lighting value or p outside chunk")
 	}
-	if value == 0 || c.HasSource(p, src) {
+	if value == 0 || (c.HasSource(p, src) && c.GetSourceValue(p, src) >= value) {
 		return
 	} else {
-		c.AddSource(p, src, value)
+		c.SetSource(p, src, value)
 	}
 
 	mods := []LightMod{

@@ -180,13 +180,21 @@ func (c *Chunk) GetBrightestSource(p VoxelPos) (VoxelPos, uint32, bool) {
 	return best, largest, found
 }
 
-func (c *Chunk) AddSource(p VoxelPos, src VoxelPos, val uint32) {
+func (c *Chunk) SetSource(p VoxelPos, src VoxelPos, val uint32) {
 	c.lightRefs[p][src] = val
 }
 
 func (c *Chunk) HasSource(p VoxelPos, src VoxelPos) bool {
 	_, ok := c.lightRefs[p][src]
 	return ok
+}
+
+func (c *Chunk) GetSourceValue(p VoxelPos, src VoxelPos) uint32 {
+	if val, ok := c.lightRefs[p][src]; !ok {
+		panic("light did not have source to get value of")
+	} else {
+		return val
+	}
 }
 
 func (c *Chunk) DeleteSource(p VoxelPos, src VoxelPos) {
