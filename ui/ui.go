@@ -23,6 +23,7 @@ type UI struct {
 	program     *gfx.Program
 	textProgram *gfx.Program
 	gfx         Gfx
+	escapeMenu  bool
 }
 
 // Gfx is an interface of the functions being provided.
@@ -125,13 +126,19 @@ func (ui *UI) Render() {
 	gl.Disable(gl.DEPTH_TEST)
 	gl.Disable(gl.CULL_FACE)
 	for _, element := range ui.elements {
+		_, okEsc := element.(*EscapeMenu)
+		if okEsc && !ui.escapeMenu {
+			// skip rendering the EscapeMenu
+			continue
+		}
+
 		ui.gfx.ProgramBind(element.GetProgram())
-		text, ok := element.(*Text)
-		if ok {
+		text, okText := element.(*Text)
+		if okText {
 			text.FontTextureBind()
 		}
 		ui.gfx.VAODraw(element.GetVAO())
-		if ok {
+		if okText {
 			text.FontTextureUnbind()
 		}
 		ui.gfx.ProgramUnbind(element.GetProgram())
@@ -147,6 +154,13 @@ func (ui *UI) Destroy() {
 	}
 	if ui.program != nil {
 		ui.program.Destroy()
+	}
+}
+
+// ToggleEscapeMenu enables, or disables if it is already enabled, the escape menu.
+func (ui *UI) ToggleEscapeMenu() {
+	if ui != nil {
+		ui.escapeMenu = !ui.escapeMenu
 	}
 }
 

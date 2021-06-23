@@ -84,4 +84,12 @@ func TestElements(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 	})
+
+	t.Run("create escape menu", func(t *testing.T) {
+		stub := &GfxStub{}
+		menu := ui.NewEscapeMenu(stub, 0, 0)
+		if menu == nil {
+			t.Fatalf("expected not nil but got nil")
+		}
+	})
 }

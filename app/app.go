@@ -11,11 +11,12 @@ import (
 )
 
 type Application struct {
-	win     *sdl.Window
-	world   *world.World
-	ui      *ui.UI
-	running bool
-	m1held  bool
+	win       *sdl.Window
+	world     *world.World
+	ui        *ui.UI
+	running   bool
+	mouseMenu bool
+	m1held    bool
 }
 
 func New(win *sdl.Window) (*Application, error) {
@@ -27,23 +28,8 @@ func New(win *sdl.Window) (*Application, error) {
 	}
 
 	w, h := win.GetSize()
-	bg := ui.NewBackground(gfx, w, h)
-	err = uiPtr.AddElement(bg)
-	if err != nil {
-		return nil, err
-	}
-
-	btn := ui.NewButton(gfx, bg, w, h)
-	err = uiPtr.AddElement(btn)
-	if err != nil {
-		return nil, err
-	}
-
-	text, err := ui.NewText(gfx, btn, w, h, "Sample Button Text")
-	if err != nil {
-		return nil, err
-	}
-	err = uiPtr.AddElement(text)
+	menu := ui.NewEscapeMenu(gfx, w, h)
+	err = uiPtr.AddElement(menu)
 	if err != nil {
 		return nil, err
 	}
@@ -90,6 +76,9 @@ func (app *Application) HandleSdlEvent(e sdl.Event) error {
 }
 
 func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
+	if app.mouseMenu {
+		return
+	}
 	vpos := app.world.GetCamera().AsVoxelPos()
 	app.world.SetVoxel(&world.Voxel{
 		Pos:   vpos,
@@ -111,7 +100,7 @@ func (app *Application) handleMouseButtonEvent(evt *sdl.MouseButtonEvent) {
 }
 
 func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error {
-	if !app.m1held {
+	if app.mouseMenu {
 		return nil
 	}
 	cam := app.world.GetCamera()
@@ -125,9 +114,16 @@ func (app *Application) handleMouseMotionEvent(evt *sdl.MouseMotionEvent) error 
 }
 
 func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
+	if evt.Keysym.Sym == sdl.K_ESCAPE && evt.State == sdl.PRESSED {
+		app.mouseMenu = !app.mouseMenu
+		app.ui.ToggleEscapeMenu()
+	}
 }
 
 func (app *Application) pollKeyboard() error {
+	if app.mouseMenu {
+		return nil
+	}
 	cam := app.world.GetCamera()
 	keys := sdl.GetKeyboardState()
 	speed := float32(0.07)
@@ -164,10 +160,25 @@ func (app *Application) pollKeyboard() error {
 	return nil
 }
 
+func (app *Application) setMouseMode(w, h int32) {
+	if app.mouseMenu {
+		relMouseMode := sdl.GetRelativeMouseMode()
+		sdl.SetRelativeMouseMode(false)
+		if relMouseMode == true {
+			sdl.GetMouseFocus().WarpMouseInWindow(w/2, h/2)
+		}
+	} else {
+		sdl.SetRelativeMouseMode(true)
+	}
+}
+
 var Block *world.Voxel
 
 func (app *Application) PostEventActions() {
+	w, h := app.win.GetSize()
+
 	app.pollKeyboard()
+	app.setMouseMode(w, h)
 	sw := util.Start()
 	Block, _, _ = app.world.FindLookAtVoxel()
 	// if found {
@@ -177,7 +188,6 @@ func (app *Application) PostEventActions() {
 	// 	log.Debugf("Block: %v, dist: %v, pos: %v, look: %v", Block.Pos, dist, eye, dir)
 	// }
 	sw.StopRecordAverage("Intersect")
-	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
 
 	// clear with black
