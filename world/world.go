@@ -494,6 +494,7 @@ func (w *World) Destroy() {
 			w.cache.Save(ch)
 		}
 	}
+	w.cache.Sync()
 	w.cache.Destroy()
 	w.cacheLock.Unlock()
 }
