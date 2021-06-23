@@ -245,8 +245,11 @@ func (c *Cache) findChunkVoxelDataOffset(pos ChunkPos) (int32, bool) {
 	return 0, false
 }
 
-func (c *Cache) Destroy() {
+func (c *Cache) Sync() {
 	c.writeBufferToFile()
+}
+
+func (c *Cache) Destroy() {
 	c.metaFile.Close()
 	c.dataFile.Close()
 }
