@@ -45,14 +45,10 @@ func TestCacheInMemory(t *testing.T) {
 	if !compareFlatData(ch.GetFlatData(), ch2.GetFlatData()) {
 		t.Fatalf("loaded data not same as saved data")
 	}
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
-	}
+	t.Cleanup(func() {
+		err = os.Remove("test_data")
+		err = os.Remove("test_meta")
+	})
 }
 
 func TestCacheInFile(t *testing.T) {
@@ -80,14 +76,10 @@ func TestCacheInFile(t *testing.T) {
 	if !compareFlatData(ch.GetFlatData(), ch2.GetFlatData()) {
 		t.Fatalf("loaded data not same as saved data")
 	}
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
-	}
+	t.Cleanup(func() {
+		err = os.Remove("test_data")
+		err = os.Remove("test_meta")
+	})
 }
 
 func TestCacheGetNumChunksMeta(t *testing.T) {
@@ -116,14 +108,10 @@ func TestCacheGetNumChunksMeta(t *testing.T) {
 	}
 
 	cache.Destroy()
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
-	}
+	t.Cleanup(func() {
+		err = os.Remove("test_data")
+		err = os.Remove("test_meta")
+	})
 }
 
 func TestCache2Chunks(t *testing.T) {
@@ -166,14 +154,10 @@ func TestCache2Chunks(t *testing.T) {
 	if !compareFlatData(ch2.GetFlatData(), ch2Loaded.GetFlatData()) {
 		t.Fatalf("loaded data not same as saved data")
 	}
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
-	}
+	t.Cleanup(func() {
+		err = os.Remove("test_data")
+		err = os.Remove("test_meta")
+	})
 }
 
 func TestCacheManyChunks(t *testing.T) {
@@ -196,11 +180,8 @@ func TestCacheManyChunks(t *testing.T) {
 	}
 	cache.Destroy()
 	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
-	}
+	t.Cleanup(func() {
+		err = os.Remove("test_data")
+		err = os.Remove("test_meta")
+	})
 }
