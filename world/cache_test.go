@@ -179,7 +179,6 @@ func TestCacheManyChunks(t *testing.T) {
 		t.Fatalf("expected %v chunks but got %v", nChunks, resultingNumChunks)
 	}
 	cache.Destroy()
-	err = os.Remove("test_data")
 	t.Cleanup(func() {
 		err = os.Remove("test_data")
 		err = os.Remove("test_meta")
