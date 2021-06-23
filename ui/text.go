@@ -22,7 +22,7 @@ func NewText(gfx Gfx, parentComponent *Button, screenWidth, screenHeight int32, 
 
 	vao := gfx.NewVAO(gl.TRIANGLES, layout)
 
-	fnt, err := gfx.LoadFontTexture("NotoMono-Regular.ttf", 14)
+	fnt, err := gfx.LoadFontTexture("NotoMono-Regular.ttf", fontSize)
 	if err != nil {
 		return nil, err
 	}

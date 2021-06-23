@@ -7,6 +7,8 @@ import (
 	"github.com/kroppt/gfx"
 )
 
+const fontSize = 16
+
 // Element is an interface that represents something that is rendered like a UI element.
 type Element interface {
 	GetProgram() *gfx.Program
@@ -78,7 +80,7 @@ func New(gfx Gfx) (*UI, error) {
 
 	ui.gfx.ProgramUploadUniform(ui.program, "screenSize", float32(1920), float32(1080))
 
-	fnt, err := gfx.LoadFontTexture("NotoMono-Regular.ttf", 14)
+	fnt, err := gfx.LoadFontTexture("NotoMono-Regular.ttf", fontSize)
 	if err != nil {
 		return nil, err
 	}
