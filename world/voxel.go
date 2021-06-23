@@ -110,18 +110,18 @@ func (pos VoxelPos) AsLocalChunkPos(chunk Chunk) VoxelPos {
 	}
 }
 
-// Color is an RGBA color.
-type Color struct {
-	R float32
-	G float32
-	B float32
-	A float32
-}
-
 // Voxel describes a discrete unit of 3D space.
 type Voxel struct {
 	Pos     VoxelPos
-	Color   Color
 	AdjMask AdjacentMask
 	Btype   BlockType
+}
+
+func (v *Voxel) GetVbits() int32 {
+	return int32(v.AdjMask) | int32(v.Btype<<6)
+}
+
+func SeparateVbits(vbits int32) (AdjacentMask, BlockType) {
+	return AdjacentMask(vbits & int32(AdjacentAll)),
+		BlockType(vbits >> 6)
 }
