@@ -7,16 +7,12 @@ import (
 	"github.com/kroppt/voxels/game"
 )
 
-func osTimeNow() time.Time {
-	return time.Now()
-}
-
 func TestNewGame(t *testing.T) {
 
 	t.Run("should not return nil", func(t *testing.T) {
 		t.Parallel()
 
-		g := game.New(osTimeNow)
+		g := game.New(game.OsTimeNow)
 		if g == nil {
 			t.Fatal("expect non-nil pointer but got nil")
 		}
@@ -29,7 +25,7 @@ func TestGetTick(t *testing.T) {
 	t.Run("should return 0 for a new game", func(t *testing.T) {
 		t.Parallel()
 
-		g := game.New(osTimeNow)
+		g := game.New(game.OsTimeNow)
 		expect := 0
 
 		actual := g.GetTick()
@@ -46,7 +42,7 @@ func TestNextTick(t *testing.T) {
 	t.Run("should increment tick 0 to 1", func(t *testing.T) {
 		t.Parallel()
 
-		g := game.New(osTimeNow)
+		g := game.New(game.OsTimeNow)
 		g.NextTick()
 		expect := 1
 
@@ -64,7 +60,7 @@ func TestTickDuration(t *testing.T) {
 	t.Run("first tick should have 0 duration", func(t *testing.T) {
 		t.Parallel()
 
-		g := game.New(osTimeNow)
+		g := game.New(game.OsTimeNow)
 		expect := time.Duration(0)
 
 		actual := g.GetTickDuration()

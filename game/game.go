@@ -39,3 +39,8 @@ func (g *Game) NextTick() {
 func (g *Game) GetTickDuration() time.Duration {
 	return g.thisTick.Sub(g.lastTick)
 }
+
+// OsTimeNow returns the current time according to the operating system.
+func OsTimeNow() time.Time {
+	return time.Now()
+}
