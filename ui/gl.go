@@ -40,3 +40,7 @@ func (g *GlGfx) ProgramBind(program *gfx.Program) {
 func (g *GlGfx) ProgramUnbind(program *gfx.Program) {
 	program.Unbind()
 }
+
+func (g *GlGfx) LoadFontTexture(fontName string, fontSize int32) (*gfx.FontInfo, error) {
+	return gfx.LoadFontTexture(fontName, fontSize)
+}

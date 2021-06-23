@@ -9,8 +9,9 @@ var _ Element = (*Background)(nil)
 
 // Background stores the internal data associated with a background UI element.
 type Background struct {
-	vao *gfx.VAO
-	gfx Gfx
+	program *gfx.Program
+	vao     *gfx.VAO
+	gfx     Gfx
 }
 
 // NewBackground creates a Background element.
@@ -52,6 +53,14 @@ func (bg *Background) ReloadPosition(screenWidth, screenHeight int32) {
 	bg.gfx.VAOLoad(bg.vao, vertices, gl.STATIC_DRAW)
 }
 
+func (bg *Background) GetProgram() *gfx.Program {
+	return bg.program
+}
+
+func (bg *Background) SetProgram(program *gfx.Program) {
+	bg.program = program
+}
+
 // GetVAO returns the vertex array object associated with the background.
 func (bg *Background) GetVAO() *gfx.VAO {
 	return bg.vao
@@ -69,4 +78,12 @@ func (bg *Background) GetHeight() int32 {
 		return int32(0)
 	}
 	return int32(100)
+}
+
+func (bg *Background) GetTop() int32 {
+	return bg.GetBorder()
+}
+
+func (bg *Background) GetLeft() int32 {
+	return bg.GetBorder()
 }

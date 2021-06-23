@@ -45,6 +45,10 @@ func (*GfxStub) ProgramBind(program *gfx.Program) {
 func (*GfxStub) ProgramUnbind(program *gfx.Program) {
 }
 
+func (*GfxStub) LoadFontTexture(fontName string, fontSize int32) (*gfx.FontInfo, error) {
+	return &gfx.FontInfo{}, nil
+}
+
 func TestNew(t *testing.T) {
 	t.Run("creates a UI with a new buffer object", func(t *testing.T) {
 		stub := &GfxStub{}

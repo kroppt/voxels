@@ -9,15 +9,18 @@ import (
 
 // Element is an interface that represents something that is rendered like a UI element.
 type Element interface {
+	GetProgram() *gfx.Program
+	SetProgram(program *gfx.Program)
 	GetVAO() *gfx.VAO
 	ReloadPosition(screenWidth, screenHeight int32)
 }
 
 // UI is a struct all of the Elements that need to be rendered along with the OpenGL Program.
 type UI struct {
-	elements []Element
-	program  *gfx.Program
-	gfx      Gfx
+	elements    []Element
+	program     *gfx.Program
+	textProgram *gfx.Program
+	gfx         Gfx
 }
 
 // Gfx is an interface of the functions being provided.
@@ -30,6 +33,7 @@ type Gfx interface {
 	ProgramBind(program *gfx.Program)
 	ProgramUnbind(program *gfx.Program)
 	ProgramUploadUniform(program *gfx.Program, uniformName string, data ...float32) error
+	LoadFontTexture(fontName string, fontSize int32) (*gfx.FontInfo, error)
 }
 
 type f32Point struct {
@@ -40,28 +44,61 @@ type f32Point struct {
 // New returns a new ui.UI.
 func New(gfx Gfx) (*UI, error) {
 
-	vbgshad, err := gfx.NewShader(vertElementShader, gl.VERTEX_SHADER)
+	vshad, err := gfx.NewShader(vertElementShader, gl.VERTEX_SHADER)
 	if err != nil {
 		return nil, err
 	}
-	fbgshad, err := gfx.NewShader(fragElementShader, gl.FRAGMENT_SHADER)
+	fshad, err := gfx.NewShader(fragElementShader, gl.FRAGMENT_SHADER)
 	if err != nil {
 		return nil, err
 	}
-	prog, err := gfx.NewProgram(vbgshad, fbgshad)
+	prog, err := gfx.NewProgram(vshad, fshad)
 	if err != nil {
 		return nil, err
 	}
+
+	vtextshad, err := gfx.NewShader(glyphShaderVertex, gl.VERTEX_SHADER)
+	if err != nil {
+		return nil, err
+	}
+	ftextshad, err := gfx.NewShader(glyphShaderFragment, gl.FRAGMENT_SHADER)
+	if err != nil {
+		return nil, err
+	}
+	textProg, err := gfx.NewProgram(vtextshad, ftextshad)
 
 	elements := make([]Element, 0)
 
 	ui := &UI{
-		elements: elements,
-		program:  &prog,
-		gfx:      gfx,
+		elements:    elements,
+		program:     &prog,
+		textProgram: &textProg,
+		gfx:         gfx,
 	}
 
 	ui.gfx.ProgramUploadUniform(ui.program, "screenSize", float32(1920), float32(1080))
+
+	fnt, err := gfx.LoadFontTexture("NotoMono-Regular.ttf", 14)
+	if err != nil {
+		return nil, err
+	}
+
+	err = ui.gfx.ProgramUploadUniform(ui.textProgram, "screen_size", float32(1920), float32(1080))
+	if err != nil {
+		return nil, err
+	}
+
+	textColor := [4]float32{0.0, 0.0, 0.0, 1.0}
+
+	err = ui.gfx.ProgramUploadUniform(ui.textProgram, "tex_size", float32(fnt.GetTexture().GetWidth()),
+		float32(fnt.GetTexture().GetHeight()))
+	if err != nil {
+		return nil, err
+	}
+	err = ui.gfx.ProgramUploadUniform(ui.textProgram, "text_color", textColor[0], textColor[1], textColor[2], textColor[3])
+	if err != nil {
+		return nil, err
+	}
 
 	return ui, nil
 }
@@ -71,6 +108,12 @@ func (ui *UI) AddElement(element Element) error {
 	if ui.elements == nil {
 		return errors.New("elements is nil")
 	}
+	_, ok := element.(*Text)
+	if ok {
+		element.SetProgram(ui.textProgram)
+	} else {
+		element.SetProgram(ui.program)
+	}
 	ui.elements = append(ui.elements, element)
 	return nil
 }
@@ -78,11 +121,20 @@ func (ui *UI) AddElement(element Element) error {
 // Render renders the object.
 func (ui *UI) Render() {
 	gl.Disable(gl.DEPTH_TEST)
-	ui.gfx.ProgramBind(ui.program)
+	gl.Disable(gl.CULL_FACE)
 	for _, element := range ui.elements {
+		ui.gfx.ProgramBind(element.GetProgram())
+		text, ok := element.(*Text)
+		if ok {
+			text.FontTextureBind()
+		}
 		ui.gfx.VAODraw(element.GetVAO())
+		if ok {
+			text.FontTextureUnbind()
+		}
+		ui.gfx.ProgramUnbind(element.GetProgram())
 	}
-	ui.gfx.ProgramUnbind(ui.program)
+	gl.Enable(gl.CULL_FACE)
 	gl.Enable(gl.DEPTH_TEST)
 }
 
@@ -123,5 +175,35 @@ const fragElementShader = `
 
 	void main() {
 		frag_color = vec4(vertexColor);
+	}
+`
+
+// Uniform `tex_size` is the (width, height) of the texture.
+// Input `position_in` is typical openGL position coordinates.
+// Input `tex_pixels` is the (x, y) of the vertex in the texture starting
+// at (left, top).
+// Output `tex_coords` is typical texture coordinates for fragment shader.
+const glyphShaderVertex = `
+	#version 330
+	uniform vec2 tex_size;
+	uniform vec2 screen_size;
+	layout(location = 0) in vec2 position_in;
+	layout(location = 1) in vec2 tex_pixels;
+	out vec2 tex_coords;
+	void main() {
+		vec2 glSpace = vec2(2.0, 2.0) * (position_in / screen_size) + vec2(-1.0, -1.0);
+		gl_Position = vec4(glSpace, 0.0, 1.0);
+		tex_coords = vec2(tex_pixels.x / tex_size.x, tex_pixels.y / tex_size.y);
+	}
+`
+
+const glyphShaderFragment = `
+	#version 330
+	uniform sampler2D frag_tex;
+	uniform vec4 text_color;
+	in vec2 tex_coords;
+	out vec4 frag_color;
+	void main() {
+		frag_color = vec4(text_color.xyz, texture(frag_tex, tex_coords).r * text_color.w);
 	}
 `

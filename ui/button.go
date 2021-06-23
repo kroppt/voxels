@@ -9,9 +9,10 @@ var _ Element = (*Button)(nil)
 
 // Button stores the internal data associated with a button UI element.
 type Button struct {
-	vao    *gfx.VAO
-	gfx    Gfx
-	parent *Background
+	program *gfx.Program
+	vao     *gfx.VAO
+	gfx     Gfx
+	parent  *Background
 }
 
 func NewButton(gfx Gfx, parentComponent *Background, screenWidth, screenHeight int32) *Button {
@@ -31,8 +32,8 @@ func NewButton(gfx Gfx, parentComponent *Background, screenWidth, screenHeight i
 }
 
 func (btn *Button) ReloadPosition(screenWidth, screenHeight int32) {
-	border := int32(10)
-	width := int32(30)
+	border := btn.GetBorder()
+	width := btn.GetWidth()
 	posTL := f32Point{float32(btn.parent.GetBorder() + border), float32(screenHeight - btn.parent.GetBorder() - border)}                                  // top-left
 	posBL := f32Point{float32(btn.parent.GetBorder() + border), float32(screenHeight - btn.parent.GetBorder() - btn.parent.GetHeight() + border)}         // bottom-left
 	posTR := f32Point{float32(btn.parent.GetBorder() + border + width), float32(screenHeight - btn.parent.GetBorder() - border)}                          // top-right
@@ -56,4 +57,46 @@ func (btn *Button) ReloadPosition(screenWidth, screenHeight int32) {
 // GetVAO returns the vertex array object associated with the button.
 func (btn *Button) GetVAO() *gfx.VAO {
 	return btn.vao
+}
+
+func (btn *Button) GetProgram() *gfx.Program {
+	return btn.program
+}
+
+func (btn *Button) SetProgram(program *gfx.Program) {
+	btn.program = program
+}
+
+func (btn *Button) GetBorder() int32 {
+	if btn == nil {
+		return int32(0)
+	}
+	return int32(10)
+}
+
+func (btn *Button) GetWidth() int32 {
+	if btn == nil {
+		return int32(0)
+	}
+	return int32(200)
+}
+
+func (btn *Button) GetTop() int32 {
+	if btn == nil {
+		return int32(0)
+	}
+	if btn.parent == nil {
+		return btn.GetBorder()
+	}
+	return btn.parent.GetTop() + btn.GetBorder()
+}
+
+func (btn *Button) GetLeft() int32 {
+	if btn == nil {
+		return int32(0)
+	}
+	if btn.parent == nil {
+		return btn.GetBorder()
+	}
+	return btn.parent.GetLeft() + btn.GetBorder()
 }

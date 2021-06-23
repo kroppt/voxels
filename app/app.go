@@ -39,6 +39,15 @@ func New(win *sdl.Window) (*Application, error) {
 		return nil, err
 	}
 
+	text, err := ui.NewText(gfx, btn, w, h, "Sample Button Text")
+	if err != nil {
+		return nil, err
+	}
+	err = uiPtr.AddElement(text)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Application{
 		win:   win,
 		world: world.New(),
