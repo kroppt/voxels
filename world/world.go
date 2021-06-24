@@ -50,7 +50,7 @@ type AdjMod struct {
 	add     bool
 }
 
-const ChunkSize = 4
+const ChunkSize = 8
 const chunkRenderDist = 3
 
 // chunkRenderBuffer gaurantees a minimum radius of area of effect operations
@@ -150,7 +150,9 @@ func (w *World) FindLookAtVoxel() (block *Voxel, dist float32, found bool) {
 }
 
 func (w *World) updateSelectedVoxel() {
+	sw := util.Start()
 	v, dist, found := w.FindLookAtVoxel()
+	sw.StopRecordAverage("FindLookAtVoxel")
 	if !found || dist > selectionDist {
 		w.selected = false
 		return
@@ -202,28 +204,53 @@ func (w *World) SetVoxel(v *Voxel) {
 		}
 	}
 
-	// if v.Btype == Light {
-	// 	v := chunk.GetVoxelFromFlatData(v.Pos)
-	// 	v.SetLightValue(MaxLightValue, LightLeft)
-	// 	v.SetLightValue(MaxLightValue, LightRight)
-	// 	v.SetLightValue(MaxLightValue, LightBack)
-	// 	v.SetLightValue(MaxLightValue, LightFront)
-	// 	v.SetLightValue(MaxLightValue, LightTop)
-	// 	v.SetLightValue(MaxLightValue, LightBottom)
-	// 	chunk.SetVoxel(&v)
+	if v.Btype == Light {
+		w.lightFrom(chunk, v.Pos, MaxLightValue, v.Pos)
+	} else if target.Btype != Light {
+		// TODO setting a light block to something else, update lighting
+		w.lightRemoveFrom(chunk, v.Pos, v.Pos)
 
-	// 	w.lightFrom(chunk, v.Pos, MaxLightValue, v.Pos)
-	// }
-	// TODO setting a light block to something else, update lighting
+	}
+}
+
+func (w *World) relightFromNeighbors(v VoxelPos) {
+	key := v.GetChunkPos(ChunkSize)
+	chunk := w.chunksLoaded[key].chunk
+	srcMap := chunk.lightRefs[v]
+	uniques := make(map[VoxelPos]uint32)
+	for src, val := range srcMap {
+		uniques[src] = val
+	}
+	for _, mod := range lightMods {
+		offP := v.Add(mod.off)
+		offKey := offP.GetChunkPos(ChunkSize)
+		if loadedCh, ok := w.chunksLoaded[offKey]; ok {
+			offCh := loadedCh.chunk
+			adjBlock := offCh.GetVoxelFromFlatData(offP)
+			if adjBlock.Btype == Air {
+				offSrcMap := offCh.lightRefs[offP]
+				for offSrc, offVal := range offSrcMap {
+					uniques[offSrc] = offVal
+				}
+			}
+		}
+	}
+	for uniqueSrc := range uniques {
+		srcChKey := uniqueSrc.GetChunkPos(ChunkSize)
+		srcCh := w.chunksLoaded[srcChKey].chunk
+		// TODO have custom light value per light so its not hacked in here
+		w.lightFrom(srcCh, uniqueSrc, MaxLightValue, uniqueSrc)
+	}
 }
 
 func (w *World) RemoveVoxel(v VoxelPos) {
 	key := v.GetChunkPos(ChunkSize)
 	loadedCh, ok := w.chunksLoaded[key]
 	if !ok {
-		panic(fmt.Sprintf("tried to remove a voxel (%v) that belongs to an unrendered chunk", v))
+		panic(fmt.Sprintf("tried to remove a voxel (%v) that belongs to an unloaded chunk", v))
 	}
 	chunk := loadedCh.chunk
+	oldType := chunk.GetVoxelFromFlatData(v).Btype
 	// log.Debugf("removing voxel in chunk %v", key)
 	// TODO setting voxel to air and removing node from octree are tied
 	// together in a "delete voxel" operation, this should be more well defined
@@ -253,17 +280,14 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 			ch.modified = true
 		}
 	}
-
+	if oldType == Light {
+		w.lightRemoveFrom(chunk, v, v)
+	}
+	// TODO can this be too slow?
 	// this is required because lesser-light sources might remain
 	// if the stronger light source was removed, so the book keeping
 	// needs to be calculated
-	// if chunk.GetVoxelFromFlatData(v).Btype == Light {
-	// 	w.lightRemoveFrom(chunk, v, v)
-	// }
-	// srcMap := chunk.lightRefs[v]
-	// for src, val := range srcMap {
-	// 	w.lightFrom(chunk, v, val, src)
-	// }
+	w.relightFromNeighbors(v)
 }
 
 // GetCamera returns a reference to the camera.
@@ -290,45 +314,53 @@ func (w *World) updateUBO() error {
 // TODO when/where will this be used? chunk constructor?
 func (w *World) updateAllLights(ch *Chunk) {
 	for lightPos := range ch.lights {
-		v := ch.GetVoxelFromFlatData(lightPos)
-		v.SetLightValue(MaxLightValue, LightLeft)
-		v.SetLightValue(MaxLightValue, LightRight)
-		v.SetLightValue(MaxLightValue, LightBack)
-		v.SetLightValue(MaxLightValue, LightFront)
-		v.SetLightValue(MaxLightValue, LightTop)
-		v.SetLightValue(MaxLightValue, LightBottom)
-		ch.SetVoxel(&v)
-
 		w.lightFrom(ch, lightPos, MaxLightValue, lightPos)
 	}
 }
 
-// func (w *World) lightRemoveFrom(c *Chunk, p VoxelPos, src VoxelPos) {
-// 	if !c.IsWithinChunk(p) {
-// 		panic("improper usage: p outside chunk")
-// 	}
-// 	if !c.HasSource(p, src) {
-// 		return
-// 	}
-// 	offs := []VoxelPos{
-// 		{-1, 0, 0},
-// 		{1, 0, 0},
-// 		{0, -1, 0},
-// 		{0, 1, 0},
-// 		{0, 0, -1},
-// 		{0, 0, 1},
-// 	}
-// 	for _, off := range offs {
-// 		offP := p.Add(off)
-// 		offKey := offP.GetChunkPos(ChunkSize)
-// 		if offCh, ok := w.chunksLoaded[offKey]; ok {
-// 			offCh.chunk.DeleteSource(offP, src)
-// 			w.lightRemoveFrom(c, offP, src)
-// 		} else {
-// 			// the unloaded chunks don't save this state, so it doesn't need to be fixed
-// 		}
-// 	}
-// }
+var lightMods = [6]struct {
+	off  VoxelPos
+	face LightMask
+}{
+	{VoxelPos{-1, 0, 0}, LightRight},
+	{VoxelPos{1, 0, 0}, LightLeft},
+	{VoxelPos{0, -1, 0}, LightTop},
+	{VoxelPos{0, 1, 0}, LightBottom},
+	{VoxelPos{0, 0, -1}, LightBack},
+	{VoxelPos{0, 0, 1}, LightFront},
+}
+
+func (w *World) lightRemoveFrom(c *Chunk, p VoxelPos, src VoxelPos) {
+	if !c.IsWithinChunk(p) {
+		panic("improper usage: p outside chunk")
+	}
+	if c.HasSource(p, src) {
+		c.DeleteSource(p, src)
+	} else {
+		return
+	}
+
+	for _, mod := range lightMods {
+		offP := p.Add(mod.off)
+		offKey := offP.GetChunkPos(ChunkSize)
+		if loadedCh, ok := w.chunksLoaded[offKey]; ok {
+			offCh := loadedCh.chunk
+			adjBlock := offCh.GetVoxelFromFlatData(offP)
+			if adjBlock.Btype == Air {
+				w.lightRemoveFrom(offCh, offP, src)
+			} else {
+				_, secondLargest, found := c.GetBrightestSource(p)
+				if found {
+					adjBlock.SetLightValue(secondLargest, mod.face)
+				} else {
+					adjBlock.SetLightValue(0, mod.face)
+				}
+				offCh.SetVoxel(&adjBlock)
+			}
+		}
+	}
+
+}
 
 type LightMod struct {
 	pos   VoxelPos
@@ -341,12 +373,22 @@ func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32, src VoxelPos) {
 	if value < 0 || value > MaxLightValue || !c.IsWithinChunk(p) {
 		panic("improper usage: bad lighting value or p outside chunk")
 	}
-	if value == 0 || (c.HasSource(p, src) && c.GetSourceValue(p, src) >= value) {
+	if value == 0 || (c.HasSource(p, src) && c.GetSourceValue(p, src) > value) {
 		return
 	} else {
 		c.SetSource(p, src, value)
 	}
-
+	if p == src {
+		v := c.GetVoxelFromFlatData(p)
+		v.SetLightValue(MaxLightValue, LightLeft)
+		v.SetLightValue(MaxLightValue, LightRight)
+		v.SetLightValue(MaxLightValue, LightBack)
+		v.SetLightValue(MaxLightValue, LightFront)
+		v.SetLightValue(MaxLightValue, LightTop)
+		v.SetLightValue(MaxLightValue, LightBottom)
+		c.SetVoxel(&v)
+	}
+	// TODO refactor
 	mods := []LightMod{
 		{VoxelPos{-1, 0, 0}, src, value, LightRight},
 		{VoxelPos{1, 0, 0}, src, value, LightLeft},
@@ -367,13 +409,10 @@ func (w *World) lightFrom(c *Chunk, p VoxelPos, value uint32, src VoxelPos) {
 			} else {
 				// path is blocked off, apply lighting value to the face *if brighter*
 				if adjBlock.GetLightValue(mod.face) < value {
-					// log.Debugf("Setting face %v of %v to value %v", GetLightMaskName(dir.face), dir.pos, value)
 					adjBlock.SetLightValue(value, mod.face)
 					offCh.SetVoxel(&adjBlock)
 				}
 			}
-		} else {
-			// panic("not currently handling pending mods to chunks past the extra loaded chunks")
 		}
 	}
 }
@@ -389,15 +428,15 @@ func (w *World) hasSurroundingChunks(key ChunkPos) bool {
 	// loadedRng handles the edge case for buffered, invisible
 	// chunks that aren't expected to have chunks beyond them
 	// loaded before they run their lighting algorithm.
-	loadedRng := currChunk.GetSurroundings(chunkRenderBuffer)
+	loadedRng := currChunk.GetSurroundings(chunkRenderDist + chunkRenderBuffer)
 	localBufRng := key.GetSurroundings(chunkRenderBuffer)
-	var missing bool
+	allHere := true
 	localBufRng.ForEach(func(pos ChunkPos) {
 		if _, ok := w.chunksLoaded[pos]; !ok && loadedRng.Contains(pos) {
-			missing = true
+			allHere = false
 		}
 	})
-	return !missing
+	return allHere
 }
 
 // receiveExpectedAsync reads loaded chunks off the chunk channel, and only adds them
@@ -431,7 +470,6 @@ func (w *World) receiveExpectedAsync() {
 						loadedCh.relight = false
 					}
 				}
-
 			}
 		default:
 			return
@@ -559,8 +597,6 @@ func (w *World) evictUnexpectedChunks() {
 			shouldRender := w.isWithinRenderDist(key)
 			if !loadedCh.doRender && shouldRender {
 				// this chunk was a buffer chunk and has moved into render dist
-				// TODO is it possible that everything already arrived at this point,
-				// so no arrival will ever trigger this relight?
 				loadedCh.relight = true
 			}
 			loadedCh.doRender = shouldRender

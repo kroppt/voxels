@@ -269,8 +269,7 @@ const (
 	LightTop    LightMask = LightFront << (BitsPerMask * 3) // The voxel's top face lighting bits.
 	LightLeft   LightMask = LightFront << (BitsPerMask * 4) // The voxel's left face lighting bits.
 	LightRight  LightMask = LightFront << (BitsPerMask * 5) // The voxel's right face lighting bits.
-	LightValue  LightMask = LightFront << (BitsPerMask * 6)
-	LightAll              = LightFront | LightBack | LightBottom | LightTop | LightLeft | LightRight | LightValue
+	LightAll              = LightFront | LightBack | LightBottom | LightTop | LightLeft | LightRight
 )
 
 func GetLightMaskName(mask LightMask) string {

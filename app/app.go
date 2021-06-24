@@ -63,12 +63,16 @@ func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
 		return
 	}
 	if evt.Y < 0 {
+		sw := util.Start()
 		app.world.RemoveVoxel(block.Pos)
+		sw.StopRecordAverage("remove voxel")
 	} else {
+		sw := util.Start()
 		app.world.SetVoxel(&world.Voxel{
 			Pos:   block.Pos,
 			Btype: world.Light,
 		})
+		sw.StopRecordAverage("set voxel")
 	}
 }
 
@@ -139,19 +143,8 @@ func (app *Application) pollKeyboard() error {
 	return nil
 }
 
-var Block *world.Voxel
-
 func (app *Application) PostEventActions() {
 	app.pollKeyboard()
-	sw := util.Start()
-	Block, _, _ = app.world.FindLookAtVoxel()
-	// if found {
-	// 	cam := app.world.GetCamera()
-	// 	eye := cam.GetPosition()
-	// 	dir := cam.GetLookForward()
-	// 	log.Debugf("Block: %v, dist: %v, pos: %v, look: %v", Block.Pos, dist, eye, dir)
-	// }
-	sw.StopRecordAverage("Intersect")
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)
 
@@ -159,7 +152,7 @@ func (app *Application) PostEventActions() {
 	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-	sw = util.Start()
+	sw := util.Start()
 	app.world.Render()
 	sw.StopRecordAverage("Total World Render")
 	app.win.GLSwap()

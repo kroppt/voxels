@@ -22,7 +22,7 @@ func (g1 FlatWorldGenerator) GenerateAt(x, y, z int) *Voxel {
 			Btype:   Labeled,
 		}
 	} else if y == 6 {
-		if x == 0 && z == 0 {
+		if x == 3 && z == 3 {
 			return &Voxel{
 				Pos:     VoxelPos{x, y, z},
 				AdjMask: AdjacentAll & ^AdjacentTop,
