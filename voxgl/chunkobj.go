@@ -1,5 +1,3 @@
-// +build !test
-
 package voxgl
 
 import (
@@ -7,7 +5,7 @@ import (
 	"github.com/kroppt/gfx"
 )
 
-// NewColoredObject returns a newly created Object with the given colors.
+// NewChunkObject returns a newly created Object with the given colors.
 //
 // Vertices should be vertices of format X, Y, Z, AdjacencyBits, R, G, B, A.
 // X, Y, and Z options should be in the range -1.0 to 1.0.
@@ -15,13 +13,13 @@ import (
 // represent whether each of the left right top bottom forward backward faces
 // can be seen.
 // R, G, B, and A should be in the range 0.0 to 1.0.
-func NewColoredObject(vertices []float32) (*Object, error) {
+func NewChunkObject(vertices []float32) (*Object, error) {
 	prog, err := GetProgram(vertColShader, fragColShader, geoColShader)
 	if err != nil {
 		return nil, err
 	}
 
-	obj, err := NewObject(prog, vertices, []int32{4, 4})
+	obj, err := NewObject(prog, vertices, []int32{4})
 	if err != nil {
 		return nil, err
 	}
@@ -63,17 +61,14 @@ const vertColShader = `
 	#version 420 core
 
 	layout (location = 0) in vec4 pos;
-	layout (location = 1) in vec4 col; // TODO delete me eventually
 
 	out Vertex {
-		vec4 color;
 		float vbits;
 	} OUT;
 
 	void main()
 	{
 		gl_Position = vec4(pos.xyz, 1.0f);
-		OUT.color = col;
 		OUT.vbits = pos[3];
 	}
 `
@@ -91,12 +86,10 @@ const geoColShader = `
 	} cam;
 
 	in Vertex {
-		vec4 color;
 		float vbits;
 	} IN[];
 
 	out Vertex {
-		vec4 color;
 		vec3 stdir;
 		flat int blockType;
 	} OUT;
@@ -105,7 +98,6 @@ const geoColShader = `
 		vec3 center = (gl_in[0].gl_Position).xyz + 0.5;
 		OUT.stdir = p.xyz - center;
 		gl_Position = cam.projection * cam.view * p;
-		OUT.color = IN[0].color;
 		EmitVertex();
 	}
 
@@ -169,7 +161,6 @@ const fragColShader = `
 	#version 400
 
 	in Vertex {
-		vec4 color;
 		vec3 stdir;
 		flat int blockType;
 	} IN;
@@ -179,6 +170,6 @@ const fragColShader = `
 	out vec4 frag_color;
 
 	void main() {
-		frag_color = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));// * IN.color;
+		frag_color = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));
 	}
 `

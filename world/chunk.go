@@ -1,8 +1,9 @@
 package world
 
 import (
+	"fmt"
+
 	"github.com/engoengine/glm"
-	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/voxgl"
 )
 
@@ -93,17 +94,20 @@ type Chunk struct {
 	root     *Octree
 	dirty    bool
 	size     int
+	modified bool
+	empty    bool
 }
+
+const VertSize = 4
 
 // NewChunk returns a new Chunk shaped as size X height X size.
 func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
-	vertSize := 8
-	flatData := make([]float32, size*size*size*vertSize)
-	// layout 4+4=8 hard coded in here too
+	flatData := make([]float32, size*size*size*VertSize)
 	chunk := &Chunk{
 		Pos:      pos,
 		flatData: flatData,
 		size:     size,
+		empty:    true,
 	}
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
@@ -119,12 +123,42 @@ func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 	return chunk
 }
 
+// NewChunkLoaded returns a pre-loaded chunk
+func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
+	chunk := &Chunk{
+		Pos:      pos,
+		flatData: make([]float32, 4*size*size*size),
+		size:     size,
+		empty:    true,
+	}
+	maxIdx := 4 * size * size * size
+	for i := 0; i < maxIdx; i += 4 {
+		vbits := flatData[i+3]
+		adjMask, btype := SeparateVbits(vbits)
+		v := Voxel{
+			Pos: VoxelPos{
+				int(flatData[i]),
+				int(flatData[i+1]),
+				int(flatData[i+2]),
+			},
+			AdjMask: adjMask,
+			Btype:   btype,
+		}
+		chunk.SetVoxel(&v)
+	}
+	return chunk
+}
+
 func (c *Chunk) SetObjs(objs *voxgl.Object) {
 	c.objs = objs
 }
 
 func (c *Chunk) GetRoot() *Octree {
 	return c.root
+}
+
+func (c *Chunk) GetFlatData() []float32 {
+	return c.flatData
 }
 
 // IsWithinChunk returns whether the position is within the chunk
@@ -148,6 +182,8 @@ const (
 	Dirt
 	Grass
 	Labeled
+	Corrupted
+	Stone
 )
 
 // AdjacentMask indicates which in which directions there are adjacent voxels.
@@ -161,26 +197,48 @@ const (
 	AdjacentLeft   AdjacentMask = 0b00010000 // The voxel has a right adjacency.
 	AdjacentRight  AdjacentMask = 0b00100000 // The voxel has a left adjacency.
 
-	AdjacentX   = AdjacentRight | AdjacentLeft      // The voxel has adjacencies in the +/-x directions.
-	AdjacentY   = AdjacentTop | AdjacentBottom      // The voxel has adjacencies in the +/-y directions.
-	AdjacentZ   = AdjacentBack | AdjacentFront      // The voxel has adjacencies in the +/-z directions.
-	AdjacentAll = AdjacentX | AdjacentY | AdjacentZ // The voxel has adjacencies in all directions.
+	AdjacentX    = AdjacentRight | AdjacentLeft      // The voxel has adjacencies in the +/-x directions.
+	AdjacentY    = AdjacentTop | AdjacentBottom      // The voxel has adjacencies in the +/-y directions.
+	AdjacentZ    = AdjacentBack | AdjacentFront      // The voxel has adjacencies in the +/-z directions.
+	AdjacentAll  = AdjacentX | AdjacentY | AdjacentZ // The voxel has adjacencies in all directions.
+	AdjacentNone = 0                                 // The voxel has no adjacencies
 )
+
+func (c *Chunk) SetModified() {
+	c.modified = true
+}
+
+func (c *Chunk) GetVoxel(pos VoxelPos) Voxel {
+	if !c.IsWithinChunk(pos) {
+		panic(fmt.Sprintf("%v is not within %v", pos, c.AsVoxelPos()))
+	}
+	localPos := pos.AsLocalChunkPos(*c)
+	i, j, k := localPos.X, localPos.Y, localPos.Z
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
+	vbits := int32(c.flatData[off+3])
+	adjMask, btype := SeparateVbits(vbits)
+	return Voxel{
+		Pos: VoxelPos{
+			X: int(c.flatData[off]),
+			Y: int(c.flatData[off+1]),
+			Z: int(c.flatData[off+2]),
+		},
+		AdjMask: adjMask,
+		Btype:   btype,
+	}
+}
 
 // SetVoxel updates a voxel's variables in the chunk, if it exists
 func (c *Chunk) SetVoxel(v *Voxel) {
 	if !c.IsWithinChunk(v.Pos) {
-		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
-		return
+		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
 	localPos := v.Pos.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	vbits := float32(int32(v.AdjMask) | int32(v.Btype<<6))
-	r, g, b, a := v.Color.R, v.Color.G, v.Color.B, v.Color.A
-	off := (i + j*c.size*c.size + k*c.size) * 8
-	if off%8 != 0 {
-		panic("offset not divisible by 8")
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
+	if off%VertSize != 0 {
+		panic("offset not divisible by VertSize")
 	}
 	if off >= len(c.flatData) || off < 0 {
 		panic("offset out of bounds")
@@ -189,14 +247,11 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 	c.flatData[off] = x
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
-	c.flatData[off+3] = vbits
-	c.flatData[off+4] = r
-	c.flatData[off+5] = g
-	c.flatData[off+6] = b
-	c.flatData[off+7] = a
+	c.flatData[off+3] = float32(v.GetVbits())
 
 	if v.Btype != Air { // TODO return at top of function?
 		c.root = c.root.AddLeaf(v)
+		c.empty = false
 	}
 	c.dirty = true
 }
@@ -204,15 +259,14 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 // AddAdjacency adds adjacency to a voxel
 func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 	if !c.IsWithinChunk(v) {
-		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
-		return
+		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
 	localPos := v.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	off := (i + j*c.size*c.size + k*c.size) * 8
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	vbits := int32(c.flatData[off+3]) | int32(adjMask)
-	if off%8 != 0 {
-		panic("offset not divisible by 8")
+	if off%VertSize != 0 {
+		panic("offset not divisible by VertSize")
 	}
 	if off >= len(c.flatData) || off < 0 {
 		panic("offset out of bounds")
@@ -220,20 +274,20 @@ func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 
 	c.flatData[off+3] = float32(vbits)
 	c.dirty = true
+	c.modified = true
 }
 
 // RemoveAdjacency remove adjacency from a voxel
 func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 	if !c.IsWithinChunk(v) {
-		log.Debugf("%v is not within %v", v, c.AsVoxelPos())
-		return
+		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
 	localPos := v.AsLocalChunkPos(*c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
-	off := (i + j*c.size*c.size + k*c.size) * 8
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	vbits := int32(c.flatData[off+3]) & ^int32(adjMask)
-	if off%8 != 0 {
-		panic("offset not divisible by 8")
+	if off%VertSize != 0 {
+		panic("offset not divisible by VertSize")
 	}
 	if off >= len(c.flatData) || off < 0 {
 		panic("offset out of bounds")
@@ -241,15 +295,21 @@ func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 
 	c.flatData[off+3] = float32(vbits)
 	c.dirty = true
+	c.modified = true
 }
 
 // Render renders the chunk in OpenGL.
-func (c *Chunk) Render() {
+func (c *Chunk) Render(cam *Camera) {
 	if c.dirty {
 		c.objs.SetData(c.flatData)
 		c.dirty = false
 	}
-	c.objs.Render()
+	if c.empty {
+		return
+	}
+	if cam.IsWithinFrustum(c.AsVoxelPos().AsVec3(), float32(c.size), float32(c.size), float32(c.size)) {
+		c.objs.Render()
+	}
 }
 
 func (c *Chunk) Destroy() {
