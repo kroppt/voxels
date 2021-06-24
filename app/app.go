@@ -140,7 +140,7 @@ func (app *Application) pollKeyboard() error {
 		return nil
 	}
 
-	speed := float32(5.0)
+	speed := float32(10.0)
 	vel.Vec3 = vel.Vec3.Normalized()
 	vel.Vec3 = vel.Vec3.Mul(speed)
 	dt := app.game.GetTickDuration()
