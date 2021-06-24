@@ -174,6 +174,7 @@ func (c *Chunk) GetBrightestSource(p VoxelPos) (VoxelPos, uint32, bool) {
 			if val > largest || !found {
 				best = src
 				found = true
+				largest = val
 			}
 		}
 	}
