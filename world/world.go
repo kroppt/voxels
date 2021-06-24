@@ -227,7 +227,7 @@ func (w *World) relightFromNeighbors(v VoxelPos) {
 		if loadedCh, ok := w.chunksLoaded[offKey]; ok {
 			offCh := loadedCh.chunk
 			adjBlock := offCh.GetVoxelFromFlatData(offP)
-			if adjBlock.Btype == Air {
+			if adjBlock.Btype == Air || adjBlock.Btype == Light {
 				offSrcMap := offCh.lightRefs[offP]
 				for offSrc, offVal := range offSrcMap {
 					uniques[offSrc] = offVal
