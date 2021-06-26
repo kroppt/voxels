@@ -16,17 +16,16 @@ import (
 
 // World tracks the camera and its renderable chunks.
 type World struct {
-	ubo               *gfx.BufferObject
-	cam               *Camera
-	chunksLoaded      map[ChunkPos]*LoadedChunk
-	chunkExpectRender map[ChunkPos]struct{}
-	chunkExpect       map[ChunkPos]struct{}
-	chunkSaving       map[ChunkPos]struct{}
-	chunkLoading      map[ChunkPos]struct{}
-	currChunk         ChunkPos
-	chunkChan         chan *Chunk
-	processed         chan ChunkPos
-	saved             chan ChunkPos
+	ubo          *gfx.BufferObject
+	cam          *Camera
+	chunksLoaded map[ChunkPos]*LoadedChunk
+	chunkExpect  map[ChunkPos]struct{}
+	chunkSaving  map[ChunkPos]struct{}
+	chunkLoading map[ChunkPos]struct{}
+	currChunk    ChunkPos
+	chunkChan    chan *Chunk
+	processed    chan ChunkPos
+	saved        chan ChunkPos
 	// loaded            chan ChunkPos
 	cubeMap   *gfx.CubeMap
 	gen       Generator
@@ -47,8 +46,9 @@ type LoadedChunk struct {
 	chunk      *Chunk
 	modified   bool
 	doRender   bool
-	relight    bool
 	processing bool
+	// relight        bool
+	relightActions []func()
 }
 
 const ChunkSize = 8
@@ -98,7 +98,6 @@ func New() *World {
 	rand.Seed(time.Now().UnixNano())
 
 	world.chunksLoaded = map[ChunkPos]*LoadedChunk{}
-	world.chunkExpectRender = make(map[ChunkPos]struct{})
 	world.chunkExpect = make(map[ChunkPos]struct{})
 	world.chunkSaving = make(map[ChunkPos]struct{})
 	world.chunkLoading = make(map[ChunkPos]struct{})
@@ -176,6 +175,103 @@ func (w *World) updateSelectedVoxel() {
 	w.selectedVoxel.SetData([]float32{pos.X(), pos.Y(), pos.Z(), float32(vox.GetVbits())})
 }
 
+func (w *World) getUniqueSources(ch *Chunk, p VoxelPos) map[VoxelPos]uint32 {
+	srcMap := ch.lightRefs[p]
+	uniques := make(map[VoxelPos]uint32)
+	for src, val := range srcMap {
+		uniques[src] = val
+	}
+	for _, mod := range faceMods {
+		offP := p.Add(mod.off)
+		offKey := offP.GetChunkPos(ChunkSize)
+		w.chunkLock.RLock()
+		if loadedCh, ok := w.chunksLoaded[offKey]; ok {
+			offCh := loadedCh.chunk
+			adjBlock := offCh.GetVoxelFromFlatData(offP)
+			// TODO remove these checks, look into all blocks? (how could a solid )
+			if adjBlock.Btype == Air || adjBlock.Btype == Light {
+				offSrcMap := offCh.lightRefs[offP]
+				for offSrc, offVal := range offSrcMap {
+					uniques[offSrc] = offVal
+				}
+			}
+		}
+		w.chunkLock.RUnlock()
+	}
+	return uniques
+}
+
+func (w *World) blockPlaceFn(ch *Chunk, p VoxelPos, light bool) func() {
+	/*
+		Block is placed (could block light)
+			- collect all unique light sources from 6 neighbors
+			- lightRemoveFrom on every unique light
+			- lightFrom on every unique light
+			if block was light source:
+				- lightFrom() <- // TODO caught in uniques ?
+	*/
+	return func() {
+		uniques := w.getUniqueSources(ch, p)
+		for uniqueSrc := range uniques {
+			srcChKey := uniqueSrc.GetChunkPos(ChunkSize)
+			w.chunkLock.RLock()
+			srcCh := w.chunksLoaded[srcChKey].chunk
+			w.chunkLock.RUnlock()
+			// TODO have custom light value per light so its not hacked in here
+			w.lightRemoveFrom(srcCh, uniqueSrc, uniqueSrc)
+			w.lightFrom(srcCh, uniqueSrc, MaxLightValue, uniqueSrc)
+		}
+		if light {
+			w.lightFrom(ch, p, MaxLightValue, p)
+		}
+	}
+}
+
+func (w *World) blockRemoveFn(ch *Chunk, p VoxelPos, light bool) func() {
+	/*
+		Block is removed (could allow light to pass through)
+		if block was light source:
+			- lightRemoveFrom()
+		- relight from all unique light sources from 6 neighbors
+
+	*/
+	return func() {
+		if light {
+			w.lightRemoveFrom(ch, p, p)
+		}
+		uniques := w.getUniqueSources(ch, p)
+		for uniqueSrc := range uniques {
+			srcChKey := uniqueSrc.GetChunkPos(ChunkSize)
+			w.chunkLock.RLock()
+			srcCh := w.chunksLoaded[srcChKey].chunk
+			w.chunkLock.RUnlock()
+			// TODO have custom light value per light so its not hacked in here
+			w.lightFrom(srcCh, uniqueSrc, MaxLightValue, uniqueSrc)
+		}
+	}
+}
+
+func (w *World) relightAllFn(ch *Chunk) func() {
+	/*
+		Chunk is loaded
+			- lightFrom() on every light source in chunk
+
+		Chunk transitions from buffered(=in invisible buffer range) to rendered
+			- lightFrom() on every light source in chunk
+	*/
+	return func() {
+		var lightCopy []VoxelPos
+		ch.lightLock.RLock()
+		for lightPos := range ch.lights {
+			lightCopy = append(lightCopy, lightPos)
+		}
+		ch.lightLock.RUnlock()
+		for _, light := range lightCopy {
+			w.lightFrom(ch, light, MaxLightValue, light)
+		}
+	}
+}
+
 // SetVoxel updates a voxel's variables in the world
 func (w *World) SetVoxel(v *Voxel) {
 	// TODO setting a voxel to air is *similar* to removing, but not the same
@@ -199,6 +295,7 @@ func (w *World) SetVoxel(v *Voxel) {
 		ch, ok := w.chunksLoaded[k]
 		w.chunkLock.RUnlock()
 		if !ok {
+			// TODO how did this happen
 			panic("not currently handling pending mods to unloaded chunks")
 		} else {
 			ch.chunk.AddAdjacency(mod.off, mod.adjFace)
@@ -206,7 +303,8 @@ func (w *World) SetVoxel(v *Voxel) {
 		}
 	}
 
-	loadedCh.relight = true
+	isLight := chunk.GetVoxelFromFlatData(v.Pos).Btype == Light
+	loadedCh.relightActions = append(loadedCh.relightActions, w.blockPlaceFn(chunk, v.Pos, isLight))
 }
 
 // RemoveVoxel sets a voxel to air and updates necessary structures.
@@ -244,7 +342,9 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 			loadedCh.modified = true
 		}
 	}
-	loadedCh.relight = true
+
+	isLight := chunk.GetVoxelFromFlatData(v).Btype == Light
+	loadedCh.relightActions = append(loadedCh.relightActions, w.blockRemoveFn(chunk, v, isLight))
 }
 
 // GetCamera returns a reference to the camera.
@@ -272,33 +372,18 @@ func (w *World) requestAsyncLighting() {
 	// TODO instead of looping over everything that is loaded, maintain a list of chunks
 	// that have relight requests, because only those need to be considered
 	for key, loadedCh := range w.chunksLoaded {
-		if loadedCh.relight && w.hasSurroundingChunks(key) && !w.hasProcessingNeighbor(key) {
+		if len(loadedCh.relightActions) > 0 && w.hasSurroundingChunks(key) && !w.hasProcessingNeighbor(key) {
 			w.setNeighborsProcessing(key, true)
-			loadedCh.relight = false
-			go func(ch *Chunk) {
-				// TODO use custom relight logic for different scenarios
-				w.updateAllLights(ch)
+			go func(ch *Chunk, tasks []func()) {
+				for _, task := range tasks {
+					task()
+				}
 				w.processed <- ch.Pos
-			}(loadedCh.chunk)
+			}(loadedCh.chunk, loadedCh.relightActions)
+			loadedCh.relightActions = nil
 		}
 	}
 	w.chunkLock.RUnlock()
-}
-
-func (w *World) updateAllLights(ch *Chunk) {
-	var lightCopy []VoxelPos
-	ch.lightLock.RLock()
-	for lightPos := range ch.lights {
-		lightCopy = append(lightCopy, lightPos)
-	}
-	ch.lightLock.RUnlock()
-
-	for _, light := range lightCopy {
-		w.lightRemoveFrom(ch, light, light)
-	}
-	for _, light := range lightCopy {
-		w.lightFrom(ch, light, MaxLightValue, light)
-	}
 }
 
 var faceMods = [6]struct {
@@ -332,9 +417,6 @@ func (w *World) lightRemoveFrom(c *Chunk, p VoxelPos, src VoxelPos) {
 		if ok {
 			offCh := loadedCh.chunk
 			adjBlock := offCh.GetVoxelFromFlatData(offP)
-			// if adjBlock.Btype == Air {
-			w.lightRemoveFrom(offCh, offP, src)
-			// } else {
 			_, secondLargest, found := c.GetBrightestSource(p)
 			if found {
 				adjBlock.SetLightValue(secondLargest, mod.lightFace)
@@ -342,7 +424,7 @@ func (w *World) lightRemoveFrom(c *Chunk, p VoxelPos, src VoxelPos) {
 				adjBlock.SetLightValue(0, mod.lightFace)
 			}
 			offCh.SetVoxel(&adjBlock)
-			// }
+			w.lightRemoveFrom(offCh, offP, src)
 		}
 	}
 }
@@ -491,14 +573,16 @@ func (w *World) receiveAllChannels() {
 				}
 				ch.SetObjs(objs)
 
-				w.chunkLock.Lock()
-				w.chunksLoaded[ch.Pos] = &LoadedChunk{
-					chunk:      ch,
-					modified:   false,
-					relight:    true,
-					processing: false,
-					doRender:   w.isWithinRenderDist(ch.Pos),
+				loadedCh := LoadedChunk{
+					chunk:          ch,
+					modified:       false,
+					processing:     false,
+					doRender:       w.isWithinRenderDist(ch.Pos),
+					relightActions: []func(){w.relightAllFn(ch)},
 				}
+
+				w.chunkLock.Lock()
+				w.chunksLoaded[ch.Pos] = &loadedCh
 				w.chunkLock.Unlock()
 
 				delete(w.chunkLoading, ch.Pos)
@@ -596,7 +680,7 @@ func (w *World) updateLoadedChunks() {
 			shouldRender := w.isWithinRenderDist(key)
 			if !loadedCh.doRender && shouldRender {
 				// this chunk was a buffer chunk and has moved into render dist
-				loadedCh.relight = true
+				loadedCh.relightActions = append(loadedCh.relightActions, w.relightAllFn(loadedCh.chunk))
 			}
 			loadedCh.doRender = shouldRender
 		}
