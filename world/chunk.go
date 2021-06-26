@@ -2,6 +2,7 @@ package world
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/voxgl"
@@ -91,6 +92,9 @@ type Chunk struct {
 	Pos       ChunkPos
 	flatData  []float32
 	lights    map[VoxelPos]struct{}
+	lightLock sync.RWMutex
+	voxLock   sync.RWMutex
+
 	lightRefs map[VoxelPos]map[VoxelPos]uint32
 	objs      *voxgl.Object
 	root      *Octree
@@ -113,6 +117,8 @@ func NewChunk(size int, pos ChunkPos, gen Generator) *Chunk {
 		empty:     true,
 		lights:    make(map[VoxelPos]struct{}),
 		lightRefs: map[VoxelPos]map[VoxelPos]uint32{},
+		lightLock: sync.RWMutex{},
+		voxLock:   sync.RWMutex{},
 	}
 	for i := 0; i < size; i++ {
 		for j := 0; j < size; j++ {
@@ -138,6 +144,8 @@ func NewChunkLoaded(size int, pos ChunkPos, flatData []int32) *Chunk {
 		empty:     true,
 		lights:    make(map[VoxelPos]struct{}),
 		lightRefs: map[VoxelPos]map[VoxelPos]uint32{},
+		lightLock: sync.RWMutex{},
+		voxLock:   sync.RWMutex{},
 	}
 	maxIdx := CacheVertSize * size * size * size
 	for i := 0; i < maxIdx; i += CacheVertSize {
@@ -198,6 +206,7 @@ func (c *Chunk) GetSourceValue(p VoxelPos, src VoxelPos) uint32 {
 	}
 }
 
+// TODO sources are never removed?
 func (c *Chunk) DeleteSource(p VoxelPos, src VoxelPos) {
 	delete(c.lightRefs[p], src)
 }
@@ -292,11 +301,13 @@ func GetLightMaskName(mask LightMask) string {
 }
 
 func (c *Chunk) SetVoxelFlatData(v Voxel) {
+	c.voxLock.Lock()
+	defer c.voxLock.Unlock()
 	if !c.IsWithinChunk(v.Pos) {
 		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
 	x, y, z := float32(v.Pos.X), float32(v.Pos.Y), float32(v.Pos.Z)
-	localPos := v.Pos.AsLocalChunkPos(*c)
+	localPos := v.Pos.AsLocalChunkPos(c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
 	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	if off%VertSize != 0 {
@@ -310,16 +321,36 @@ func (c *Chunk) SetVoxelFlatData(v Voxel) {
 	c.flatData[off+1] = y
 	c.flatData[off+2] = z
 	c.flatData[off+3] = float32(v.GetVbits())
-	c.flatData[off+4] = float32(v.GetLbits())
 
 	c.dirty = true
 }
 
+// TODO is this thread safe?
+func (c *Chunk) SetVoxelLightBits(v Voxel) {
+	c.voxLock.Lock()
+	defer c.voxLock.Unlock()
+	if !c.IsWithinChunk(v.Pos) {
+		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
+	}
+	localPos := v.Pos.AsLocalChunkPos(c)
+	i, j, k := localPos.X, localPos.Y, localPos.Z
+	off := (i + j*c.size*c.size + k*c.size) * VertSize
+	if off%VertSize != 0 {
+		panic("offset not divisible by VertSize")
+	}
+	if off >= len(c.flatData) || off < 0 {
+		panic("offset out of bounds")
+	}
+	c.flatData[off+4] = float32(v.GetLbits())
+}
+
 func (c *Chunk) GetVoxelFromFlatData(pos VoxelPos) Voxel {
+	c.voxLock.RLock()
+	defer c.voxLock.RUnlock()
 	if !c.IsWithinChunk(pos) {
 		panic(fmt.Sprintf("%v is not within %v", pos, c.AsVoxelPos()))
 	}
-	localPos := pos.AsLocalChunkPos(*c)
+	localPos := pos.AsLocalChunkPos(c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
 	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	vbits := int32(c.flatData[off+3])
@@ -342,11 +373,13 @@ func (c *Chunk) GetVoxelFromFlatData(pos VoxelPos) Voxel {
 func (c *Chunk) SetVoxel(v *Voxel) {
 	oldVox := c.GetVoxelFromFlatData(v.Pos)
 	c.SetVoxelFlatData(*v)
+	c.lightLock.Lock()
 	if v.Btype == Light {
 		c.lights[v.Pos] = struct{}{}
 	} else if oldVox.Btype == Light && v.Btype != Light {
 		delete(c.lights, v.Pos)
 	}
+	c.lightLock.Unlock()
 
 	if v.Btype != Air {
 		c.root = c.root.AddLeaf(v)
@@ -358,10 +391,12 @@ func (c *Chunk) SetVoxel(v *Voxel) {
 
 // AddAdjacency adds adjacency to a voxel
 func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
+	c.voxLock.Lock()
+	defer c.voxLock.Unlock()
 	if !c.IsWithinChunk(v) {
 		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
-	localPos := v.AsLocalChunkPos(*c)
+	localPos := v.AsLocalChunkPos(c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
 	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	vbits := int32(c.flatData[off+3]) | int32(adjMask)
@@ -378,10 +413,12 @@ func (c *Chunk) AddAdjacency(v VoxelPos, adjMask AdjacentMask) {
 
 // RemoveAdjacency remove adjacency from a voxel
 func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
+	c.voxLock.Lock()
+	defer c.voxLock.Unlock()
 	if !c.IsWithinChunk(v) {
 		panic(fmt.Sprintf("%v is not within %v", v, c.AsVoxelPos()))
 	}
-	localPos := v.AsLocalChunkPos(*c)
+	localPos := v.AsLocalChunkPos(c)
 	i, j, k := localPos.X, localPos.Y, localPos.Z
 	off := (i + j*c.size*c.size + k*c.size) * VertSize
 	vbits := int32(c.flatData[off+3]) & ^int32(adjMask)
@@ -399,7 +436,9 @@ func (c *Chunk) RemoveAdjacency(v VoxelPos, adjMask AdjacentMask) {
 // Render renders the chunk in OpenGL.
 func (c *Chunk) Render(cam *Camera) {
 	if c.dirty {
+		c.voxLock.RLock()
 		c.objs.SetData(c.flatData)
+		c.voxLock.RUnlock()
 		c.dirty = false
 	}
 	if c.empty {

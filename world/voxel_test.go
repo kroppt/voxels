@@ -156,36 +156,6 @@ func TestLightBitsOverwrite(t *testing.T) {
 	}
 }
 
-func TestLightBitsOverwriteWithValue(t *testing.T) {
-	v := world.Voxel{}
-	v.SetLightValue(3, world.LightLeft)
-	v.SetLightValue(7, world.LightBottom)
-	v.SetLightValue(5, world.LightTop)
-	v.SetLightValue(4, world.LightLeft)
-	v.SetLightValue(2, world.LightValue)
-
-	if v.GetLightValue(world.LightBottom) != 7 {
-		t.Fatal("invalid light bottom")
-	}
-	if v.GetLightValue(world.LightTop) != 5 {
-		t.Fatal("invalid light top")
-	}
-	if v.GetLightValue(world.LightLeft) != 4 {
-		t.Fatal("invalid light left")
-	}
-	v.SetLightValue(0, world.LightValue)
-
-	if v.GetLightValue(world.LightBottom) != 7 {
-		t.Fatal("invalid light bottom")
-	}
-	if v.GetLightValue(world.LightTop) != 5 {
-		t.Fatal("invalid light top")
-	}
-	if v.GetLightValue(world.LightLeft) != 4 {
-		t.Fatal("invalid light left")
-	}
-}
-
 func TestLbitSeparate(t *testing.T) {
 	v := world.Voxel{
 		LightBits: uint32(world.LightAll),

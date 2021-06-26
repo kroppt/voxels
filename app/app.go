@@ -62,6 +62,8 @@ func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
 	if !ok {
 		return
 	}
+	// key := block.Pos.GetChunkPos(world.ChunkSize)
+	// log.Debug(app.world.ChunksLoaded[key].Chunk)
 	if evt.Y < 0 {
 		sw := util.Start()
 		app.world.RemoveVoxel(block.Pos)

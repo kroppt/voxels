@@ -88,7 +88,7 @@ func TestGetRelativeIndices(t *testing.T) {
 		t.Parallel()
 		chunk := world.NewChunk(5, world.ChunkPos{0, 0, -2}, world.FlatWorldGenerator{})
 		pos := world.VoxelPos{1, 3, -7}
-		localPos := pos.AsLocalChunkPos(*chunk)
+		localPos := pos.AsLocalChunkPos(chunk)
 		i, j, k := localPos.X, localPos.Y, localPos.Z
 		if i != 1 || j != 3 || k != 3 {
 			t.Fatalf("expected 1, 3, 3 but got %v %v %v", i, j, k)

@@ -105,7 +105,7 @@ func (pos VoxelPos) GetChunkPos(chunkSize int) ChunkPos {
 
 // AsLocalChunkPos returns the voxel position relative to the origin of chunk,
 // with the assumption that the position is in the bounds of the chunk.
-func (pos VoxelPos) AsLocalChunkPos(chunk Chunk) VoxelPos {
+func (pos VoxelPos) AsLocalChunkPos(chunk *Chunk) VoxelPos {
 	return VoxelPos{
 		X: pos.X - chunk.AsVoxelPos().X,
 		Y: pos.Y - chunk.AsVoxelPos().Y,
