@@ -79,13 +79,11 @@ const geoFrameShader = `
 		int forwardmask = 0x01;
 		int bits = int(IN[0].vbits);
 
-		float delta = 0.0001;
-		vec4 deltavec = vec4(delta, delta, delta, 0.0);
-		vec4 dx = vec4(1.0+delta*2, 0.0, 0.0, 0.0);
-		vec4 dy = vec4(0.0, 1.0+delta*2, 0.0, 0.0);
-		vec4 dz = vec4(0.0, 0.0, 1.0+delta*2, 0.0);
-		vec4 p1 = origin - deltavec;
-		vec4 p2 = p1 + dx + dy + dz + deltavec;
+		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
+		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
+		vec4 dz = vec4(0.0, 0.0, 1.0, 0.0);
+		vec4 p1 = origin;
+		vec4 p2 = p1 + dx + dy + dz;
 
 		if ((bits & backwardmask) - backwardmask != 0) {
 			createQuad(p2, -dx, -dy); // backward
