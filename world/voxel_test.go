@@ -1,8 +1,10 @@
 package world_test
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/engoengine/glm"
 	"github.com/kroppt/voxels/world"
 )
 
@@ -180,4 +182,94 @@ func TestLbitConversion(t *testing.T) {
 	if lbits != lbits2 {
 		t.Fatalf("got lbits %v but wanted %v", lbits2, lbits)
 	}
+}
+
+func TestGetChunkPos(t *testing.T) {
+	testCases := []struct {
+		vpos      world.VoxelPos
+		chunkSize int
+		expected  world.ChunkPos
+	}{
+		{
+			vpos:      world.VoxelPos{0, 0, 0},
+			chunkSize: 1,
+			expected:  world.ChunkPos{0, 0, 0},
+		},
+		{
+			vpos:      world.VoxelPos{1, 0, 0},
+			chunkSize: 1,
+			expected:  world.ChunkPos{1, 0, 0},
+		},
+		{
+			vpos:      world.VoxelPos{1, 0, 0},
+			chunkSize: 2,
+			expected:  world.ChunkPos{0, 0, 0},
+		},
+		{
+			vpos:      world.VoxelPos{-1, 0, 0},
+			chunkSize: 5,
+			expected:  world.ChunkPos{-1, 0, 0},
+		},
+		{
+			vpos:      world.VoxelPos{5, 5, 5},
+			chunkSize: 3,
+			expected:  world.ChunkPos{1, 1, 1},
+		},
+	}
+	for _, tC := range testCases {
+		tC := tC
+		desc := fmt.Sprintf("voxel: %v, chunkSize: %v", tC.vpos, tC.chunkSize)
+		t.Run(desc, func(t *testing.T) {
+			t.Parallel()
+			result := tC.vpos.GetChunkPos(tC.chunkSize)
+			if result != tC.expected {
+				t.Fatalf("expected %v but got %v", tC.expected, result)
+			}
+		})
+	}
+}
+
+func TestVoxelArithmetic(t *testing.T) {
+	t.Run("voxel add", func(t *testing.T) {
+		t.Parallel()
+		vpos := world.VoxelPos{-2, 0, 2}
+		diff := world.VoxelPos{10, -5, 0}
+		result := vpos.Add(diff)
+		expected := world.VoxelPos{8, -5, 2}
+		if result != expected {
+			t.Fatalf("expected %v but got %v", expected, result)
+		}
+	})
+	t.Run("voxel sub", func(t *testing.T) {
+		t.Parallel()
+		vpos := world.VoxelPos{-2, 0, 2}
+		diff := world.VoxelPos{10, -5, 0}
+		result := vpos.Sub(diff)
+		expected := world.VoxelPos{-12, 5, 2}
+		if result != expected {
+			t.Fatalf("expected %v but got %v", expected, result)
+		}
+	})
+	t.Run("voxel to glm.vec3", func(t *testing.T) {
+		t.Parallel()
+		vpos := world.VoxelPos{-2, 5, 2}
+		result := vpos.AsVec3()
+		expected := glm.Vec3{-2.0, 5.0, 2.0}
+		if result != expected {
+			t.Fatalf("expected %v but got %v", expected, result)
+		}
+	})
+	t.Run("voxel ForEach sum", func(t *testing.T) {
+		t.Parallel()
+		sum := 15
+		vpos := world.VoxelPos{0, 0, 0}
+		rng := vpos.GetSurroundings(2)
+		rng.ForEach(func(pos world.VoxelPos) {
+			sum += pos.X + pos.Y + pos.Z
+		})
+		expected := 15
+		if sum != expected {
+			t.Fatalf("expected %v but got %v", expected, sum)
+		}
+	})
 }
