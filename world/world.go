@@ -50,7 +50,7 @@ type LoadedChunk struct {
 }
 
 const ChunkSize = 8
-const chunkRenderDist = 3
+const chunkRenderDist = 4
 
 // chunkRenderBuffer gaurantees a minimum radius of area of effect operations
 const chunkRenderBuffer = 1
@@ -78,13 +78,13 @@ func New() *World {
 		saved:     make(chan ChunkPos),
 		// loaded:    make(chan ChunkPos),
 		processed: make(chan ChunkPos),
-		gen:       FlatWorldGenerator{},
+		gen:       AlexGenerator{},
 		crosshair: crosshair,
 		cacheLock: sync.Mutex{},
 		chunkLock: sync.RWMutex{},
 	}
 
-	cam.SetPosition(&glm.Vec3{0.5, 30.5, 2})
+	cam.SetPosition(&glm.Vec3{0.5, 30.5, 0.5})
 	cam.LookAt(&glm.Vec3{0.5, 0.5, 2})
 
 	cache, err := NewCache("world_meta", "world_data", cacheThreshold)
