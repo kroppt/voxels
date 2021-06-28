@@ -50,7 +50,7 @@ type LoadedChunk struct {
 }
 
 const ChunkSize = 8
-const chunkRenderDist = 3
+const chunkRenderDist = 8
 
 // chunkRenderBuffer gaurantees a minimum radius of area of effect operations
 const chunkRenderBuffer = 1
@@ -78,7 +78,7 @@ func New() *World {
 		saved:     make(chan ChunkPos),
 		// loaded:    make(chan ChunkPos),
 		processed: make(chan ChunkPos),
-		gen:       FlatWorldGenerator{},
+		gen:       NoiseGenerator{},
 		crosshair: crosshair,
 		cacheLock: sync.Mutex{},
 		chunkLock: sync.RWMutex{},

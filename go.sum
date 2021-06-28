@@ -1,5 +1,7 @@
 github.com/EngoEngine/math v1.0.4 h1:ejDfSg48ynB9T6btiu9EHjZmpQgW/zHf3IeC7SqXXv8=
 github.com/EngoEngine/math v1.0.4/go.mod h1:d8SnfwiaImse0lB3JuR91B2CShZmMxaTWaWZ/ZxDxAU=
+github.com/cjslep/noise v0.0.0-20160208164128-e99d7a54b992 h1:nRoSVesMnwMLSIKnAOl601SNNOlxLtYVQQOhyybpdx8=
+github.com/cjslep/noise v0.0.0-20160208164128-e99d7a54b992/go.mod h1:zU7gFTHFfwd+gDwN/QrrNcLl9dE2+ksT8ahpy7/3sEo=
 github.com/engoengine/glm v0.0.0-20170725114841-9c08f4d1f668 h1:rVKp3XvwVYVidU1oOcahpRdoG32EJ1+CLxiwZOADpNc=
 github.com/engoengine/glm v0.0.0-20170725114841-9c08f4d1f668/go.mod h1:vZgjKvLPzQvHBEK5VZ2caeMU8LnI7eycnky96Xf94TU=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7 h1:SCYMcCJ89LjRGwEa0tRluNRiMjZHalQZrVrvTbPh+qw=
@@ -8,6 +10,8 @@ github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 h1:DACJavvAHhabrF0
 github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0/go.mod h1:E/TSTwGwJL78qG/PmXZO1EjYhfJinVAhrmmHX6Z8B9k=
 github.com/kroppt/gfx v0.0.0-20210611042050-acd486a6975c h1:dW1mX336HLgCmdEqkeAwkNyVkK667dpgfkhkKCyeikU=
 github.com/kroppt/gfx v0.0.0-20210611042050-acd486a6975c/go.mod h1:rZUXQaNUEVHDtNxajcy58/2EYbQWSh+nDx69Mnp1frY=
+github.com/ojrac/opensimplex-go v1.0.2 h1:l4vs0D+JCakcu5OV0kJ99oEaWJfggSc9jiLpxaWvSzs=
+github.com/ojrac/opensimplex-go v1.0.2/go.mod h1:NwbXFFbXcdGgIFdiA7/REME+7n/lOf1TuEbLiZYOWnM=
 github.com/veandco/go-sdl2 v0.4.5 h1:GFIjMabK7y2XWpr9sGvN7RDKHt7vrA7XPTUW60eOw+Y=
 github.com/veandco/go-sdl2 v0.4.5/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=
 golang.org/x/image v0.0.0-20200119044424-58c23975cae1 h1:5h3ngYt7+vXCDZCup/HkCQgW5XwmSvR/nA2JmJ0RErg=
