@@ -59,7 +59,7 @@ const (
 )
 
 func noiseAt(x, z int) float64 {
-	res := 20.0
+	res := 3.0
 	return math.Round(10*(smoothNoise(float64(x)/res)+
 		smoothNoise(float64(z)/res)+
 		smoothNoise(float64(x+z)/res)+
