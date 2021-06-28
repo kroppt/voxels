@@ -13,8 +13,20 @@ import (
 // represent whether each of the left right top bottom forward backward faces
 // can be seen.
 // R, G, B, and A should be in the range 0.0 to 1.0.
+
+const fullBright = true
+
 func NewChunkObject(vertices []float32) (*Object, error) {
-	prog, err := GetProgram(vertColShader, fragColShader, geoColShader)
+
+	var prog gfx.Program
+	var err error
+
+	if fullBright {
+		prog, err = GetProgram(vertColShader, fragColShaderFB, geoColShader)
+	} else {
+		prog, err = GetProgram(vertColShader, fragColShader, geoColShader)
+	}
+
 	if err != nil {
 		return nil, err
 	}
@@ -200,5 +212,24 @@ const fragColShader = `
 		float lightFrac = float(correctedFaceLight) / float(maxFaceLight);
 		vec4 fullBright = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));
 		frag_color = vec4(fullBright.xyz * lightFrac, fullBright.w);
+	}
+`
+
+const fragColShaderFB = `
+	#version 400
+
+	in Vertex {
+		vec3 stdir;
+		flat int blockType;
+		flat uint faceLight;
+	} IN;
+	uniform samplerCubeArray cubeMapArray;
+
+
+	out vec4 frag_color;
+
+	void main() {
+		vec4 fullBright = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));
+		frag_color = fullBright;
 	}
 `

@@ -50,7 +50,7 @@ type LoadedChunk struct {
 }
 
 const ChunkSize = 8
-const chunkRenderDist = 4
+const chunkRenderDist = 5
 
 // chunkRenderBuffer gaurantees a minimum radius of area of effect operations
 const chunkRenderBuffer = 1
