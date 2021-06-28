@@ -260,7 +260,7 @@ const (
 	AdjacentY    = AdjacentTop | AdjacentBottom      // The voxel has adjacencies in the +/-y directions.
 	AdjacentZ    = AdjacentBack | AdjacentFront      // The voxel has adjacencies in the +/-z directions.
 	AdjacentAll  = AdjacentX | AdjacentY | AdjacentZ // The voxel has adjacencies in all directions.
-	AdjacentNone = 0
+	AdjacentNone = 0                                 // The voxel has no adjacencies
 )
 
 type LightMask uint32

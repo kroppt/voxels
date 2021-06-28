@@ -25,6 +25,11 @@ func TestCacheInMemory(t *testing.T) {
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
+	t.Cleanup(func() {
+		cache.Destroy()
+		os.Remove("test_data")
+		os.Remove("test_meta")
+	})
 	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
 		X: 0,
 		Y: 0,
@@ -39,19 +44,9 @@ func TestCacheInMemory(t *testing.T) {
 	if !loaded {
 		t.Fatal("expected chunk to be loaded but was not")
 	}
-	t.Logf("ch: %v", ch)
-	t.Logf("ch2: %v", ch2)
-	cache.Destroy()
+	cache.Sync()
 	if !compareFlatData(ch.GetFlatData(), ch2.GetFlatData()) {
 		t.Fatalf("loaded data not same as saved data")
-	}
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
 	}
 }
 
@@ -60,6 +55,11 @@ func TestCacheInFile(t *testing.T) {
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
+	t.Cleanup(func() {
+		cache.Destroy()
+		os.Remove("test_data")
+		os.Remove("test_meta")
+	})
 	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
 		X: 0,
 		Y: 0,
@@ -74,19 +74,9 @@ func TestCacheInFile(t *testing.T) {
 	if !loaded {
 		t.Fatal("expected chunk to be loaded but was not")
 	}
-	t.Logf("ch: %v", ch)
-	t.Logf("ch2: %v", ch2)
-	cache.Destroy()
+	cache.Sync()
 	if !compareFlatData(ch.GetFlatData(), ch2.GetFlatData()) {
 		t.Fatalf("loaded data not same as saved data")
-	}
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
 	}
 }
 
@@ -95,6 +85,11 @@ func TestCacheGetNumChunksMeta(t *testing.T) {
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
+	t.Cleanup(func() {
+		cache.Destroy()
+		os.Remove("test_data")
+		os.Remove("test_meta")
+	})
 	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
 		X: 0,
 		Y: 0,
@@ -114,16 +109,6 @@ func TestCacheGetNumChunksMeta(t *testing.T) {
 	if chunksInFile != 2 {
 		t.Fatalf("expected 2 chunks in file but got %v", chunksInFile)
 	}
-
-	cache.Destroy()
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
-	}
 }
 
 func TestCache2Chunks(t *testing.T) {
@@ -131,6 +116,11 @@ func TestCache2Chunks(t *testing.T) {
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
+	t.Cleanup(func() {
+		cache.Destroy()
+		os.Remove("test_data")
+		os.Remove("test_meta")
+	})
 	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
 		X: 0,
 		Y: 0,
@@ -159,20 +149,12 @@ func TestCache2Chunks(t *testing.T) {
 	if !loaded2 {
 		t.Fatal("expected chunk2 to be loaded but was not")
 	}
-	cache.Destroy()
+	cache.Sync()
 	if !compareFlatData(ch.GetFlatData(), chLoaded.GetFlatData()) {
 		t.Fatalf("loaded data not same as saved data")
 	}
 	if !compareFlatData(ch2.GetFlatData(), ch2Loaded.GetFlatData()) {
 		t.Fatalf("loaded data not same as saved data")
-	}
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
 	}
 }
 
@@ -181,6 +163,11 @@ func TestCacheManyChunks(t *testing.T) {
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
+	t.Cleanup(func() {
+		cache.Destroy()
+		os.Remove("test_data")
+		os.Remove("test_meta")
+	})
 	nChunks := 15
 	for i := 0; i < nChunks; i++ {
 		ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
@@ -193,14 +180,5 @@ func TestCacheManyChunks(t *testing.T) {
 	resultingNumChunks, success := cache.GetNumChunksInFile()
 	if !success || resultingNumChunks != int32(nChunks) {
 		t.Fatalf("expected %v chunks but got %v", nChunks, resultingNumChunks)
-	}
-	cache.Destroy()
-	err = os.Remove("test_data")
-	if err != nil {
-		t.Fatalf("failed to remove test_data")
-	}
-	err = os.Remove("test_meta")
-	if err != nil {
-		t.Fatalf("failed to remove test_meta")
 	}
 }

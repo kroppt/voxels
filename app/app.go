@@ -3,7 +3,9 @@ package app
 import (
 	"github.com/engoengine/glm"
 	"github.com/go-gl/gl/v2.1/gl"
+	"github.com/kroppt/voxels/game"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/physics"
 	"github.com/kroppt/voxels/util"
 	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
@@ -14,12 +16,14 @@ type Application struct {
 	world   *world.World
 	running bool
 	m1held  bool
+	game    *game.Game
 }
 
 func New(win *sdl.Window) (*Application, error) {
 	return &Application{
 		win:   win,
 		world: world.New(),
+		game:  game.New(game.OsTimeNow),
 	}, nil
 }
 
@@ -111,41 +115,49 @@ func (app *Application) handleKeyboardEvent(evt *sdl.KeyboardEvent) {
 func (app *Application) pollKeyboard() error {
 	cam := app.world.GetCamera()
 	keys := sdl.GetKeyboardState()
-	speed := float32(0.07)
+
+	vel := physics.Vel{}
 	if keys[sdl.SCANCODE_W] == sdl.PRESSED {
 		look := cam.GetLookForward()
-		lookSpeed := look.Mul(speed)
-		cam.Translate(&lookSpeed)
+		vel.Vec3 = vel.Add(&look)
 	}
 	if keys[sdl.SCANCODE_S] == sdl.PRESSED {
 		look := cam.GetLookBack()
-		lookSpeed := look.Mul(speed)
-		cam.Translate(&lookSpeed)
+		vel.Vec3 = vel.Add(&look)
 	}
 	if keys[sdl.SCANCODE_A] == sdl.PRESSED {
 		look := cam.GetLookLeft()
-		lookSpeed := look.Mul(speed)
-		cam.Translate(&lookSpeed)
+		vel.Vec3 = vel.Add(&look)
 	}
 	if keys[sdl.SCANCODE_D] == sdl.PRESSED {
 		look := cam.GetLookRight()
-		lookSpeed := look.Mul(speed)
-		cam.Translate(&lookSpeed)
+		vel.Vec3 = vel.Add(&look)
 	}
 	if keys[sdl.SCANCODE_SPACE] == sdl.PRESSED {
 		look := glm.Vec3{0.0, 1.0, 0.0}
-		lookSpeed := look.Mul(speed)
-		cam.Translate(&lookSpeed)
+		vel.Vec3 = vel.Add(&look)
 	}
 	if keys[sdl.SCANCODE_LSHIFT] == sdl.PRESSED {
 		look := glm.Vec3{0.0, -1.0, 0.0}
-		lookSpeed := look.Mul(speed)
-		cam.Translate(&lookSpeed)
+		vel.Vec3 = vel.Add(&look)
 	}
+
+	if vel.Len() == 0 {
+		return nil
+	}
+
+	speed := float32(10.0)
+	vel.Vec3 = vel.Vec3.Normalized()
+	vel.Vec3 = vel.Vec3.Mul(speed)
+	dt := app.game.GetTickDuration()
+	pos := vel.AsPosition(dt)
+	cam.Translate(&pos.Vec3)
+
 	return nil
 }
 
 func (app *Application) PostEventActions() {
+	app.game.NextTick()
 	app.pollKeyboard()
 	w, h := app.win.GetSize()
 	gl.Viewport(0, 0, w, h)

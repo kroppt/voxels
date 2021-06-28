@@ -760,6 +760,7 @@ func (w *World) saveRoutine() {
 		}
 	}
 	w.chunkLock.RUnlock()
+	w.cache.Sync()
 	w.cache.Destroy()
 	w.cacheLock.Unlock()
 }
