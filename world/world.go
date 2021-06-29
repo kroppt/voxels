@@ -21,6 +21,7 @@ type World struct {
 	chunksLoaded  map[ChunkPos]*LoadedChunk
 	chunksSaving  map[ChunkPos]struct{}
 	chunksLoading map[ChunkPos]struct{}
+	chunksRelight map[ChunkPos][]func()
 	currChunk     ChunkPos
 	chunkChan     chan *Chunk
 	processed     chan ChunkPos
@@ -41,11 +42,10 @@ type World struct {
 // describing various states that the chunk is in, and
 // operations that are expected to happen on it.
 type LoadedChunk struct {
-	chunk          *Chunk
-	modified       bool
-	doRender       bool
-	processing     bool
-	relightActions []func()
+	chunk      *Chunk
+	modified   bool
+	doRender   bool
+	processing bool
 }
 
 const ChunkSize = 8
@@ -76,11 +76,12 @@ func New() *World {
 		chunkChan: make(chan *Chunk),
 		saved:     make(chan ChunkPos),
 		// loaded:    make(chan ChunkPos),
-		processed: make(chan ChunkPos),
-		gen:       AlexGenerator{},
-		crosshair: crosshair,
-		cacheLock: sync.Mutex{},
-		chunkLock: sync.RWMutex{},
+		processed:     make(chan ChunkPos),
+		gen:           AlexGenerator{},
+		crosshair:     crosshair,
+		cacheLock:     sync.Mutex{},
+		chunkLock:     sync.RWMutex{},
+		chunksRelight: make(map[ChunkPos][]func()),
 	}
 
 	cam.SetPosition(&glm.Vec3{0.5, 30.5, 0.5})
@@ -303,7 +304,8 @@ func (w *World) SetVoxel(v *Voxel) {
 	}
 
 	isLight := chunk.GetVoxelFromFlatData(v.Pos).Btype == Light
-	loadedCh.relightActions = append(loadedCh.relightActions, w.blockPlaceFn(chunk, v.Pos, isLight))
+	// loadedCh.relightActions = append(loadedCh.relightActions, w.blockPlaceFn(chunk, v.Pos, isLight))
+	w.chunksRelight[loadedCh.chunk.Pos] = append(w.chunksRelight[loadedCh.chunk.Pos], w.blockPlaceFn(chunk, v.Pos, isLight))
 }
 
 // RemoveVoxel sets a voxel to air and updates necessary structures.
@@ -346,7 +348,8 @@ func (w *World) RemoveVoxel(v VoxelPos) {
 		}
 	}
 
-	loadedCh.relightActions = append(loadedCh.relightActions, w.blockRemoveFn(chunk, v, isLight))
+	// loadedCh.relightActions = append(loadedCh.relightActions, w.blockRemoveFn(chunk, v, isLight))
+	w.chunksRelight[loadedCh.chunk.Pos] = append(w.chunksRelight[loadedCh.chunk.Pos], w.blockRemoveFn(chunk, v, isLight))
 }
 
 // GetCamera returns a reference to the camera.
@@ -370,22 +373,26 @@ func (w *World) updateUBO() {
 }
 
 func (w *World) requestAsyncLighting() {
-	w.chunkLock.RLock()
-	// TODO instead of looping over everything that is loaded, maintain a list of chunks
-	// that have relight requests, because only those need to be considered
-	for key, loadedCh := range w.chunksLoaded {
-		if len(loadedCh.relightActions) > 0 && w.hasSurroundingChunks(key) && !w.hasProcessingNeighbor(key) {
+	for key, tasks := range w.chunksRelight {
+		w.chunkLock.RLock()
+		_, loaded := w.chunksLoaded[key]
+		w.chunkLock.RUnlock()
+		if !loaded || len(tasks) == 0 {
+			delete(w.chunksRelight, key)
+			continue
+		}
+		if w.hasSurroundingChunks(key) && !w.hasProcessingNeighbor(key) {
 			w.setNeighborsProcessing(key, true)
 			go func(key ChunkPos, tasks []func()) {
 				for _, task := range tasks {
 					task()
 				}
 				w.processed <- key
-			}(loadedCh.chunk.Pos, loadedCh.relightActions)
-			loadedCh.relightActions = nil
+			}(key, tasks)
+			delete(w.chunksRelight, key)
+			// loadedCh.relightActions = nil
 		}
 	}
-	w.chunkLock.RUnlock()
 }
 
 var faceMods = [6]struct {
@@ -588,12 +595,13 @@ func (w *World) receiveAllChannels() {
 				ch.SetObjs(objs)
 
 				loadedCh := LoadedChunk{
-					chunk:          ch,
-					modified:       false,
-					processing:     false,
-					doRender:       w.isWithinRenderDist(ch.Pos) && w.hasSurroundingChunks(ch.Pos),
-					relightActions: []func(){w.relightAllFn(ch)},
+					chunk:      ch,
+					modified:   false,
+					processing: false,
+					doRender:   w.isWithinRenderDist(ch.Pos) && w.hasSurroundingChunks(ch.Pos),
+					// relightActions: []func(){w.relightAllFn(ch)},
 				}
+				w.chunksRelight[loadedCh.chunk.Pos] = append(w.chunksRelight[loadedCh.chunk.Pos], w.relightAllFn(ch))
 
 				w.chunkLock.Lock()
 				w.chunksLoaded[ch.Pos] = &loadedCh
@@ -684,7 +692,8 @@ func (w *World) updateLoadedChunks() {
 			shouldRender := w.isWithinRenderDist(key)
 			if !loadedCh.doRender && shouldRender {
 				// this chunk was a buffer chunk and has moved into render dist
-				loadedCh.relightActions = append(loadedCh.relightActions, w.relightAllFn(loadedCh.chunk))
+				// loadedCh.relightActions = append(loadedCh.relightActions, w.relightAllFn(loadedCh.chunk))
+				w.chunksRelight[loadedCh.chunk.Pos] = append(w.chunksRelight[loadedCh.chunk.Pos], w.relightAllFn(loadedCh.chunk))
 			}
 			loadedCh.doRender = shouldRender
 		}
@@ -708,7 +717,9 @@ func (w *World) Render() error {
 	// TODO figure out how to fix no update until u move chunks if update is above
 	w.update()
 
+	sw = util.Start()
 	w.requestAsyncLighting()
+	sw.StopRecordAverage("requestAsyncLighting")
 	w.receiveAllChannels()
 	sw.StopRecordAverage("total update logic")
 
