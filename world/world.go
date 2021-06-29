@@ -16,21 +16,20 @@ import (
 
 // World tracks the camera and its renderable chunks.
 type World struct {
-	ubo            *gfx.BufferObject
-	cam            *Camera
-	chunksLoaded   map[ChunkPos]*LoadedChunk
-	chunksExpected map[ChunkPos]struct{}
-	chunksSaving   map[ChunkPos]struct{}
-	chunksLoading  map[ChunkPos]struct{}
-	currChunk      ChunkPos
-	chunkChan      chan *Chunk
-	processed      chan ChunkPos
-	saved          chan ChunkPos
-	cubeMap        *gfx.CubeMap
-	gen            Generator
-	cache          *Cache
-	cacheLock      sync.Mutex
-	chunkLock      sync.RWMutex
+	ubo           *gfx.BufferObject
+	cam           *Camera
+	chunksLoaded  map[ChunkPos]*LoadedChunk
+	chunksSaving  map[ChunkPos]struct{}
+	chunksLoading map[ChunkPos]struct{}
+	currChunk     ChunkPos
+	chunkChan     chan *Chunk
+	processed     chan ChunkPos
+	saved         chan ChunkPos
+	cubeMap       *gfx.CubeMap
+	gen           Generator
+	cache         *Cache
+	cacheLock     sync.Mutex
+	chunkLock     sync.RWMutex
 
 	// cancel        bool
 	selectedVoxel *voxgl.Object
@@ -96,7 +95,6 @@ func New() *World {
 	rand.Seed(time.Now().UnixNano())
 
 	world.chunksLoaded = map[ChunkPos]*LoadedChunk{}
-	world.chunksExpected = make(map[ChunkPos]struct{})
 	world.chunksSaving = make(map[ChunkPos]struct{})
 	world.chunksLoading = make(map[ChunkPos]struct{})
 
@@ -580,7 +578,7 @@ func (w *World) receiveAllChannels() {
 			w.setNeighborsDirty(key, true)
 		case ch := <-w.chunkChan:
 			delete(w.chunksLoading, ch.Pos)
-			if _, ok := w.chunksExpected[ch.Pos]; ok {
+			if w.isExpected(ch.Pos) {
 				// the chunk has arrived and we expected it
 				// give the chunk its object
 				objs, err := voxgl.NewChunkObject(nil)
@@ -640,28 +638,21 @@ func (w *World) requestChunk(key ChunkPos) {
 	}(key)
 }
 
+func (w *World) isExpected(key ChunkPos) bool {
+	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
+	rng := currChunk.GetSurroundings(chunkRenderDist + chunkRenderBuffer)
+	return rng.Contains(key)
+}
+
 // requestExpectedChunks attempts to request every expected chunk
 // Note that in requestChunk, it will ignore requests to loaded,
 // loading or saving chunks.
 func (w *World) requestExpectedChunks() {
-	for key := range w.chunksExpected {
-		w.requestChunk(key)
-	}
-}
-
-// Expected chunks are those that are within the render distance from the
-// chunk that the camera is currently in, and are also not in the process
-// of being saved.
-func (w *World) updateExpectedChunks() {
 	// slightly larger range for chunks that should be loaded
 	currChunk := w.cam.AsVoxelPos().GetChunkPos(ChunkSize)
 	rng := currChunk.GetSurroundings(chunkRenderDist + chunkRenderBuffer)
-	w.chunksExpected = make(map[ChunkPos]struct{})
 	rng.ForEach(func(pos ChunkPos) {
-		if _, saving := w.chunksSaving[pos]; !saving {
-			// only expect chunks that are not in the process of saving
-			w.chunksExpected[pos] = struct{}{}
-		}
+		w.requestChunk(pos)
 	})
 }
 
@@ -673,7 +664,7 @@ func (w *World) updateExpectedChunks() {
 func (w *World) updateLoadedChunks() {
 	w.chunkLock.Lock()
 	for key, loadedCh := range w.chunksLoaded {
-		if _, expected := w.chunksExpected[key]; !expected && !loadedCh.processing {
+		if !w.isExpected(key) && !loadedCh.processing {
 			w.chunksLoaded[key].chunk.Destroy()
 			delete(w.chunksLoaded, key)
 			if loadedCh.modified {
@@ -702,7 +693,6 @@ func (w *World) updateLoadedChunks() {
 }
 
 func (w *World) update() {
-	w.updateExpectedChunks()
 	w.updateLoadedChunks()
 	w.requestExpectedChunks()
 }
