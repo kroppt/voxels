@@ -63,14 +63,107 @@ type ChunkRange struct {
 }
 
 // ForEach executes the given function on every position in the this ChunkRange.
-func (rng ChunkRange) ForEach(fn func(pos ChunkPos)) {
+// The return of fn indices whether to stop iterating
+func (rng ChunkRange) ForEach(fn func(pos ChunkPos) bool) {
 	for x := rng.Min.X; x <= rng.Max.X; x++ {
 		for y := rng.Min.Y; y <= rng.Max.Y; y++ {
 			for z := rng.Min.Z; z <= rng.Max.Z; z++ {
-				fn(ChunkPos{X: x, Y: y, Z: z})
+				stop := fn(ChunkPos{X: x, Y: y, Z: z})
+				if stop {
+					return
+				}
 			}
 		}
 	}
+}
+
+func (rng ChunkRange) ForEachExclusive(fn func(pos ChunkPos) bool) {
+	for x := rng.Min.X; x < rng.Max.X; x++ {
+		for y := rng.Min.Y; y < rng.Max.Y; y++ {
+			for z := rng.Min.Z; z < rng.Max.Z; z++ {
+				stop := fn(ChunkPos{X: x, Y: y, Z: z})
+				if stop {
+					return
+				}
+			}
+		}
+	}
+}
+
+func (with ChunkRange) ForEachSub(without ChunkRange, fn func(pos ChunkPos) bool) {
+	ranges := with.Sub(without)
+	for _, area := range ranges {
+		area.ForEachExclusive(fn)
+	}
+}
+
+func (rng ChunkRange) Count() int {
+	return (rng.Max.X - rng.Min.X) * (rng.Max.Y - rng.Min.Y) * (rng.Max.Z - rng.Min.Z)
+}
+
+func (new ChunkRange) Sub(old ChunkRange) []ChunkRange {
+	x1, x2, x3 := new.Min.X, new.Min.X, new.Max.X
+	if x1 >= old.Min.X && x1 < old.Max.X {
+		x2 = old.Max.X
+	} else if x3 >= old.Min.X {
+		x2 = old.Min.X
+	}
+	y1, y2, y3 := new.Min.Y, new.Min.Y, new.Max.Y
+	if y1 >= old.Min.Y && y1 < old.Max.Y {
+		y2 = old.Max.Y
+	} else if y3 >= old.Min.Y {
+		y2 = old.Min.Y
+	}
+	z1, z2, z3 := new.Min.Z, new.Min.Z, new.Max.Z
+	if z1 >= old.Min.Z && z1 < old.Max.Z {
+		z2 = old.Max.Z
+	} else if z3 >= old.Min.Z {
+		z2 = old.Min.Z
+	}
+	checks := [8]struct {
+		p   ChunkPos
+		rng ChunkRange
+	}{
+		{
+			ChunkPos{new.Min.X, new.Min.Y, new.Min.Z},
+			ChunkRange{ChunkPos{x1, y1, z1}, ChunkPos{x2, y2, z2}},
+		},
+		{
+			ChunkPos{new.Min.X, new.Min.Y, new.Max.Z},
+			ChunkRange{ChunkPos{x1, y1, z2}, ChunkPos{x2, y2, z3}},
+		},
+		{
+			ChunkPos{new.Min.X, new.Max.Y, new.Min.Z},
+			ChunkRange{ChunkPos{x1, y2, z1}, ChunkPos{x2, y3, z2}},
+		},
+		{
+			ChunkPos{new.Min.X, new.Max.Y, new.Max.Z},
+			ChunkRange{ChunkPos{x1, y2, z2}, ChunkPos{x2, y3, z3}},
+		},
+		{
+			ChunkPos{new.Max.X, new.Min.Y, new.Min.Z},
+			ChunkRange{ChunkPos{x2, y1, z1}, ChunkPos{x3, y2, z2}},
+		},
+		{
+			ChunkPos{new.Max.X, new.Min.Y, new.Max.Z},
+			ChunkRange{ChunkPos{x2, y1, z2}, ChunkPos{x3, y2, z3}},
+		},
+		{
+			ChunkPos{new.Max.X, new.Max.Y, new.Min.Z},
+			ChunkRange{ChunkPos{x2, y2, z1}, ChunkPos{x3, y3, z2}},
+		},
+		{
+			ChunkPos{new.Max.X, new.Max.Y, new.Max.Z},
+			ChunkRange{ChunkPos{x2, y2, z2}, ChunkPos{x3, y3, z3}},
+		},
+	}
+	var ranges []ChunkRange
+	for _, check := range checks {
+		if !old.Contains(check.p) {
+			ranges = append(ranges, check.rng)
+		}
+	}
+	return ranges
 }
 
 // Contains returns whether this ChunkRange contains the given pos.

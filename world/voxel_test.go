@@ -107,9 +107,9 @@ func TestLightBits(t *testing.T) {
 		},
 	}
 	for _, tC := range testCases {
+		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
-			tC := tC
-			// t.Parallel()
+			t.Parallel()
 			v := world.Voxel{
 				LightBits: tC.lightInit,
 			}

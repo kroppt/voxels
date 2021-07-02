@@ -53,6 +53,7 @@ func (c *Cache) Load(pos ChunkPos) (*Chunk, bool) {
 	} else {
 		dataOff, found := c.findChunkVoxelDataOffset(pos)
 		if found {
+			// TODO dont call NewChunkLoaded in cache, return flat data instead
 			flatData := c.readChunkVoxelData(int64(dataOff))
 			return NewChunkLoaded(ChunkSize, pos, flatData), true
 		}

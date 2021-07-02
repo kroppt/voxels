@@ -197,7 +197,7 @@ const fragColShader = `
 		if (correctedFaceLight == 0) {
 			correctedFaceLight = 1;
 		}
-		float lightFrac = float(correctedFaceLight) / float(maxFaceLight);
+		float lightFrac = 1;//float(correctedFaceLight) / float(maxFaceLight);
 		vec4 fullBright = texture(cubeMapArray, vec4(IN.stdir, IN.blockType));
 		frag_color = vec4(fullBright.xyz * lightFrac, fullBright.w);
 	}
