@@ -1,4 +1,4 @@
-package events
+package input
 
 import (
 	"github.com/kroppt/voxels/log"

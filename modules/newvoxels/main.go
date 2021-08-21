@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/kroppt/voxels/log"
-	"github.com/kroppt/voxels/modules/events"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
 )
 
@@ -19,7 +19,7 @@ func main() {
 
 	graphicsMod := graphics.New()
 	playerMod := player.New()
-	eventsMod := events.New(graphicsMod, playerMod)
+	inputMod := input.New(graphicsMod, playerMod)
 
 	err := graphicsMod.CreateWindow("newvoxels", 1920, 1080)
 	if err != nil {
@@ -28,5 +28,5 @@ func main() {
 
 	graphicsMod.ShowWindow()
 
-	eventsMod.RouteEvents()
+	inputMod.RouteEvents()
 }

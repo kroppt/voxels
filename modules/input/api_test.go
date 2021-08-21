@@ -1,17 +1,17 @@
-package events_test
+package input_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/kroppt/voxels/modules/events"
+	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
-		mod := events.New(nil, nil)
+		mod := input.New(nil, nil)
 		if mod == nil {
 			t.Fatal("expected non-nil return")
 		}
@@ -61,7 +61,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				return nil
 			},
 		}
-		mod := events.New(graphicsMod, nil)
+		mod := input.New(graphicsMod, nil)
 
 		mod.RouteEvents()
 	})
@@ -82,7 +82,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				return nil
 			},
 		}
-		mod := events.New(graphicsMod, nil)
+		mod := input.New(graphicsMod, nil)
 
 		mod.RouteEvents()
 
@@ -167,7 +167,7 @@ func TestModuleRouteEvents(t *testing.T) {
 					evtHandle = &evt
 				},
 			}
-			mod := events.New(graphicsMod, playerMod)
+			mod := input.New(graphicsMod, playerMod)
 
 			mod.RouteEvents()
 
@@ -249,7 +249,7 @@ func TestModuleRouteEvents(t *testing.T) {
 					evtHandle = &evt
 				},
 			}
-			mod := events.New(graphicsMod, playerMod)
+			mod := input.New(graphicsMod, playerMod)
 
 			mod.RouteEvents()
 
