@@ -8,6 +8,10 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+type core struct {
+	window *sdl.Window
+}
+
 // ErrRenderDriver indicates that SDL failed to enable the OpenGL render driver.
 const ErrRenderDriver log.ConstErr = "failed to set opengl render driver hint"
 
