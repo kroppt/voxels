@@ -19,6 +19,16 @@ type MovementEvent struct {
 	Direction MoveDirection
 }
 
+// LookEvent contains look event information.
+type LookEvent struct {
+	Right int32
+	Down  int32
+}
+
 // HandleMovementEvent handles a movement event.
 func (m *Module) HandleMovementEvent(evt MovementEvent) {
+}
+
+// HandleLookEvent handles a look event.
+func (m *Module) HandleLookEvent(evt LookEvent) {
 }

@@ -1,6 +1,7 @@
 package events_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/kroppt/voxels/modules/events"
@@ -32,10 +33,15 @@ func (fn fnGraphicsMod) DestroyWindow() error {
 
 type fnPlayerMod struct {
 	FnHandleMovementEvent func(player.MovementEvent)
+	FnHandleLookEvent     func(player.LookEvent)
 }
 
 func (fn fnPlayerMod) HandleMovementEvent(evt player.MovementEvent) {
 	fn.FnHandleMovementEvent(evt)
+}
+
+func (fn fnPlayerMod) HandleLookEvent(evt player.LookEvent) {
+	fn.FnHandleLookEvent(evt)
 }
 
 func TestModuleRouteEvents(t *testing.T) {
@@ -172,6 +178,94 @@ func TestModuleRouteEvents(t *testing.T) {
 			if movementEvent != *evtHandle {
 				t.Fatalf("expected %v but got %v", movementEvent, *evtHandle)
 			}
+		})
+	}
+
+	testLookCases := []struct {
+		xRel int32
+		yRel int32
+	}{
+		{
+			xRel: 1,
+			yRel: 2,
+		},
+		{
+			xRel: 0,
+			yRel: 2,
+		},
+		{
+			xRel: 1,
+			yRel: 0,
+		},
+		{
+			xRel: -1,
+			yRel: 2,
+		},
+		{
+			xRel: 1,
+			yRel: -2,
+		},
+		{
+			xRel: -1,
+			yRel: -2,
+		},
+	}
+	for _, tC := range testLookCases {
+		tC := tC
+		t.Run(fmt.Sprintf("convert sdl.MouseMotionEvent (%v, %v) to LookEvent", tC.xRel, tC.yRel), func(t *testing.T) {
+			motionEvent := sdl.MouseMotionEvent{
+				Type:      sdl.MOUSEMOTION,
+				Timestamp: 0,
+				WindowID:  0,
+				Which:     0,
+				State:     0,
+				X:         0,
+				Y:         0,
+				XRel:      tC.xRel,
+				YRel:      tC.yRel,
+			}
+
+			quitEvent := sdl.QuitEvent{
+				Type:      sdl.QUIT,
+				Timestamp: 0,
+			}
+
+			first := true
+			graphicsMod := fnGraphicsMod{
+				FnPollEvent: func() (sdl.Event, bool) {
+					if first {
+						first = false
+						return &motionEvent, true
+					}
+					return &quitEvent, true
+				},
+				FnDestroyWindow: func() error {
+					return nil
+				},
+			}
+			var evtHandle *player.LookEvent
+			playerMod := &fnPlayerMod{
+				FnHandleLookEvent: func(evt player.LookEvent) {
+					evtHandle = &evt
+				},
+			}
+			mod := events.New(graphicsMod, playerMod)
+
+			mod.RouteEvents()
+
+			expectLookEvent := player.LookEvent{
+				Right: tC.xRel,
+				Down:  tC.yRel,
+			}
+
+			if evtHandle == nil {
+				t.Fatalf("expected %v but got %v", expectLookEvent, nil)
+			}
+
+			if expectLookEvent != *evtHandle {
+				t.Fatalf("expected %v but got %v", expectLookEvent, *evtHandle)
+			}
+
 		})
 	}
 

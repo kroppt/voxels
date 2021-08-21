@@ -13,6 +13,7 @@ type graphicsMod interface {
 
 type playerMod interface {
 	HandleMovementEvent(player.MovementEvent)
+	HandleLookEvent(player.LookEvent)
 }
 
 type core struct {
@@ -66,5 +67,12 @@ func (m *core) routeEvent(e sdl.Event) {
 			}
 			m.playerMod.HandleMovementEvent(left)
 		}
+	case *sdl.MouseMotionEvent:
+		lookEvt := player.LookEvent{
+			Right: evt.XRel,
+			Down:  evt.YRel,
+		}
+		m.playerMod.HandleLookEvent(lookEvt)
 	}
+
 }
