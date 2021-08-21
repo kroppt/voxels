@@ -6,6 +6,7 @@ import (
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/events"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 )
 
 func main() {
@@ -17,7 +18,8 @@ func main() {
 	log.SetColorized(false)
 
 	graphicsMod := graphics.New()
-	eventsMod := events.New(graphicsMod)
+	playerMod := player.New()
+	eventsMod := events.New(graphicsMod, playerMod)
 
 	err := graphicsMod.CreateWindow("newvoxels", 1920, 1080)
 	if err != nil {

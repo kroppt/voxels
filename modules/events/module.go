@@ -6,10 +6,11 @@ type Module struct {
 }
 
 // New creates a synchronous events module.
-func New(graphicsMod graphicsMod) *Module {
+func New(graphicsMod graphicsMod, playerMod playerMod) *Module {
 	return &Module{
 		core{
 			graphicsMod: graphicsMod,
+			playerMod:   playerMod,
 			quit:        false,
 		},
 	}
