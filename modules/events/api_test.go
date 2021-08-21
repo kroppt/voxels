@@ -117,8 +117,9 @@ func TestModuleRouteEvents(t *testing.T) {
 		},
 	}
 
-	for _, tc := range testCases {
-		t.Run("creates a "+tc.message+" movement event from a keyboard event", func(t *testing.T) {
+	for _, tC := range testCases {
+		tC := tC
+		t.Run("creates a "+tC.message+" movement event from a keyboard event", func(t *testing.T) {
 			t.Parallel()
 
 			first := true
@@ -129,8 +130,8 @@ func TestModuleRouteEvents(t *testing.T) {
 				State:     sdl.PRESSED,
 				Repeat:    0,
 				Keysym: sdl.Keysym{
-					Scancode: tc.scancode,
-					Sym:      tc.sym,
+					Scancode: tC.scancode,
+					Sym:      tC.sym,
 					Mod:      sdl.KMOD_NONE,
 				},
 			}
@@ -152,7 +153,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			}
 
 			movementEvent := player.MovementEvent{
-				Direction: tc.direction,
+				Direction: tC.direction,
 			}
 			var evtHandle *player.MovementEvent
 			playerMod := &fnPlayerMod{
