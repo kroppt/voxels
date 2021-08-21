@@ -1,7 +1,5 @@
 package graphics
 
-import "github.com/veandco/go-sdl2/sdl"
-
 // Module is a synchronous graphics renderer.
 type Module struct {
 	c core
@@ -11,7 +9,7 @@ type Module struct {
 func New() *Module {
 	return &Module{
 		core{
-			window: &sdl.Window{},
+			window: nil,
 		},
 	}
 }
