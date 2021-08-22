@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
@@ -18,7 +19,8 @@ func main() {
 	log.SetColorized(false)
 
 	graphicsMod := graphics.New()
-	playerMod := player.New()
+	chunkMod := chunk.New()
+	playerMod := player.New(chunkMod)
 	inputMod := input.New(graphicsMod, playerMod)
 
 	err := graphicsMod.CreateWindow("newvoxels", 1920, 1080)
