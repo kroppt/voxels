@@ -254,7 +254,7 @@ func TestModuleRouteEvents(t *testing.T) {
 					evtHandle = &evt
 				},
 			}
-			settingsRepo := settings.New()
+			settingsRepo := settings.New(nil)
 			settingsRepo.SetFOV(60)
 			settingsRepo.SetResolution(1920, 1080)
 			mod := input.New(graphicsMod, playerMod, settingsRepo)
@@ -285,7 +285,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 	t.Parallel()
 
 	t.Run("x at 60 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
+		settingsRepo := settings.New(nil)
 		settingsRepo.SetFOV(60)
 		settingsRepo.SetResolution(1920, 1080)
 		mod := input.New(nil, nil, settingsRepo)
@@ -303,7 +303,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 	})
 
 	t.Run("y at 60 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
+		settingsRepo := settings.New(nil)
 		settingsRepo.SetFOV(60)
 		settingsRepo.SetResolution(1920, 1080)
 		mod := input.New(nil, nil, settingsRepo)
@@ -321,7 +321,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 	})
 
 	t.Run("x at 90 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
+		settingsRepo := settings.New(nil)
 		settingsRepo.SetFOV(90)
 		settingsRepo.SetResolution(1920, 1080)
 		mod := input.New(nil, nil, settingsRepo)
@@ -339,7 +339,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 	})
 
 	t.Run("y at 90 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
+		settingsRepo := settings.New(nil)
 		settingsRepo.SetFOV(90)
 		settingsRepo.SetResolution(1920, 1080)
 		mod := input.New(nil, nil, settingsRepo)
@@ -357,7 +357,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 	})
 
 	t.Run("x at 60 fov 720p", func(t *testing.T) {
-		settingsRepo := settings.New()
+		settingsRepo := settings.New(nil)
 		settingsRepo.SetFOV(60)
 		settingsRepo.SetResolution(1280, 720)
 		mod := input.New(nil, nil, settingsRepo)
@@ -375,7 +375,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 	})
 
 	t.Run("y at 60 fov 720p", func(t *testing.T) {
-		settingsRepo := settings.New()
+		settingsRepo := settings.New(nil)
 		settingsRepo.SetFOV(60)
 		settingsRepo.SetResolution(1280, 720)
 		mod := input.New(nil, nil, settingsRepo)

@@ -22,7 +22,7 @@ func main() {
 	graphicsMod := graphics.New()
 	chunkMod := chunk.New()
 	playerMod := player.New(chunkMod, graphicsMod)
-	settingsRepo := settings.New()
+	settingsRepo := settings.New(nil)
 	inputMod := input.New(graphicsMod, playerMod, settingsRepo)
 
 	err := graphicsMod.CreateWindow("newvoxels", 1920, 1080)
