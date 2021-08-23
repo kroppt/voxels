@@ -281,7 +281,7 @@ func TestModuleRouteEvents(t *testing.T) {
 
 }
 
-func TestPixelsToRadians(t *testing.T) {
+func TestModulePixelsToRadians(t *testing.T) {
 	t.Parallel()
 
 	t.Run("x at 60 fov 1080p", func(t *testing.T) {
