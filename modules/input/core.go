@@ -1,6 +1,8 @@
 package input
 
 import (
+	"math"
+
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/veandco/go-sdl2/sdl"
@@ -68,11 +70,21 @@ func (m *core) routeEvent(e sdl.Event) {
 			m.playerMod.HandleMovementEvent(left)
 		}
 	case *sdl.MouseMotionEvent:
+		xRad, yRad := m.PixelsToRadians(evt.XRel, evt.YRel)
 		lookEvt := player.LookEvent{
-			Right: evt.XRel,
-			Down:  evt.YRel,
+			Right: xRad,
+			Down:  yRad,
 		}
 		m.playerMod.HandleLookEvent(lookEvt)
 	}
 
+}
+
+func (m *core) PixelsToRadians(xRel, yRel int32) (float32, float32) {
+	nearDistance := 0.1
+	fovY := 60 * math.Pi / 180
+	screenHeight := 1080
+	nearHeight := 2 * nearDistance * math.Tan(fovY/2)
+	radPerPixel := math.Atan(nearHeight / float64(screenHeight) / 0.1)
+	return float32(radPerPixel * float64(xRel)), float32(radPerPixel * float64(yRel))
 }

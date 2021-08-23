@@ -9,6 +9,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+const radPerPixel = 0.00106916675777135701865376418730309896037268813747497991241552305271399806859756004655613930392969573839250030872981391876499815549171599432302996328453614659015666711180688934233446017999583370005037294423634816183735651831579120613095493436003836285184792
+
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
 		mod := input.New(nil, nil)
@@ -253,9 +255,11 @@ func TestModuleRouteEvents(t *testing.T) {
 
 			mod.RouteEvents()
 
+			xRad := float32(radPerPixel * float64(tC.xRel))
+			yRad := float32(radPerPixel * float64(tC.yRel))
 			expectLookEvent := player.LookEvent{
-				Right: tC.xRel,
-				Down:  tC.yRel,
+				Right: xRad,
+				Down:  yRad,
 			}
 
 			if evtHandle == nil {
@@ -269,4 +273,38 @@ func TestModuleRouteEvents(t *testing.T) {
 		})
 	}
 
+}
+
+func TestPixelsToRadians(t *testing.T) {
+	t.Parallel()
+
+	t.Run("convert relative x pixels to radians", func(t *testing.T) {
+		mod := input.New(nil, nil)
+
+		xRad, yRad := mod.PixelsToRadians(1, 0)
+
+		expectedX := float32(radPerPixel)
+		expectedY := float32(0)
+		if xRad != expectedX {
+			t.Fatalf("expected %v but got %v", expectedX, xRad)
+		}
+		if yRad != expectedY {
+			t.Fatalf("expected %v but got %v", expectedY, yRad)
+		}
+	})
+
+	t.Run("convert relative y pixels to radians", func(t *testing.T) {
+		mod := input.New(nil, nil)
+
+		xRad, yRad := mod.PixelsToRadians(0, 1)
+
+		expectedX := float32(0.0)
+		expectedY := float32(radPerPixel)
+		if xRad != expectedX {
+			t.Fatalf("expected %v but got %v", expectedX, xRad)
+		}
+		if yRad != expectedY {
+			t.Fatalf("expected %v but got %v", expectedY, yRad)
+		}
+	})
 }
