@@ -1,16 +1,25 @@
 package player
 
-import "github.com/kroppt/voxels/modules/chunk"
+import (
+	"github.com/engoengine/glm"
+	"github.com/kroppt/voxels/modules/chunk"
+	"github.com/kroppt/voxels/modules/graphics"
+)
 
 type chunkMod interface {
 	UpdatePosition(chunk.PositionEvent)
 }
 
+type graphicsMod interface {
+	UpdateDirection(graphics.DirectionEvent)
+}
+
 type core struct {
-	chunkMod chunkMod
-	x        int32
-	y        int32
-	z        int32
+	chunkMod    chunkMod
+	graphicsMod graphicsMod
+	x           int32
+	y           int32
+	z           int32
 }
 
 func (c *core) handleMovementEvent(evt MovementEvent) {
@@ -33,4 +42,15 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 }
 
 func (c *core) handleLookEvent(evt LookEvent) {
+	rotX := glm.QuatIdent()
+	radX := evt.Right
+	quatX := glm.QuatRotate(radX, &glm.Vec3{0, -1, 0})
+	rotX = rotX.Mul(&quatX)
+	rotY := glm.QuatIdent()
+	radY := evt.Down
+	quatY := glm.QuatRotate(radY, &glm.Vec3{-1, 0, 0})
+	rotY = rotY.Mul(&quatY)
+	c.graphicsMod.UpdateDirection(graphics.DirectionEvent{
+		Rotation: rotX.Mul(&rotY),
+	})
 }

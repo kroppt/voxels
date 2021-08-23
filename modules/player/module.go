@@ -6,10 +6,11 @@ type Module struct {
 }
 
 // New creates a player.
-func New(chunkMod chunkMod) *Module {
+func New(chunkMod chunkMod, graphicsMod graphicsMod) *Module {
 	return &Module{
 		core{
-			chunkMod: chunkMod,
+			chunkMod:    chunkMod,
+			graphicsMod: graphicsMod,
 		},
 	}
 }

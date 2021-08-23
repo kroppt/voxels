@@ -35,8 +35,8 @@ type MovementEvent struct {
 
 // LookEvent contains look event information.
 type LookEvent struct {
-	Right int32
-	Down  int32
+	Right float32
+	Down  float32
 }
 
 // HandleMovementEvent handles a movement event.
