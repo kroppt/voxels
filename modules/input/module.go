@@ -6,12 +6,17 @@ type Module struct {
 }
 
 // New creates a synchronous input module.
-func New(graphicsMod graphicsMod, playerMod playerMod) *Module {
+func New(
+	graphicsMod graphicsMod,
+	playerMod playerMod,
+	settingsRepo settingsRepo,
+) *Module {
 	return &Module{
 		core{
-			graphicsMod: graphicsMod,
-			playerMod:   playerMod,
-			quit:        false,
+			graphicsMod:  graphicsMod,
+			playerMod:    playerMod,
+			settingsRepo: settingsRepo,
+			quit:         false,
 		},
 	}
 }

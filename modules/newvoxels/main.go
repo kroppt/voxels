@@ -8,6 +8,7 @@ import (
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
+	"github.com/kroppt/voxels/repositories/settings"
 )
 
 func main() {
@@ -21,7 +22,8 @@ func main() {
 	graphicsMod := graphics.New()
 	chunkMod := chunk.New()
 	playerMod := player.New(chunkMod, graphicsMod)
-	inputMod := input.New(graphicsMod, playerMod)
+	settingsRepo := settings.New()
+	inputMod := input.New(graphicsMod, playerMod, settingsRepo)
 
 	err := graphicsMod.CreateWindow("newvoxels", 1920, 1080)
 	if err != nil {

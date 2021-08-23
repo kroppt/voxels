@@ -18,10 +18,16 @@ type playerMod interface {
 	HandleLookEvent(player.LookEvent)
 }
 
+type settingsRepo interface {
+	GetFOV() float32
+	GetResolution() (int32, int32)
+}
+
 type core struct {
-	graphicsMod graphicsMod
-	playerMod   playerMod
-	quit        bool
+	graphicsMod  graphicsMod
+	playerMod    playerMod
+	settingsRepo settingsRepo
+	quit         bool
 }
 
 func (m *core) routeEvents() {
@@ -82,8 +88,8 @@ func (m *core) routeEvent(e sdl.Event) {
 
 func (m *core) PixelsToRadians(xRel, yRel int32) (float32, float32) {
 	nearDistance := 0.1
-	fovY := 60 * math.Pi / 180
-	screenHeight := 1080
+	fovY := float64(m.settingsRepo.GetFOV()) * math.Pi / 180
+	_, screenHeight := m.settingsRepo.GetResolution()
 	nearHeight := 2 * nearDistance * math.Tan(fovY/2)
 	radPerPixel := math.Atan(nearHeight / float64(screenHeight) / 0.1)
 	return float32(radPerPixel * float64(xRel)), float32(radPerPixel * float64(yRel))
