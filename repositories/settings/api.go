@@ -2,6 +2,17 @@ package settings
 
 import "io"
 
+// ConstErr is a constant error type.
+type ConstErr string
+
+// Error returns the error message.
+func (e ConstErr) Error() string {
+	return string(e)
+}
+
+// ErrSettingsParse is an error of parsing settings.
+var ErrSettingsParse ConstErr = "malformed settings line: expected key=value"
+
 // SetFOV sets the vertical field of view.
 func (r *Repository) SetFOV(degY float32) {
 	r.c.setFOV(degY)

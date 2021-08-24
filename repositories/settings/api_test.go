@@ -1,6 +1,7 @@
 package settings_test
 
 import (
+	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -72,6 +73,28 @@ func TestRepositoryResolution(t *testing.T) {
 
 func TestRepositoryFromFile(t *testing.T) {
 	t.Parallel()
+
+	t.Run("fails correctly", func(t *testing.T) {
+		fileMod := &fnFileMod{
+			fnGetFileReader: func(fileName string) io.Reader {
+				if fileName != "settings.config" {
+					return nil
+				}
+				return strings.NewReader(strings.Join([]string{
+					"fov=60=60",
+				}, "\n"))
+			},
+		}
+		settingsMod := settings.New(fileMod)
+
+		reader := fileMod.GetFileReader("settings.config")
+
+		err := settingsMod.SetFromReader(reader)
+
+		if !errors.Is(err, settings.ErrSettingsParse) {
+			t.Fatalf("expected %v but got %v", settings.ErrSettingsParse, err)
+		}
+	})
 
 	t.Run("set and get is the same", func(t *testing.T) {
 		fileMod := &fnFileMod{

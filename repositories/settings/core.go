@@ -2,7 +2,6 @@ package settings
 
 import (
 	"bufio"
-	"errors"
 	"io"
 	"strconv"
 	"strings"
@@ -51,7 +50,7 @@ func (c *core) setFromReader(reader io.Reader) error {
 		}
 		elements := strings.Split(line, "=")
 		if len(elements) != 2 {
-			return errors.New("malformed settings line: expected key=value")
+			return ErrSettingsParse
 		}
 		key := strings.TrimSpace(elements[0])
 		value := strings.Trim(elements[1], "\t ")
