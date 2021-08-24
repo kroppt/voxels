@@ -46,14 +46,14 @@ func (c *core) setFromReader(reader io.Reader) error {
 		if err != nil {
 			return err
 		}
-		if strings.Trim(line, " \t") == "" {
+		if strings.TrimSpace(line) == "" {
 			continue
 		}
 		elements := strings.Split(line, "=")
 		if len(elements) != 2 {
 			return errors.New("malformed settings line: expected key=value")
 		}
-		key := strings.Trim(elements[0], "\t ")
+		key := strings.TrimSpace(elements[0])
 		value := strings.Trim(elements[1], "\t ")
 		switch key {
 		case "fov":
