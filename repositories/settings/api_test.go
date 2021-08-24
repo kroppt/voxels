@@ -3,6 +3,7 @@ package settings_test
 import (
 	"errors"
 	"io"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -74,7 +75,7 @@ func TestRepositoryResolution(t *testing.T) {
 func TestRepositoryFromFile(t *testing.T) {
 	t.Parallel()
 
-	t.Run("fails correctly", func(t *testing.T) {
+	t.Run("fails parsing equals signs", func(t *testing.T) {
 		fileMod := &fnFileMod{
 			fnGetFileReader: func(fileName string) io.Reader {
 				if fileName != "settings.config" {
@@ -91,8 +92,32 @@ func TestRepositoryFromFile(t *testing.T) {
 
 		err := settingsMod.SetFromReader(reader)
 
-		if !errors.Is(err, settings.ErrSettingsParse) {
-			t.Fatalf("expected %v but got %v", settings.ErrSettingsParse, err)
+		expect := settings.ErrSettingsParse
+		if err != expect {
+			t.Fatalf("expected %v but got %v", expect, err)
+		}
+	})
+
+	t.Run("fails parsing invalid numbers", func(t *testing.T) {
+		fileMod := &fnFileMod{
+			fnGetFileReader: func(fileName string) io.Reader {
+				if fileName != "settings.config" {
+					return nil
+				}
+				return strings.NewReader(strings.Join([]string{
+					"fov=abc",
+				}, "\n"))
+			},
+		}
+		settingsMod := settings.New(fileMod)
+
+		reader := fileMod.GetFileReader("settings.config")
+
+		err := settingsMod.SetFromReader(reader)
+
+		var expectNumError *strconv.NumError
+		if !errors.As(err, &expectNumError) {
+			t.Fatalf("expected %v but got %v", "type strconv.NumError", err)
 		}
 	})
 
