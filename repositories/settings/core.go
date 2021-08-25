@@ -58,7 +58,7 @@ func (c *core) setFromReader(reader io.Reader) error {
 			}
 		}
 		key := strings.TrimSpace(elements[0])
-		value := strings.Trim(elements[1], "\t ")
+		value := strings.TrimSpace(elements[1])
 		switch key {
 		case "fov":
 			fov, err := strconv.Atoi(value)
