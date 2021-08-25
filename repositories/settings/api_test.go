@@ -3,7 +3,6 @@ package settings_test
 import (
 	"errors"
 	"io"
-	"strconv"
 	"strings"
 	"testing"
 
@@ -82,19 +81,30 @@ func TestRepositoryFromFile(t *testing.T) {
 					return nil
 				}
 				return strings.NewReader(strings.Join([]string{
+					"resolutionX=100",
 					"fov=60=60",
 				}, "\n"))
 			},
 		}
+		expect := settings.ErrParseSyntax
+		var expectAs *settings.ErrParse
+		expectLine := 2
 		settingsMod := settings.New(fileMod)
-
 		reader := fileMod.GetFileReader("settings.config")
 
 		err := settingsMod.SetFromReader(reader)
 
-		expect := settings.ErrSettingsParse
-		if err != expect {
-			t.Fatalf("expected %v but got %v", expect, err)
+		if err == nil {
+			t.Fatal("expected error but got nil")
+		}
+		if !errors.Is(err, expect) {
+			t.Fatalf("expected %q but got %q", expect, err)
+		}
+		if !errors.As(err, &expectAs) {
+			t.Fatalf("expected %T but got %T", expectAs, err)
+		}
+		if expectAs.Line != expectLine {
+			t.Fatalf("expected %v but got %v", expectLine, expectAs.Line)
 		}
 	})
 
@@ -109,15 +119,25 @@ func TestRepositoryFromFile(t *testing.T) {
 				}, "\n"))
 			},
 		}
+		expect := settings.ErrParseValue
+		var expectAs *settings.ErrParse
+		expectLine := 1
 		settingsMod := settings.New(fileMod)
-
 		reader := fileMod.GetFileReader("settings.config")
 
 		err := settingsMod.SetFromReader(reader)
 
-		var expectNumError *strconv.NumError
-		if !errors.As(err, &expectNumError) {
-			t.Fatalf("expected %v but got %v", "type strconv.NumError", err)
+		if err == nil {
+			t.Fatal("expected error but got nil")
+		}
+		if !errors.Is(err, expect) {
+			t.Fatalf("expected %q but got %q", expect, err)
+		}
+		if !errors.As(err, &expectAs) {
+			t.Fatalf("expected %T but got %T", expectAs, err)
+		}
+		if expectAs.Line != expectLine {
+			t.Fatalf("expected %v but got %v", expectLine, expectAs.Line)
 		}
 	})
 

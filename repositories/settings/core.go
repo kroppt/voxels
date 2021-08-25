@@ -39,7 +39,9 @@ func (c *core) getResolution() (int32, int32) {
 
 func (c *core) setFromReader(reader io.Reader) error {
 	scanner := bufio.NewScanner(reader)
+	lineNumber := 0
 	for scanner.Scan() {
+		lineNumber++
 		line := scanner.Text()
 		err := scanner.Err()
 		if err != nil {
@@ -50,7 +52,10 @@ func (c *core) setFromReader(reader io.Reader) error {
 		}
 		elements := strings.Split(line, "=")
 		if len(elements) != 2 {
-			return ErrSettingsParse
+			return &ErrParse{
+				Line: lineNumber,
+				Err:  ErrParseSyntax,
+			}
 		}
 		key := strings.TrimSpace(elements[0])
 		value := strings.Trim(elements[1], "\t ")
@@ -58,19 +63,28 @@ func (c *core) setFromReader(reader io.Reader) error {
 		case "fov":
 			fov, err := strconv.Atoi(value)
 			if err != nil {
-				return err
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
 			}
 			c.setFOV(float32(fov))
 		case "resolutionX":
 			resX, err := strconv.Atoi(value)
 			if err != nil {
-				return err
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
 			}
 			c.setResolution(int32(resX), c.height)
 		case "resolutionY":
 			resY, err := strconv.Atoi(value)
 			if err != nil {
-				return err
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
 			}
 			c.setResolution(c.width, int32(resY))
 		default:

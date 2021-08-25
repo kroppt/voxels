@@ -1,6 +1,10 @@
 package settings
 
-import "io"
+import (
+	"errors"
+	"fmt"
+	"io"
+)
 
 // ConstErr is a constant error type.
 type ConstErr string
@@ -10,8 +14,26 @@ func (e ConstErr) Error() string {
 	return string(e)
 }
 
-// ErrSettingsParse is an error of parsing settings.
-var ErrSettingsParse ConstErr = "malformed settings line: expected key=value"
+// ErrParseSyntax indicates that the settings failed to parse the syntax.
+const ErrParseSyntax ConstErr = "syntax should be key=value format"
+
+// ErrParseValue indicates that the settings failed to parse a value.
+const ErrParseValue ConstErr = "value invalid"
+
+// ErrParse indicates that the settings failed to parse.
+type ErrParse struct {
+	Line int
+	Err  error
+}
+
+func (e ErrParse) Error() string {
+	return fmt.Sprintf("%v at line %v", e.Err, e.Line)
+}
+
+// Is returns the value of performing errors.Is on the wrapped error.
+func (e ErrParse) Is(err error) bool {
+	return errors.Is(e.Err, err)
+}
 
 // SetFOV sets the vertical field of view.
 func (r *Repository) SetFOV(degY float32) {
