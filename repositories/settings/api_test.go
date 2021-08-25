@@ -71,7 +71,7 @@ func TestRepositoryResolution(t *testing.T) {
 	})
 }
 
-func TestRepositoryFromFile(t *testing.T) {
+func TestRepositoryFromReader(t *testing.T) {
 	t.Parallel()
 
 	t.Run("fails parsing equals signs", func(t *testing.T) {
