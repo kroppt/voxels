@@ -46,10 +46,38 @@ func (c *core) handleLookEvent(evt LookEvent) {
 	radX := evt.Right
 	quatX := glm.QuatRotate(radX, &glm.Vec3{0, -1, 0})
 	rotX = rotX.Mul(&quatX)
+
 	rotY := glm.QuatIdent()
 	radY := evt.Down
-	quatY := glm.QuatRotate(radY, &glm.Vec3{-1, 0, 0})
+	right := rotX.Rotate(&glm.Vec3{-1, 0, 0})
+	quatY := glm.QuatRotate(radY, &right)
 	rotY = rotY.Mul(&quatY)
+
+	/*
+		rotY := glm.QuatIdent()
+		radY := evt.Down
+		quatY := glm.QuatRotate(radY, &glm.Vec3{-1, 0, 0})
+		rotY = rotY.Mul(&quatY)
+
+		rotX := glm.QuatIdent()
+		radX := evt.Right
+		down := rotY.Rotate(&glm.Vec3{0, -1, 0})
+		quatX := glm.QuatRotate(radX, &down)
+		rotX = rotX.Mul(&quatX)
+	*/
+
+	/*
+		rotX := glm.QuatIdent()
+		radX := evt.Right
+		quatX := glm.QuatRotate(radX, &glm.Vec3{0, -1, 0})
+		rotX = rotX.Mul(&quatX)
+
+		rotY := glm.QuatIdent()
+		radY := evt.Down
+		quatY := glm.QuatRotate(radY, &glm.Vec3{-1, 0, 0})
+		rotY = rotY.Mul(&quatY)
+	*/
+
 	c.graphicsMod.UpdateDirection(graphics.DirectionEvent{
 		Rotation: rotX.Mul(&rotY),
 	})

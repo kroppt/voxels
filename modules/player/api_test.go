@@ -139,6 +139,23 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 func TestModuleHandleLookEvent(t *testing.T) {
 	t.Parallel()
 
+	/*
+		const w = 0.7701511529340699
+		const i = 0.5574995435082759
+		const j = -0.42073549240394825
+		const k = 0.830177245525354
+	*/
+	w := math.Cos(0.5) * math.Cos(0.5)
+	i := -0.5 * math.Sin(1)
+	j := -0.5 * math.Sin(1)
+	k := math.Sin(0.5) * math.Sin(0.5)
+	/*
+		const w = 0.770151
+		const i = -0.420735
+		const j = -0.420735
+		const k = 0.229849
+	*/
+
 	testCases := []struct {
 		right    float32
 		down     float32
@@ -176,6 +193,14 @@ func TestModuleHandleLookEvent(t *testing.T) {
 				V: [3]float32{math.Sin(1.0 / 2), 0, 0},
 			},
 		},
+		{
+			right: 1.0,
+			down:  1.0,
+			rotation: glm.Quat{
+				W: w,
+				V: [3]float32{i, j, k},
+			},
+		},
 	}
 	for _, tC := range testCases {
 		tC := tC
@@ -197,10 +222,22 @@ func TestModuleHandleLookEvent(t *testing.T) {
 			}
 			mod.HandleLookEvent(lookEvent)
 
+			if tC.down == 0 && tC.right == 1 {
+				gotDir := evt.Rotation.Rotate(&glm.Vec3{0, 0, -1})
+				t.Logf("got rotation towards %v", gotDir)
+				t.FailNow()
+			}
+
 			expected := graphics.DirectionEvent{
 				Rotation: tC.rotation,
 			}
 			if evt != expected {
+				gotDir := evt.Rotation.Rotate(&glm.Vec3{0, 0, -1})
+				t.Logf("got rotation towards %v", gotDir)
+
+				expectDir := expected.Rotation.Rotate(&glm.Vec3{0, 0, -1})
+				t.Logf("expected rotation towards %v", expectDir)
+
 				t.Fatalf("expected %v but got %v", expected, evt)
 			}
 		})
