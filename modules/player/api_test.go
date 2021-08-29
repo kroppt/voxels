@@ -145,10 +145,10 @@ func TestModuleHandleLookEvent(t *testing.T) {
 		const j = -0.42073549240394825
 		const k = 0.830177245525354
 	*/
-	w := math.Cos(0.5) * math.Cos(0.5)
-	i := -0.5 * math.Sin(1)
-	j := -0.5 * math.Sin(1)
-	k := math.Sin(0.5) * math.Sin(0.5)
+	// w := math.Cos(0.5) * math.Cos(0.5)
+	// i := -0.5 * math.Sin(1)
+	// j := -0.5 * math.Sin(1)
+	// k := math.Sin(0.5) * math.Sin(0.5)
 	/*
 		const w = 0.770151
 		const i = -0.420735
@@ -194,11 +194,12 @@ func TestModuleHandleLookEvent(t *testing.T) {
 			},
 		},
 		{
-			right: 1.0,
-			down:  1.0,
+			// TODO float 64?
+			right: math.Pi / 2.0,
+			down:  math.Pi / 2.0,
 			rotation: glm.Quat{
-				W: w,
-				V: [3]float32{i, j, k},
+				W: 1.0 / 2.0,
+				V: [3]float32{1.0 / 2.0, -1.0 / 2.0, -1.0 / 2.0},
 			},
 		},
 	}
