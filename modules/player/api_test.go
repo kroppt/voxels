@@ -2,10 +2,10 @@ package player_test
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
-	"github.com/EngoEngine/math"
-	"github.com/engoengine/glm"
+	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
@@ -136,70 +136,76 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 	})
 }
 
+func withinError(x, y float64, diff float64) bool {
+	if x+diff > y && x-diff < y {
+		return true
+	}
+	return false
+}
+
+func withinErrorVec3(a, b mgl.Vec3, diff float64) bool {
+	if withinError(a.X(), b.X(), diff) && withinError(a.Y(), b.Y(), diff) &&
+		withinError(a.Z(), b.Z(), diff) {
+		return true
+	}
+	return false
+}
+
+func withinErrorQuat(q1 mgl.Quat, q2 mgl.Quat, diff float64) bool {
+	if withinError(q1.W, q2.W, diff) && withinErrorVec3(q1.V, q2.V, diff) {
+		return true
+	}
+	return false
+}
+
+const errMargin = 0.000001
+
 func TestModuleHandleLookEvent(t *testing.T) {
 	t.Parallel()
 
-	/*
-		const w = 0.7701511529340699
-		const i = 0.5574995435082759
-		const j = -0.42073549240394825
-		const k = 0.830177245525354
-	*/
-	// w := math.Cos(0.5) * math.Cos(0.5)
-	// i := -0.5 * math.Sin(1)
-	// j := -0.5 * math.Sin(1)
-	// k := math.Sin(0.5) * math.Sin(0.5)
-	/*
-		const w = 0.770151
-		const i = -0.420735
-		const j = -0.420735
-		const k = 0.229849
-	*/
-
 	testCases := []struct {
-		right    float32
-		down     float32
-		rotation glm.Quat
+		right    float64
+		down     float64
+		rotation mgl.Quat
 	}{
 		{
 			right: 1.0,
 			down:  0.0,
-			rotation: glm.Quat{
+			rotation: mgl.Quat{
 				W: math.Cos(1.0 / 2),
-				V: [3]float32{0, -math.Sin(1.0 / 2), 0},
+				V: [3]float64{0, -math.Sin(1.0 / 2), 0},
 			},
 		},
 		{
 			right: -1.0,
 			down:  0.0,
-			rotation: glm.Quat{
+			rotation: mgl.Quat{
 				W: math.Cos(1.0 / 2),
-				V: [3]float32{0, math.Sin(1.0 / 2), 0},
+				V: [3]float64{0, math.Sin(1.0 / 2), 0},
 			},
 		},
 		{
 			right: 0.0,
 			down:  1.0,
-			rotation: glm.Quat{
+			rotation: mgl.Quat{
 				W: math.Cos(1.0 / 2),
-				V: [3]float32{-math.Sin(1.0 / 2), 0, 0},
+				V: [3]float64{-math.Sin(1.0 / 2), 0, 0},
 			},
 		},
 		{
 			right: 0.0,
 			down:  -1.0,
-			rotation: glm.Quat{
+			rotation: mgl.Quat{
 				W: math.Cos(1.0 / 2),
-				V: [3]float32{math.Sin(1.0 / 2), 0, 0},
+				V: [3]float64{math.Sin(1.0 / 2), 0, 0},
 			},
 		},
 		{
-			// TODO float 64?
 			right: math.Pi / 2.0,
 			down:  math.Pi / 2.0,
-			rotation: glm.Quat{
+			rotation: mgl.Quat{
 				W: 1.0 / 2.0,
-				V: [3]float32{1.0 / 2.0, -1.0 / 2.0, -1.0 / 2.0},
+				V: [3]float64{1.0 / 2.0, -1.0 / 2.0, -1.0 / 2.0},
 			},
 		},
 	}
@@ -223,22 +229,10 @@ func TestModuleHandleLookEvent(t *testing.T) {
 			}
 			mod.HandleLookEvent(lookEvent)
 
-			if tC.down == 0 && tC.right == 1 {
-				gotDir := evt.Rotation.Rotate(&glm.Vec3{0, 0, -1})
-				t.Logf("got rotation towards %v", gotDir)
-				t.FailNow()
-			}
-
 			expected := graphics.DirectionEvent{
 				Rotation: tC.rotation,
 			}
-			if evt != expected {
-				gotDir := evt.Rotation.Rotate(&glm.Vec3{0, 0, -1})
-				t.Logf("got rotation towards %v", gotDir)
-
-				expectDir := expected.Rotation.Rotate(&glm.Vec3{0, 0, -1})
-				t.Logf("expected rotation towards %v", expectDir)
-
+			if !withinErrorQuat(evt.Rotation, expected.Rotation, errMargin) {
 				t.Fatalf("expected %v but got %v", expected, evt)
 			}
 		})

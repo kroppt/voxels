@@ -1,7 +1,7 @@
 package player
 
 import (
-	"github.com/engoengine/glm"
+	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 )
@@ -42,16 +42,16 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 }
 
 func (c *core) handleLookEvent(evt LookEvent) {
-	rotX := glm.QuatIdent()
+	rotX := mgl.QuatIdent()
 	radX := evt.Right
-	quatX := glm.QuatRotate(radX, &glm.Vec3{0, -1, 0})
-	rotX = rotX.Mul(&quatX)
+	quatX := mgl.QuatRotate(radX, mgl.Vec3{0, -1, 0})
+	rotX = rotX.Mul(quatX)
 
-	rotY := glm.QuatIdent()
+	rotY := mgl.QuatIdent()
 	radY := evt.Down
-	right := rotX.Rotate(&glm.Vec3{-1, 0, 0})
-	quatY := glm.QuatRotate(radY, &right)
-	rotY = rotY.Mul(&quatY)
+	right := rotX.Rotate(mgl.Vec3{-1, 0, 0})
+	quatY := mgl.QuatRotate(radY, right)
+	rotY = rotY.Mul(quatY)
 
 	/*
 		rotY := glm.QuatIdent()
@@ -79,6 +79,6 @@ func (c *core) handleLookEvent(evt LookEvent) {
 	*/
 
 	c.graphicsMod.UpdateDirection(graphics.DirectionEvent{
-		Rotation: rotX.Mul(&rotY),
+		Rotation: rotX.Mul(rotY),
 	})
 }

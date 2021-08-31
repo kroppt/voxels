@@ -19,7 +19,7 @@ type playerMod interface {
 }
 
 type settingsRepo interface {
-	GetFOV() float32
+	GetFOV() float64
 	GetResolution() (int32, int32)
 }
 
@@ -76,7 +76,7 @@ func (m *core) routeEvent(e sdl.Event) {
 			m.playerMod.HandleMovementEvent(left)
 		}
 	case *sdl.MouseMotionEvent:
-		xRad, yRad := m.PixelsToRadians(evt.XRel, evt.YRel)
+		xRad, yRad := m.pixelsToRadians(evt.XRel, evt.YRel)
 		lookEvt := player.LookEvent{
 			Right: xRad,
 			Down:  yRad,
@@ -86,11 +86,11 @@ func (m *core) routeEvent(e sdl.Event) {
 
 }
 
-func (m *core) PixelsToRadians(xRel, yRel int32) (float32, float32) {
-	nearDistance := 0.1
-	fovY := float64(m.settingsRepo.GetFOV()) * math.Pi / 180
+func (m *core) pixelsToRadians(xRel, yRel int32) (float64, float64) {
+	const nearDistance = 0.1
+	fovY := m.settingsRepo.GetFOV() * math.Pi / 180
 	_, screenHeight := m.settingsRepo.GetResolution()
 	nearHeight := 2 * nearDistance * math.Tan(fovY/2)
 	radPerPixel := math.Atan(nearHeight / float64(screenHeight) / 0.1)
-	return float32(radPerPixel * float64(xRel)), float32(radPerPixel * float64(yRel))
+	return radPerPixel * float64(xRel), radPerPixel * float64(yRel)
 }

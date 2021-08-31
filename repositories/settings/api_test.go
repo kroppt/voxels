@@ -27,7 +27,7 @@ func TestRepositoryFOV(t *testing.T) {
 		t.Parallel()
 
 		settings := settings.New()
-		expect := float32(90)
+		expect := 90.0
 
 		settings.SetFOV(expect)
 		got := settings.GetFOV()

@@ -6,6 +6,6 @@ func (m *Module) RouteEvents() {
 }
 
 // PixelsToRadians converts from pixels to radians in terms of camera rotation.
-func (m *Module) PixelsToRadians(xRel, yRel int32) (float32, float32) {
-	return m.c.PixelsToRadians(xRel, yRel)
+func (m *Module) PixelsToRadians(xRel, yRel int32) (float64, float64) {
+	return m.c.pixelsToRadians(xRel, yRel)
 }

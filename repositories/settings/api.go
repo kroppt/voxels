@@ -1,12 +1,12 @@
 package settings
 
 // SetFOV sets the vertical field of view.
-func (r *Repository) SetFOV(degY float32) {
+func (r *Repository) SetFOV(degY float64) {
 	r.c.setFOV(degY)
 }
 
 // GetFOV gets the vertical field of view.
-func (r *Repository) GetFOV() float32 {
+func (r *Repository) GetFOV() float64 {
 	return r.c.getFOV()
 }
 
