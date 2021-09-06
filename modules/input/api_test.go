@@ -254,7 +254,7 @@ func TestModuleRouteEvents(t *testing.T) {
 					evtHandle = &evt
 				},
 			}
-			settingsRepo := settings.New()
+			settingsRepo := settings.New(nil)
 			settingsRepo.SetFOV(60)
 			settingsRepo.SetResolution(1920, 1080)
 			mod := input.New(graphicsMod, playerMod, settingsRepo)
@@ -363,7 +363,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 		t.Run(fmt.Sprintf("%v at %vx%v", tC.fov, tC.resX, tC.resY), func(t *testing.T) {
 			t.Parallel()
 
-			settingsRepo := settings.New()
+			settingsRepo := settings.New(nil)
 			settingsRepo.SetFOV(tC.fov)
 			settingsRepo.SetResolution(tC.resX, tC.resY)
 			mod := input.New(nil, nil, settingsRepo)
