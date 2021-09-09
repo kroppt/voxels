@@ -33,7 +33,12 @@ func main() {
 		settingsRepo.SetFromReader(readCloser)
 		readCloser.Close()
 	}
-	err := graphicsMod.CreateWindow("newvoxels", 1920, 1080)
+	width, height := settingsRepo.GetResolution()
+	if width == 0 || height == 0 {
+		width = 1920
+		height = 1080
+	}
+	err := graphicsMod.CreateWindow("newvoxels", width, height)
 	if err != nil {
 		log.Fatal(err)
 	}
