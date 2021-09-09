@@ -309,6 +309,64 @@ func TestModuleHandleLookEvent(t *testing.T) {
 				V: [3]float64{0, -1, 0},
 			},
 		},
+		{
+			looks: []struct {
+				right float64
+				down  float64
+			}{
+				{
+					right: 0.0,
+					down:  math.Pi / 2.0,
+				},
+				{
+					right: math.Pi / 2.0,
+					down:  0.0,
+				},
+			},
+			rotation: mgl.Quat{
+				W: 1.0 / 2.0,
+				V: [3]float64{-1.0 / 2.0, -1.0 / 2.0, -1.0 / 2.0},
+			},
+		},
+		{
+			looks: []struct {
+				right float64
+				down  float64
+			}{
+				{
+					right: -math.Pi / 4.0,
+					down:  -math.Pi / 4.0,
+				},
+				{
+					right: math.Pi / 4.0,
+					down:  0.0,
+				},
+			},
+			rotation: mgl.Quat{
+				W: math.Cos(math.Pi / 8.0),
+				V: [3]float64{math.Sin(math.Pi / 8.0), 0, 0},
+			},
+		},
+		{
+			looks: []struct {
+				right float64
+				down  float64
+			}{
+				{
+					right: -math.Pi / 4.0,
+					down:  -math.Pi / 4.0,
+				},
+				{
+					right: math.Pi / 4.0,
+					down:  0.0,
+				},
+				{
+					right: 0,
+					down:  math.Pi / 4.0,
+				},
+			},
+			rotation: mgl.QuatIdent(),
+		},
 	}
 	for _, tC := range testCases {
 		tC := tC
