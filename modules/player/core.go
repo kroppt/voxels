@@ -48,9 +48,7 @@ func (c *core) handleLookEvent(evt LookEvent) {
 
 	c.rot = quatX.Mul(c.rot)
 
-	forward := c.rot.Rotate(mgl.Vec3{0, 0, -1})
-	up := c.rot.Rotate(mgl.Vec3{0, 1, 0})
-	downAxis := up.Cross(forward)
+	downAxis := c.rot.Rotate(mgl.Vec3{-1, 0, 0})
 
 	radY := evt.Down
 	quatY := mgl.QuatRotate(radY, downAxis)
