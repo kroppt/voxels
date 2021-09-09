@@ -1,5 +1,7 @@
 package player
 
+import mgl "github.com/go-gl/mathgl/mgl64"
+
 // Module is a player.
 type Module struct {
 	c core
@@ -11,6 +13,7 @@ func New(chunkMod chunkMod, graphicsMod graphicsMod) *Module {
 		core{
 			chunkMod:    chunkMod,
 			graphicsMod: graphicsMod,
+			rot:         mgl.QuatIdent(),
 		},
 	}
 }

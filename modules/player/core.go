@@ -20,6 +20,7 @@ type core struct {
 	x           int32
 	y           int32
 	z           int32
+	rot         mgl.Quat
 }
 
 func (c *core) handleMovementEvent(evt MovementEvent) {
@@ -42,17 +43,21 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 }
 
 func (c *core) handleLookEvent(evt LookEvent) {
-	rotX := mgl.QuatIdent()
 	radX := evt.Right
 	quatX := mgl.QuatRotate(radX, mgl.Vec3{0, -1, 0})
-	rotX = rotX.Mul(quatX)
 
-	rotY := mgl.QuatIdent()
+	c.rot = quatX.Mul(c.rot)
+
+	forward := c.rot.Rotate(mgl.Vec3{0, 0, -1})
+	up := c.rot.Rotate(mgl.Vec3{0, 1, 0})
+	downAxis := up.Cross(forward)
+
 	radY := evt.Down
-	quatY := mgl.QuatRotate(radY, mgl.Vec3{-1, 0, 0})
-	rotY = rotY.Mul(quatY)
+	quatY := mgl.QuatRotate(radY, downAxis)
+
+	c.rot = quatY.Mul(c.rot)
 
 	c.graphicsMod.UpdateDirection(graphics.DirectionEvent{
-		Rotation: rotX.Mul(rotY),
+		Rotation: c.rot,
 	})
 }
