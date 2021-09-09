@@ -10,14 +10,13 @@ import (
 )
 
 type fileMod interface {
-	GetFileReader(string) io.Reader
+	GetReadCloser(string) (io.ReadCloser, error)
 }
 
 type core struct {
-	fileMod fileMod
-	fovY    float32
-	width   int32
-	height  int32
+	fovY   float32
+	width  int32
+	height int32
 }
 
 func (c *core) setFOV(degY float32) {

@@ -6,10 +6,8 @@ type Repository struct {
 }
 
 // New creates and returns a new settings repository.
-func New(fileMod fileMod) *Repository {
+func New() *Repository {
 	return &Repository{
-		core{
-			fileMod: fileMod,
-		},
+		core{},
 	}
 }

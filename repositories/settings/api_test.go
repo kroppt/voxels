@@ -10,12 +10,27 @@ import (
 )
 
 type fnFileMod struct {
-	fnGetFileReader func(fileName string) io.Reader
+	fnGetReadCloser func(fileName string) (io.ReadCloser, error)
 }
 
-func (fn *fnFileMod) GetFileReader(fileName string) io.Reader {
-	return fn.fnGetFileReader(fileName)
+func (fn *fnFileMod) GetReadCloser(fileName string) (io.ReadCloser, error) {
+	return fn.fnGetReadCloser(fileName)
 }
+
+type fnReadCloser struct {
+	fnRead  func(p []byte) (n int, err error)
+	fnClose func() error
+}
+
+func (fn *fnReadCloser) Read(p []byte) (n int, err error) {
+	return fn.fnRead(p)
+}
+
+func (fn *fnReadCloser) Close() error {
+	return fn.fnClose()
+}
+
+const invalidFileNameError string = "invalid file name"
 
 func TestRepositoryNew(t *testing.T) {
 	t.Parallel()
@@ -23,7 +38,7 @@ func TestRepositoryNew(t *testing.T) {
 	t.Run("should not return nil", func(t *testing.T) {
 		t.Parallel()
 
-		settings := settings.New(nil)
+		settings := settings.New()
 
 		if settings == nil {
 			t.Fatal("expected non-nil return")
@@ -37,7 +52,7 @@ func TestRepositoryFOV(t *testing.T) {
 	t.Run("set then get is same", func(t *testing.T) {
 		t.Parallel()
 
-		settings := settings.New(nil)
+		settings := settings.New()
 		expect := float32(90)
 
 		settings.SetFOV(expect)
@@ -55,7 +70,7 @@ func TestRepositoryResolution(t *testing.T) {
 	t.Run("set then get is same", func(t *testing.T) {
 		t.Parallel()
 
-		settings := settings.New(nil)
+		settings := settings.New()
 		expectX := int32(1920)
 		expectY := int32(1080)
 
@@ -76,23 +91,34 @@ func TestRepositoryFromReader(t *testing.T) {
 
 	t.Run("fails parsing equals signs", func(t *testing.T) {
 		fileMod := &fnFileMod{
-			fnGetFileReader: func(fileName string) io.Reader {
+			fnGetReadCloser: func(fileName string) (io.ReadCloser, error) {
 				if fileName != "settings.config" {
-					return nil
+					return nil, errors.New(invalidFileNameError)
 				}
-				return strings.NewReader(strings.Join([]string{
+				reader := strings.NewReader(strings.Join([]string{
 					"resolutionX=100",
 					"fov=60=60",
 				}, "\n"))
+				return &fnReadCloser{
+					fnRead: func(p []byte) (int, error) {
+						return reader.Read(p)
+					},
+					fnClose: func() error {
+						return nil
+					},
+				}, nil
 			},
 		}
 		expect := settings.ErrParseSyntax
 		var expectAs *settings.ErrParse
 		expectLine := 2
-		settingsMod := settings.New(fileMod)
-		reader := fileMod.GetFileReader("settings.config")
+		settingsMod := settings.New()
+		readerCloser, err := fileMod.GetReadCloser("settings.config")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		err := settingsMod.SetFromReader(reader)
+		err = settingsMod.SetFromReader(readerCloser)
 
 		if err == nil {
 			t.Fatal("expected error but got nil")
@@ -110,22 +136,33 @@ func TestRepositoryFromReader(t *testing.T) {
 
 	t.Run("fails parsing invalid numbers", func(t *testing.T) {
 		fileMod := &fnFileMod{
-			fnGetFileReader: func(fileName string) io.Reader {
+			fnGetReadCloser: func(fileName string) (io.ReadCloser, error) {
 				if fileName != "settings.config" {
-					return nil
+					return nil, errors.New(invalidFileNameError)
 				}
-				return strings.NewReader(strings.Join([]string{
+				reader := strings.NewReader(strings.Join([]string{
 					"fov=abc",
 				}, "\n"))
+				return &fnReadCloser{
+					fnRead: func(p []byte) (int, error) {
+						return reader.Read(p)
+					},
+					fnClose: func() error {
+						return nil
+					},
+				}, nil
 			},
 		}
 		expect := settings.ErrParseValue
 		var expectAs *settings.ErrParse
 		expectLine := 1
-		settingsMod := settings.New(fileMod)
-		reader := fileMod.GetFileReader("settings.config")
+		settingsMod := settings.New()
+		readCloser, err := fileMod.GetReadCloser("settings.config")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		err := settingsMod.SetFromReader(reader)
+		err = settingsMod.SetFromReader(readCloser)
 
 		if err == nil {
 			t.Fatal("expected error but got nil")
@@ -143,22 +180,33 @@ func TestRepositoryFromReader(t *testing.T) {
 
 	t.Run("set and get is the same", func(t *testing.T) {
 		fileMod := &fnFileMod{
-			fnGetFileReader: func(fileName string) io.Reader {
+			fnGetReadCloser: func(fileName string) (io.ReadCloser, error) {
 				if fileName != "settings.config" {
-					return nil
+					return nil, errors.New(invalidFileNameError)
 				}
-				return strings.NewReader(strings.Join([]string{
+				reader := strings.NewReader(strings.Join([]string{
 					"fov=60",
 					"resolutionX=1920",
 					"resolutionY=1080",
 				}, "\n"))
+				return &fnReadCloser{
+					fnRead: func(p []byte) (int, error) {
+						return reader.Read(p)
+					},
+					fnClose: func() error {
+						return nil
+					},
+				}, nil
 			},
 		}
-		settings := settings.New(fileMod)
+		settings := settings.New()
 
-		reader := fileMod.GetFileReader("settings.config")
+		readCloser, err := fileMod.GetReadCloser("settings.config")
+		if err != nil {
+			t.Fatal(err)
+		}
 
-		err := settings.SetFromReader(reader)
+		err = settings.SetFromReader(readCloser)
 
 		if err != nil {
 			t.Fatal(err)
