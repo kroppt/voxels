@@ -205,7 +205,7 @@ func TestModuleHandleLookEvent(t *testing.T) {
 			down:  math.Pi / 2.0,
 			rotation: mgl.Quat{
 				W: 1.0 / 2.0,
-				V: [3]float64{1.0 / 2.0, -1.0 / 2.0, -1.0 / 2.0},
+				V: [3]float64{-1.0 / 2.0, -1.0 / 2.0, -1.0 / 2.0},
 			},
 		},
 	}

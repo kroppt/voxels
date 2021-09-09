@@ -49,8 +49,7 @@ func (c *core) handleLookEvent(evt LookEvent) {
 
 	rotY := mgl.QuatIdent()
 	radY := evt.Down
-	right := rotX.Rotate(mgl.Vec3{-1, 0, 0})
-	quatY := mgl.QuatRotate(radY, right)
+	quatY := mgl.QuatRotate(radY, mgl.Vec3{-1, 0, 0})
 	rotY = rotY.Mul(quatY)
 
 	c.graphicsMod.UpdateDirection(graphics.DirectionEvent{
