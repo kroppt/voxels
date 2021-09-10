@@ -1,13 +1,13 @@
 package graphics
 
 import (
-	"github.com/engoengine/glm"
+	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 // DirectionEvent contains rotation information.
 type DirectionEvent struct {
-	Rotation glm.Quat
+	Rotation mgl.Quat
 }
 
 // CreateWindow creates an SDL window.

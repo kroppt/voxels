@@ -38,7 +38,7 @@ func TestRepositoryFOV(t *testing.T) {
 		t.Parallel()
 
 		settings := settings.New(nil)
-		expect := float32(90)
+		expect := 90.0
 
 		settings.SetFOV(expect)
 		got := settings.GetFOV()
@@ -164,12 +164,12 @@ func TestRepositoryFromReader(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		expectFOV := 60
+		expectFOV := 60.0
 		expectResolutionX := 1920
 		expectResolutionY := 1080
 
 		fov := settings.GetFOV()
-		if fov != float32(expectFOV) {
+		if fov != expectFOV {
 			t.Fatalf("expected %v but got %v", expectFOV, fov)
 		}
 		resolutionX, resolutionY := settings.GetResolution()
