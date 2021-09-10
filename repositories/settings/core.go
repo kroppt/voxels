@@ -14,16 +14,16 @@ type fileMod interface {
 }
 
 type core struct {
-	fovY   float32
+	fovY   float64
 	width  int32
 	height int32
 }
 
-func (c *core) setFOV(degY float32) {
+func (c *core) setFOV(degY float64) {
 	c.fovY = degY
 }
 
-func (c *core) getFOV() float32 {
+func (c *core) getFOV() float64 {
 	return c.fovY
 }
 
@@ -67,7 +67,7 @@ func (c *core) setFromReader(reader io.Reader) error {
 					Err:  ErrParseValue,
 				}
 			}
-			c.setFOV(float32(fov))
+			c.setFOV(float64(fov))
 		case "resolutionX":
 			resX, err := strconv.Atoi(value)
 			if err != nil {

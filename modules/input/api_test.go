@@ -261,8 +261,8 @@ func TestModuleRouteEvents(t *testing.T) {
 
 			mod.RouteEvents()
 
-			xRad := float32(radPerPixel60Fov1080p * float64(tC.xRel))
-			yRad := float32(radPerPixel60Fov1080p * float64(tC.yRel))
+			xRad := radPerPixel60Fov1080p * float64(tC.xRel)
+			yRad := radPerPixel60Fov1080p * float64(tC.yRel)
 			expectLookEvent := player.LookEvent{
 				Right: xRad,
 				Down:  yRad,
@@ -281,114 +281,101 @@ func TestModuleRouteEvents(t *testing.T) {
 
 }
 
+func withinError(x, y float64, diff float64) bool {
+	if x+diff > y && x-diff < y {
+		return true
+	}
+	return false
+}
+
+const errMargin = 0.000001
+
 func TestModulePixelsToRadians(t *testing.T) {
 	t.Parallel()
 
-	t.Run("x at 60 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
-		settingsRepo.SetFOV(60)
-		settingsRepo.SetResolution(1920, 1080)
-		mod := input.New(nil, nil, settingsRepo)
+	testCases := []struct {
+		fov     float64
+		resX    int32
+		resY    int32
+		xRel    int32
+		yRel    int32
+		expectX float64
+		expectY float64
+	}{
+		{
+			fov:     60.0,
+			resX:    1920,
+			resY:    1080,
+			xRel:    1,
+			yRel:    0,
+			expectX: radPerPixel60Fov1080p,
+			expectY: 0.0,
+		},
+		{
+			fov:     60.0,
+			resX:    1920,
+			resY:    1080,
+			xRel:    0,
+			yRel:    1,
+			expectX: 0.0,
+			expectY: radPerPixel60Fov1080p,
+		},
+		{
+			fov:     90.0,
+			resX:    1920,
+			resY:    1080,
+			xRel:    1,
+			yRel:    0,
+			expectX: radPerPixel90Fov1080p,
+			expectY: 0,
+		},
+		{
+			fov:     90.0,
+			resX:    1920,
+			resY:    1080,
+			xRel:    0,
+			yRel:    1,
+			expectX: 0.0,
+			expectY: radPerPixel90Fov1080p,
+		},
+		{
+			fov:     60.0,
+			resX:    1280,
+			resY:    720,
+			xRel:    1,
+			yRel:    0,
+			expectX: radPerPixel60Fov720p,
+			expectY: 0,
+		},
+		{
+			fov:     60.0,
+			resX:    1280,
+			resY:    720,
+			xRel:    0,
+			yRel:    1,
+			expectX: 0,
+			expectY: radPerPixel60Fov720p,
+		},
+	}
 
-		xRad, yRad := mod.PixelsToRadians(1, 0)
+	for _, tC := range testCases {
+		tC := tC
+		t.Run(fmt.Sprintf("%v at %vx%v", tC.fov, tC.resX, tC.resY), func(t *testing.T) {
+			t.Parallel()
 
-		expectedX := float32(radPerPixel60Fov1080p)
-		expectedY := float32(0)
-		if xRad != expectedX {
-			t.Fatalf("expected %v but got %v", expectedX, xRad)
-		}
-		if yRad != expectedY {
-			t.Fatalf("expected %v but got %v", expectedY, yRad)
-		}
-	})
+			settingsRepo := settings.New()
+			settingsRepo.SetFOV(tC.fov)
+			settingsRepo.SetResolution(tC.resX, tC.resY)
+			mod := input.New(nil, nil, settingsRepo)
 
-	t.Run("y at 60 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
-		settingsRepo.SetFOV(60)
-		settingsRepo.SetResolution(1920, 1080)
-		mod := input.New(nil, nil, settingsRepo)
+			xRad, yRad := mod.PixelsToRadians(tC.xRel, tC.yRel)
 
-		xRad, yRad := mod.PixelsToRadians(0, 1)
-
-		expectedX := float32(0.0)
-		expectedY := float32(radPerPixel60Fov1080p)
-		if xRad != expectedX {
-			t.Fatalf("expected %v but got %v", expectedX, xRad)
-		}
-		if yRad != expectedY {
-			t.Fatalf("expected %v but got %v", expectedY, yRad)
-		}
-	})
-
-	t.Run("x at 90 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
-		settingsRepo.SetFOV(90)
-		settingsRepo.SetResolution(1920, 1080)
-		mod := input.New(nil, nil, settingsRepo)
-
-		xRad, yRad := mod.PixelsToRadians(1, 0)
-
-		expectedX := float32(radPerPixel90Fov1080p)
-		expectedY := float32(0)
-		if xRad != expectedX {
-			t.Fatalf("expected %v but got %v", expectedX, xRad)
-		}
-		if yRad != expectedY {
-			t.Fatalf("expected %v but got %v", expectedY, yRad)
-		}
-	})
-
-	t.Run("y at 90 fov 1080p", func(t *testing.T) {
-		settingsRepo := settings.New()
-		settingsRepo.SetFOV(90)
-		settingsRepo.SetResolution(1920, 1080)
-		mod := input.New(nil, nil, settingsRepo)
-
-		xRad, yRad := mod.PixelsToRadians(0, 1)
-
-		expectedX := float32(0.0)
-		expectedY := float32(radPerPixel90Fov1080p)
-		if xRad != expectedX {
-			t.Fatalf("expected %v but got %v", expectedX, xRad)
-		}
-		if yRad != expectedY {
-			t.Fatalf("expected %v but got %v", expectedY, yRad)
-		}
-	})
-
-	t.Run("x at 60 fov 720p", func(t *testing.T) {
-		settingsRepo := settings.New()
-		settingsRepo.SetFOV(60)
-		settingsRepo.SetResolution(1280, 720)
-		mod := input.New(nil, nil, settingsRepo)
-
-		xRad, yRad := mod.PixelsToRadians(1, 0)
-
-		expectedX := float32(radPerPixel60Fov720p)
-		expectedY := float32(0)
-		if xRad != expectedX {
-			t.Fatalf("expected %v but got %v", expectedX, xRad)
-		}
-		if yRad != expectedY {
-			t.Fatalf("expected %v but got %v", expectedY, yRad)
-		}
-	})
-
-	t.Run("y at 60 fov 720p", func(t *testing.T) {
-		settingsRepo := settings.New()
-		settingsRepo.SetFOV(60)
-		settingsRepo.SetResolution(1280, 720)
-		mod := input.New(nil, nil, settingsRepo)
-
-		xRad, yRad := mod.PixelsToRadians(0, 1)
-
-		expectedX := float32(0.0)
-		expectedY := float32(radPerPixel60Fov720p)
-		if xRad != expectedX {
-			t.Fatalf("expected %v but got %v", expectedX, xRad)
-		}
-		if yRad != expectedY {
-			t.Fatalf("expected %v but got %v", expectedY, yRad)
-		}
-	})
+			if !withinError(xRad, tC.expectX, errMargin) {
+				t.Fatalf("expected %v but got %v", tC.expectX, xRad)
+			}
+			if !withinError(yRad, tC.expectY, errMargin) {
+				t.Fatalf("expected %v but got %v", tC.expectY, yRad)
+			}
+		})
+	}
 }
