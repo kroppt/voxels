@@ -9,10 +9,6 @@ import (
 	"github.com/kroppt/voxels/log"
 )
 
-type fileMod interface {
-	GetReadCloser(string) (io.ReadCloser, error)
-}
-
 type core struct {
 	fovY   float64
 	width  int32
