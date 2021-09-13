@@ -1,7 +1,6 @@
 package file_test
 
 import (
-	"errors"
 	"io"
 	"strings"
 	"testing"
@@ -33,7 +32,6 @@ func TestModuleNew(t *testing.T) {
 func TestModuleGetReadCloser(t *testing.T) {
 
 	t.Run("open empty file", func(t *testing.T) {
-		expectErr := io.EOF
 		expectN := 0
 		mod := file.New()
 
@@ -46,17 +44,18 @@ func TestModuleGetReadCloser(t *testing.T) {
 			t.Fatalf("expected non-nil reader")
 		}
 		defer readCloser.Close()
-		buf := make([]byte, 8)
-		n, err := readCloser.Read(buf)
-		if !errors.Is(err, expectErr) {
-			t.Fatalf("expected %q but got %q", io.EOF, err)
+		buf, err := io.ReadAll(readCloser)
+		if err != nil {
+			t.Fatal(err)
 		}
+		n := len(buf)
 		if n != expectN {
 			t.Fatalf("expected %v bytes read but got %v bytes read", expectN, n)
 		}
 	})
 
 	t.Run("open single-line file", func(t *testing.T) {
+		expect := "abc123"
 		expectN := 6
 		mod := file.New()
 
@@ -69,10 +68,14 @@ func TestModuleGetReadCloser(t *testing.T) {
 			t.Fatalf("expected non-nil reader")
 		}
 		defer readCloser.Close()
-		buf := make([]byte, 16)
-		n, err := readCloser.Read(buf)
-		if err != nil && err != io.EOF {
+		buf, err := io.ReadAll(readCloser)
+		if err != nil {
 			t.Fatal(err)
+		}
+		content := string(buf)
+		n := len(buf)
+		if content != expect {
+			t.Fatalf("expected %v but got %v", expect, content)
 		}
 		if n != expectN {
 			t.Fatalf("expected %v bytes read but got %v bytes read", expectN, n)
@@ -92,13 +95,11 @@ func TestModuleGetReadCloser(t *testing.T) {
 			t.Fatalf("expected non-nil reader")
 		}
 		defer readCloser.Close()
-		buf := make([]byte, 64)
-		n, err := readCloser.Read(buf)
-		if err != nil && err != io.EOF {
+		buf, err := io.ReadAll(readCloser)
+		if err != nil {
 			t.Fatal(err)
 		}
-		content := string(buf[:n])
-		content = strings.ReplaceAll(content, "\r\n", "\n")
+		content := strings.ReplaceAll(string(buf), "\r\n", "\n")
 		lines := strings.Split(content, "\n")
 		if !stringSliceEqual(expect, lines) {
 			t.Fatalf("expected %v but got %v", expect, lines)
