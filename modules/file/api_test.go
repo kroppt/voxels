@@ -30,8 +30,10 @@ func TestModuleNew(t *testing.T) {
 }
 
 func TestModuleGetReadCloser(t *testing.T) {
+	t.Parallel()
 
 	t.Run("open empty file", func(t *testing.T) {
+		t.Parallel()
 		expectN := 0
 		mod := file.New()
 
@@ -55,6 +57,7 @@ func TestModuleGetReadCloser(t *testing.T) {
 	})
 
 	t.Run("open single-line file", func(t *testing.T) {
+		t.Parallel()
 		expect := "abc123"
 		expectN := 6
 		mod := file.New()
@@ -83,6 +86,7 @@ func TestModuleGetReadCloser(t *testing.T) {
 	})
 
 	t.Run("open multi-line file", func(t *testing.T) {
+		t.Parallel()
 		expect := []string{"Line 1.", "123abc", "This is a test.", ""}
 		mod := file.New()
 
