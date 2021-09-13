@@ -1,6 +1,6 @@
 package file
 
-// Module is a file.
+// Module is a file system API.
 type Module struct {
 	c core
 }
