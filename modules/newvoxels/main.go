@@ -35,8 +35,8 @@ func main() {
 	}
 	width, height := settingsRepo.GetResolution()
 	if width == 0 || height == 0 {
-		width = 1920
-		height = 1080
+		width = 1280
+		height = 720
 	}
 	err := graphicsMod.CreateWindow("newvoxels", width, height)
 	if err != nil {
