@@ -37,7 +37,7 @@ func TestModuleGetReadCloser(t *testing.T) {
 		expectN := 0
 		mod := file.New()
 
-		readCloser, err := mod.GetReadCloser("empty.txt")
+		readCloser, err := mod.GetReadCloser("test-empty.txt")
 
 		if err != nil {
 			t.Fatal(err)
