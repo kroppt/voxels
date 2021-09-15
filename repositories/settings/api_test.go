@@ -47,8 +47,8 @@ func TestRepositoryResolution(t *testing.T) {
 		t.Parallel()
 
 		settings := settings.New()
-		expectX := int32(1920)
-		expectY := int32(1080)
+		expectX := uint32(1920)
+		expectY := uint32(1080)
 
 		settings.SetResolution(expectX, expectY)
 		gotX, gotY := settings.GetResolution()
@@ -139,10 +139,10 @@ func TestRepositoryFromReader(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expectFOV, fov)
 		}
 		resolutionX, resolutionY := settings.GetResolution()
-		if resolutionX != int32(expectResolutionX) {
+		if resolutionX != uint32(expectResolutionX) {
 			t.Fatalf("expected %v but got %v", expectResolutionX, resolutionX)
 		}
-		if resolutionY != int32(expectResolutionY) {
+		if resolutionY != uint32(expectResolutionY) {
 			t.Fatalf("expected %v but got %v", expectResolutionY, resolutionY)
 		}
 	})

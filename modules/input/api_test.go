@@ -295,8 +295,8 @@ func TestModulePixelsToRadians(t *testing.T) {
 
 	testCases := []struct {
 		fov     float64
-		resX    int32
-		resY    int32
+		resX    uint32
+		resY    uint32
 		xRel    int32
 		yRel    int32
 		expectX float64
