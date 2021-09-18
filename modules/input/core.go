@@ -20,7 +20,7 @@ type playerMod interface {
 
 type settingsRepo interface {
 	GetFOV() float64
-	GetResolution() (int32, int32)
+	GetResolution() (uint32, uint32)
 }
 
 type core struct {

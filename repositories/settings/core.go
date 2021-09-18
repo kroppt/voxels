@@ -9,15 +9,10 @@ import (
 	"github.com/kroppt/voxels/log"
 )
 
-type fileMod interface {
-	GetFileReader(string) io.Reader
-}
-
 type core struct {
-	fileMod fileMod
-	fovY    float64
-	width   int32
-	height  int32
+	fovY   float64
+	width  uint32
+	height uint32
 }
 
 func (c *core) setFOV(degY float64) {
@@ -28,12 +23,12 @@ func (c *core) getFOV() float64 {
 	return c.fovY
 }
 
-func (c *core) setResolution(width, height int32) {
+func (c *core) setResolution(width, height uint32) {
 	c.width = width
 	c.height = height
 }
 
-func (c *core) getResolution() (int32, int32) {
+func (c *core) getResolution() (uint32, uint32) {
 	return c.width, c.height
 }
 
@@ -71,22 +66,22 @@ func (c *core) setFromReader(reader io.Reader) error {
 			c.setFOV(float64(fov))
 		case "resolutionX":
 			resX, err := strconv.Atoi(value)
-			if err != nil {
+			if err != nil || resX < 0 {
 				return &ErrParse{
 					Line: lineNumber,
 					Err:  ErrParseValue,
 				}
 			}
-			c.setResolution(int32(resX), c.height)
+			c.setResolution(uint32(resX), c.height)
 		case "resolutionY":
 			resY, err := strconv.Atoi(value)
-			if err != nil {
+			if err != nil || resY < 0 {
 				return &ErrParse{
 					Line: lineNumber,
 					Err:  ErrParseValue,
 				}
 			}
-			c.setResolution(c.width, int32(resY))
+			c.setResolution(c.width, uint32(resY))
 		default:
 			log.Warnf("invalid settings entry: %v=%v", key, value)
 		}

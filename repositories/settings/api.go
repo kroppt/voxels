@@ -46,12 +46,12 @@ func (r *Repository) GetFOV() float64 {
 }
 
 // SetResolution sets the width and height of the window in pixels.
-func (r *Repository) SetResolution(width, height int32) {
+func (r *Repository) SetResolution(width, height uint32) {
 	r.c.setResolution(width, height)
 }
 
 // GetResolution gets the width and height of the window in pixels.
-func (r *Repository) GetResolution() (int32, int32) {
+func (r *Repository) GetResolution() (uint32, uint32) {
 	return r.c.getResolution()
 }
 

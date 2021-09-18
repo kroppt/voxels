@@ -15,7 +15,7 @@ type core struct {
 // ErrRenderDriver indicates that SDL failed to enable the OpenGL render driver.
 const ErrRenderDriver log.ConstErr = "failed to set opengl render driver hint"
 
-func (c *core) createWindow(title string, width, height int32) error {
+func (c *core) createWindow(title string, width, height uint32) error {
 	runtime.LockOSThread()
 
 	if !sdl.SetHint(sdl.HINT_RENDER_DRIVER, "opengl") {
@@ -40,7 +40,7 @@ func (c *core) createWindow(title string, width, height int32) error {
 
 	var window *sdl.Window
 	if window, err = sdl.CreateWindow(title, sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED,
-		width, height, sdl.WINDOW_HIDDEN|sdl.WINDOW_OPENGL); err != nil {
+		int32(width), int32(height), sdl.WINDOW_HIDDEN|sdl.WINDOW_OPENGL); err != nil {
 		return err
 	}
 	window.SetResizable(true)

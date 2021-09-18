@@ -11,7 +11,7 @@ type DirectionEvent struct {
 }
 
 // CreateWindow creates an SDL window.
-func (m *Module) CreateWindow(title string, width, height int32) error {
+func (m *Module) CreateWindow(title string, width, height uint32) error {
 	return m.c.createWindow(title, width, height)
 }
 
