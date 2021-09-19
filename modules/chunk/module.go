@@ -6,8 +6,12 @@ type Module struct {
 }
 
 // New creates a chunk module.
-func New() *Module {
+func New(graphicsMod graphicsMod) *Module {
+	core := core{
+		graphicsMod: graphicsMod,
+	}
+	core.init()
 	return &Module{
-		core{},
+		core,
 	}
 }
