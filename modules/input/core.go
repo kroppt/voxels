@@ -8,21 +8,6 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-type graphicsMod interface {
-	DestroyWindow() error
-	PollEvent() (sdl.Event, bool)
-}
-
-type playerMod interface {
-	HandleMovementEvent(player.MovementEvent)
-	HandleLookEvent(player.LookEvent)
-}
-
-type settingsRepo interface {
-	GetFOV() float64
-	GetResolution() (uint32, uint32)
-}
-
 type core struct {
 	graphicsMod  graphicsMod
 	playerMod    playerMod

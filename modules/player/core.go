@@ -6,14 +6,6 @@ import (
 	"github.com/kroppt/voxels/modules/graphics"
 )
 
-type chunkMod interface {
-	UpdatePosition(chunk.PositionEvent)
-}
-
-type graphicsMod interface {
-	UpdateDirection(graphics.DirectionEvent)
-}
-
 type core struct {
 	chunkMod    chunkMod
 	graphicsMod graphicsMod
