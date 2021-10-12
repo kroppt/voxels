@@ -80,6 +80,9 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 func (c *core) updateDirection(directionEvent DirectionEvent) {
 }
 
+func (c *core) showVoxel(voxelEvent VoxelEvent) {
+}
+
 func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	sdl.Quit()

@@ -10,6 +10,10 @@ type DirectionEvent struct {
 	Rotation mgl.Quat
 }
 
+// VoxelEvent contains voxel information.
+type VoxelEvent struct {
+}
+
 // CreateWindow creates an SDL window.
 func (m *Module) CreateWindow(title string, width, height uint32) error {
 	return m.c.createWindow(title, width, height)
@@ -28,6 +32,11 @@ func (m *Module) PollEvent() (sdl.Event, bool) {
 // UpdateDirection updates the direction of the camera from which to render.
 func (m *Module) UpdateDirection(directionEvent DirectionEvent) {
 	m.c.updateDirection(directionEvent)
+}
+
+// ShowVoxel shows a voxel.
+func (m *Module) ShowVoxel(voxelEvent VoxelEvent) {
+	m.c.showVoxel(voxelEvent)
 }
 
 // DestroyWindow destroys an SDL window.
