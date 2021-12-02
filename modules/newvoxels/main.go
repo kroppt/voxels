@@ -21,7 +21,7 @@ func main() {
 	log.SetColorized(false)
 
 	graphicsMod := graphics.New()
-	chunkMod := chunk.New(graphicsMod)
+	chunkMod := chunk.New(graphicsMod, 1)
 	playerMod := player.New(chunkMod, graphicsMod)
 	fileMod := file.New()
 	settingsRepo := settings.New()
