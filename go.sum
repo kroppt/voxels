@@ -12,6 +12,8 @@ github.com/kroppt/gfx v0.0.0-20210611042050-acd486a6975c h1:dW1mX336HLgCmdEqkeAw
 github.com/kroppt/gfx v0.0.0-20210611042050-acd486a6975c/go.mod h1:rZUXQaNUEVHDtNxajcy58/2EYbQWSh+nDx69Mnp1frY=
 github.com/veandco/go-sdl2 v0.4.5 h1:GFIjMabK7y2XWpr9sGvN7RDKHt7vrA7XPTUW60eOw+Y=
 github.com/veandco/go-sdl2 v0.4.5/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=
+github.com/veandco/go-sdl2 v0.4.10 h1:8QoD2bhWl7SbQDflIAUYWfl9Vq+mT8/boJFAUzAScgY=
+github.com/veandco/go-sdl2 v0.4.10/go.mod h1:OROqMhHD43nT4/i9crJukyVecjPNYYuCofep6SNiAjY=
 golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f/go.mod h1:kZ7UVZpmo3dzQBMxlp+ypCbDeSB+sBbTgSJuh5dn5js=
 golang.org/x/image v0.0.0-20200119044424-58c23975cae1 h1:5h3ngYt7+vXCDZCup/HkCQgW5XwmSvR/nA2JmJ0RErg=
 golang.org/x/image v0.0.0-20200119044424-58c23975cae1/go.mod h1:FeLwcggjj3mMvU+oOTbSwawSJRM1uh48EjtB4UJZlP0=
