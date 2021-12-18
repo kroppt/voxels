@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -55,7 +56,7 @@ func TestModuleRouteEvents(t *testing.T) {
 	t.Run("returns on quit event", func(t *testing.T) {
 		t.Parallel()
 
-		graphicsMod := fnGraphicsMod{
+		graphicsMod := graphics.FnModule{
 			FnPollEvent: func() (sdl.Event, bool) {
 				return &sdl.QuitEvent{
 					Type:      sdl.QUIT,
@@ -75,7 +76,7 @@ func TestModuleRouteEvents(t *testing.T) {
 		t.Parallel()
 
 		destroyed := false
-		graphicsMod := fnGraphicsMod{
+		graphicsMod := graphics.FnModule{
 			FnPollEvent: func() (sdl.Event, bool) {
 				return &sdl.QuitEvent{
 					Type:      sdl.QUIT,
@@ -150,7 +151,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				Type:      sdl.QUIT,
 				Timestamp: 0,
 			}
-			graphicsMod := fnGraphicsMod{
+			graphicsMod := graphics.FnModule{
 				FnPollEvent: func() (sdl.Event, bool) {
 					if first {
 						first = false
@@ -236,7 +237,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			}
 
 			first := true
-			graphicsMod := fnGraphicsMod{
+			graphicsMod := graphics.FnModule{
 				FnPollEvent: func() (sdl.Event, bool) {
 					if first {
 						first = false

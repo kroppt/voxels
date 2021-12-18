@@ -2,13 +2,8 @@ package chunk
 
 import "github.com/kroppt/voxels/modules/graphics"
 
-type graphicsMod interface {
-	UpdatePlayerDirection(graphics.DirectionEvent)
-	ShowVoxel(graphics.VoxelEvent)
-}
-
 type core struct {
-	graphicsMod graphicsMod
+	graphicsMod graphics.Interface
 }
 
 func (c core) init(chunkSize uint) {

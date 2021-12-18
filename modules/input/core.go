@@ -4,12 +4,13 @@ import (
 	"math"
 
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type core struct {
-	graphicsMod  graphicsMod
+	graphicsMod  graphics.Interface
 	playerMod    playerMod
 	settingsRepo settingsRepo
 	quit         bool

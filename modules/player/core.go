@@ -8,7 +8,7 @@ import (
 
 type core struct {
 	chunkMod    chunkMod
-	graphicsMod graphicsMod
+	graphicsMod graphics.Interface
 	x           int32
 	y           int32
 	z           int32

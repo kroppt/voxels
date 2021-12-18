@@ -15,12 +15,8 @@ type chunkMod interface {
 	UpdatePosition(chunk.PositionEvent)
 }
 
-type graphicsMod interface {
-	UpdatePlayerDirection(graphics.DirectionEvent)
-}
-
 // New creates a player.
-func New(chunkMod chunkMod, graphicsMod graphicsMod) *Module {
+func New(chunkMod chunkMod, graphicsMod graphics.Interface) *Module {
 	return &Module{
 		core{
 			chunkMod:    chunkMod,

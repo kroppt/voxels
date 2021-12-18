@@ -28,14 +28,6 @@ func (fn fnChunkMod) UpdatePosition(posEvent chunk.PositionEvent) {
 	fn.fnUpdatePosition(posEvent)
 }
 
-type fnGraphicsMod struct {
-	fnUpdatePlayerDirection func(graphics.DirectionEvent)
-}
-
-func (fn fnGraphicsMod) UpdatePlayerDirection(directionEvent graphics.DirectionEvent) {
-	fn.fnUpdatePlayerDirection(directionEvent)
-}
-
 func TestModuleHandleMovementEvent(t *testing.T) {
 	t.Parallel()
 
@@ -374,8 +366,8 @@ func TestModuleHandleLookEvent(t *testing.T) {
 			t.Parallel()
 
 			var evt graphics.DirectionEvent
-			graphicsMod := &fnGraphicsMod{
-				fnUpdatePlayerDirection: func(directionEvent graphics.DirectionEvent) {
+			graphicsMod := graphics.FnModule{
+				FnUpdatePlayerDirection: func(directionEvent graphics.DirectionEvent) {
 					evt = directionEvent
 				},
 			}

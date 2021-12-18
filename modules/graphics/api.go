@@ -5,6 +5,15 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+type Interface interface {
+	CreateWindow(title string, width, height uint32) error
+	ShowWindow()
+	PollEvent() (sdl.Event, bool)
+	UpdatePlayerDirection(directionEvent DirectionEvent)
+	ShowVoxel(voxelEvent VoxelEvent)
+	DestroyWindow() error
+}
+
 // DirectionEvent contains rotation information.
 type DirectionEvent struct {
 	Rotation mgl.Quat
@@ -42,4 +51,52 @@ func (m *Module) ShowVoxel(voxelEvent VoxelEvent) {
 // DestroyWindow destroys an SDL window.
 func (m *Module) DestroyWindow() error {
 	return m.c.destroyWindow()
+}
+
+type FnModule struct {
+	FnCreateWindow          func(string, uint32, uint32)
+	FnShowWindow            func()
+	FnPollEvent             func() (sdl.Event, bool)
+	FnUpdatePlayerDirection func(DirectionEvent)
+	FnShowVoxel             func(voxelEvent VoxelEvent)
+	FnDestroyWindow         func() error
+}
+
+func (fn FnModule) CreateWindow(title string, width, height uint32) error {
+	if fn.FnCreateWindow != nil {
+		fn.FnCreateWindow(title, width, height)
+	}
+	return nil
+}
+
+func (fn FnModule) ShowWindow() {
+	if fn.FnShowWindow != nil {
+		fn.FnShowWindow()
+	}
+}
+
+func (fn FnModule) PollEvent() (sdl.Event, bool) {
+	if fn.FnPollEvent != nil {
+		return fn.FnPollEvent()
+	}
+	return nil, false
+}
+
+func (fn FnModule) UpdatePlayerDirection(directionEvent DirectionEvent) {
+	if fn.FnUpdatePlayerDirection != nil {
+		fn.FnUpdatePlayerDirection(directionEvent)
+	}
+}
+
+func (fn FnModule) ShowVoxel(voxelEvent VoxelEvent) {
+	if fn.FnShowVoxel != nil {
+		fn.FnShowVoxel(voxelEvent)
+	}
+}
+
+func (fn FnModule) DestroyWindow() error {
+	if fn.FnDestroyWindow != nil {
+		return fn.FnDestroyWindow()
+	}
+	return nil
 }
