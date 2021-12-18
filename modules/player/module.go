@@ -16,7 +16,7 @@ type chunkMod interface {
 }
 
 type graphicsMod interface {
-	UpdateDirection(graphics.DirectionEvent)
+	UpdatePlayerDirection(graphics.DirectionEvent)
 }
 
 // New creates a player.

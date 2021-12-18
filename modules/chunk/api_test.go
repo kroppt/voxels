@@ -9,12 +9,12 @@ import (
 )
 
 type fnGraphicsMod struct {
-	fnUpdateDirection func(graphics.DirectionEvent)
-	fnShowVoxel       func(graphics.VoxelEvent)
+	fnUpdatePlayerDirection func(graphics.DirectionEvent)
+	fnShowVoxel             func(graphics.VoxelEvent)
 }
 
-func (fn fnGraphicsMod) UpdateDirection(directionEvent graphics.DirectionEvent) {
-	fn.fnUpdateDirection(directionEvent)
+func (fn fnGraphicsMod) UpdatePlayerDirection(directionEvent graphics.DirectionEvent) {
+	fn.fnUpdatePlayerDirection(directionEvent)
 }
 
 func (fn fnGraphicsMod) ShowVoxel(voxelEvent graphics.VoxelEvent) {
@@ -24,7 +24,7 @@ func (fn fnGraphicsMod) ShowVoxel(voxelEvent graphics.VoxelEvent) {
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
 		graphicsMod := fnGraphicsMod{
-			fnUpdateDirection: func(graphics.DirectionEvent) {
+			fnUpdatePlayerDirection: func(graphics.DirectionEvent) {
 			},
 			fnShowVoxel: func(voxelEvent graphics.VoxelEvent) {
 			},
@@ -59,7 +59,7 @@ func TestModuleNew(t *testing.T) {
 			var calls uint
 			t.Run(fmt.Sprintf("called %v times for chunk size %v", calls, tC.chunkSize), func(t *testing.T) {
 				graphicsMod := fnGraphicsMod{
-					fnUpdateDirection: func(graphics.DirectionEvent) {
+					fnUpdatePlayerDirection: func(graphics.DirectionEvent) {
 					},
 					fnShowVoxel: func(graphics.VoxelEvent) {
 						calls++
@@ -83,7 +83,7 @@ func TestModuleNew(t *testing.T) {
 		}()
 
 		graphicsMod := fnGraphicsMod{
-			fnUpdateDirection: func(graphics.DirectionEvent) {
+			fnUpdatePlayerDirection: func(graphics.DirectionEvent) {
 			},
 			fnShowVoxel: func(graphics.VoxelEvent) {
 			},

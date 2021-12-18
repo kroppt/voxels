@@ -77,7 +77,7 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 	return evt, evt != nil
 }
 
-func (c *core) updateDirection(directionEvent DirectionEvent) {
+func (c *core) updatePlayerDirection(directionEvent DirectionEvent) {
 }
 
 func (c *core) showVoxel(voxelEvent VoxelEvent) {

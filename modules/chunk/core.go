@@ -3,7 +3,7 @@ package chunk
 import "github.com/kroppt/voxels/modules/graphics"
 
 type graphicsMod interface {
-	UpdateDirection(graphics.DirectionEvent)
+	UpdatePlayerDirection(graphics.DirectionEvent)
 	ShowVoxel(graphics.VoxelEvent)
 }
 

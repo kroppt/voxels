@@ -29,9 +29,9 @@ func (m *Module) PollEvent() (sdl.Event, bool) {
 	return m.c.pollEvent()
 }
 
-// UpdateDirection updates the direction of the camera from which to render.
-func (m *Module) UpdateDirection(directionEvent DirectionEvent) {
-	m.c.updateDirection(directionEvent)
+// UpdatePlayerDirection updates the direction of the camera from which to render.
+func (m *Module) UpdatePlayerDirection(directionEvent DirectionEvent) {
+	m.c.updatePlayerDirection(directionEvent)
 }
 
 // ShowVoxel shows a voxel.

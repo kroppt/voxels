@@ -47,7 +47,7 @@ func (c *core) handleLookEvent(evt LookEvent) {
 
 	c.rot = quatY.Mul(c.rot)
 
-	c.graphicsMod.UpdateDirection(graphics.DirectionEvent{
+	c.graphicsMod.UpdatePlayerDirection(graphics.DirectionEvent{
 		Rotation: c.rot,
 	})
 }
