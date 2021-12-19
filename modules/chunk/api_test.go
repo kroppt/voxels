@@ -8,6 +8,16 @@ import (
 	"github.com/kroppt/voxels/modules/graphics"
 )
 
+// Test Plan:
+// [X] Change name of graphics mod Update{Position,Direction} to UpdatePlayer{Position,Direction}
+// [ ] Make interfaces for each module in their packages
+// [ ] On startup, renders chunks around player
+// [ ]  - Change graphics mod ShowVoxel to ShowChunk
+// [ ]  - Change graphics mod VoxelEvent to ChunkEvent
+// [ ] Updates player position, renders different chunks around player
+// [ ]  - Test to check new chunks are shown
+// [ ]  - Test that old chunks are hidden
+
 type fnGraphicsMod struct {
 	fnUpdatePlayerDirection func(graphics.DirectionEvent)
 	fnShowVoxel             func(graphics.VoxelEvent)
