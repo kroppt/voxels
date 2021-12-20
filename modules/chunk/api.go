@@ -6,9 +6,9 @@ type Interface interface {
 
 // PositionEvent contains player position event information.
 type PositionEvent struct {
-	X float64
-	Y float64
-	Z float64
+	X int32
+	Y int32
+	Z int32
 }
 
 // UpdatePlayerPosition updates the chunks based on the new player position.

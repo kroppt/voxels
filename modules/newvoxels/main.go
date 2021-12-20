@@ -23,7 +23,7 @@ func main() {
 	graphicsMod := graphics.New()
 	fileMod := file.New()
 	settingsRepo := settings.New()
-	chunkMod := chunk.New(graphicsMod, settingsRepo)
+	chunkMod := chunk.New(graphicsMod, settingsRepo, 1)
 	playerMod := player.New(chunkMod, graphicsMod)
 	inputMod := input.New(graphicsMod, playerMod, settingsRepo)
 

@@ -27,9 +27,9 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 		c.x--
 	}
 	posEvent := chunk.PositionEvent{
-		X: float64(c.x),
-		Y: float64(c.y),
-		Z: float64(c.z),
+		X: c.x,
+		Y: c.y,
+		Z: c.z,
 	}
 	c.chunkMod.UpdatePlayerPosition(posEvent)
 }

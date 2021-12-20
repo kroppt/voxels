@@ -25,9 +25,9 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 
 	testCases := []struct {
 		direction player.MoveDirection
-		x         float64
-		y         float64
-		z         float64
+		x         int32
+		y         int32
+		z         int32
 	}{
 		{
 			direction: player.MoveForwards,

@@ -11,13 +11,14 @@ type Module struct {
 }
 
 // New creates a chunk module.
-func New(graphicsMod graphics.Interface, settingsMod settings.Interface) *Module {
+func New(graphicsMod graphics.Interface, settingsMod settings.Interface, chunkSize uint32) *Module {
 	if settingsMod == nil {
 		panic("settings is required to be non-nil")
 	}
 	core := core{
 		graphicsMod: graphicsMod,
 		settingsMod: settingsMod,
+		chunkSize:   chunkSize,
 	}
 	core.init()
 	return &Module{
