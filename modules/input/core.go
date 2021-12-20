@@ -6,13 +6,14 @@ import (
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
+	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type core struct {
 	graphicsMod  graphics.Interface
 	playerMod    player.Interface
-	settingsRepo settingsRepo
+	settingsRepo settings.Interface
 	quit         bool
 }
 

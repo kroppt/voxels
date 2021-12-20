@@ -6,6 +6,14 @@ import (
 	"io"
 )
 
+type Interface interface {
+	SetFOV(degY float64)
+	GetFOV() float64
+	SetResolution(width, height uint32)
+	GetResolution() (uint32, uint32)
+	SetFromReader(reader io.Reader) error
+}
+
 // ConstErr is a constant error type.
 type ConstErr string
 
@@ -58,4 +66,45 @@ func (r *Repository) GetResolution() (uint32, uint32) {
 // SetFromReader sets repository value from a reader in key=value format.
 func (r *Repository) SetFromReader(reader io.Reader) error {
 	return r.c.setFromReader(reader)
+}
+
+type FnRepository struct {
+	FnSetFOV        func(degY float64)
+	FnGetFOV        func() float64
+	FnSetResolution func(width, height uint32)
+	FnGetResolution func() (uint32, uint32)
+	FnSetFromReader func(reader io.Reader) error
+}
+
+func (fn *FnRepository) SetFOV(degY float64) {
+	if fn.FnSetFOV != nil {
+		fn.FnSetFOV(degY)
+	}
+}
+
+func (fn *FnRepository) GetFOV() float64 {
+	if fn.FnGetFOV != nil {
+		return fn.FnGetFOV()
+	}
+	return 0
+}
+
+func (fn *FnRepository) SetResolution(width, height uint32) {
+	if fn.FnSetResolution != nil {
+		fn.FnSetResolution(width, height)
+	}
+}
+
+func (fn *FnRepository) GetResolution() (uint32, uint32) {
+	if fn.FnGetResolution != nil {
+		return fn.FnGetResolution()
+	}
+	return 0, 0
+}
+
+func (fn *FnRepository) SetFromReader(reader io.Reader) error {
+	if fn.FnSetFromReader != nil {
+		return fn.FnSetFromReader(reader)
+	}
+	return nil
 }
