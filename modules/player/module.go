@@ -11,12 +11,8 @@ type Module struct {
 	c core
 }
 
-type chunkMod interface {
-	UpdatePosition(chunk.PositionEvent)
-}
-
 // New creates a player.
-func New(chunkMod chunkMod, graphicsMod graphics.Interface) *Module {
+func New(chunkMod chunk.Interface, graphicsMod graphics.Interface) *Module {
 	return &Module{
 		core{
 			chunkMod:    chunkMod,

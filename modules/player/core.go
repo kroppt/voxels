@@ -7,7 +7,7 @@ import (
 )
 
 type core struct {
-	chunkMod    chunkMod
+	chunkMod    chunk.Interface
 	graphicsMod graphics.Interface
 	x           int32
 	y           int32

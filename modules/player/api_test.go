@@ -20,14 +20,6 @@ func TestModuleNew(t *testing.T) {
 	})
 }
 
-type fnChunkMod struct {
-	fnUpdatePosition func(chunk.PositionEvent)
-}
-
-func (fn fnChunkMod) UpdatePosition(posEvent chunk.PositionEvent) {
-	fn.fnUpdatePosition(posEvent)
-}
-
 func TestModuleHandleMovementEvent(t *testing.T) {
 	t.Parallel()
 
@@ -74,8 +66,8 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 			t.Parallel()
 
 			var evt chunk.PositionEvent
-			chunkMod := &fnChunkMod{
-				fnUpdatePosition: func(posEvent chunk.PositionEvent) {
+			chunkMod := &chunk.FnModule{
+				FnUpdatePosition: func(posEvent chunk.PositionEvent) {
 					evt = posEvent
 				},
 			}
@@ -100,8 +92,8 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 
 	t.Run("updates chunk module position when moving multiple times", func(t *testing.T) {
 		var evt chunk.PositionEvent
-		chunkMod := &fnChunkMod{
-			fnUpdatePosition: func(posEvent chunk.PositionEvent) {
+		chunkMod := &chunk.FnModule{
+			FnUpdatePosition: func(posEvent chunk.PositionEvent) {
 				evt = posEvent
 			},
 		}
