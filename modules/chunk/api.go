@@ -1,27 +1,27 @@
 package chunk
 
 type Interface interface {
-	UpdatePosition(posEvent PositionEvent)
+	UpdatePlayerPosition(posEvent PositionEvent)
 }
 
-// PositionEvent contains position event information.
+// PositionEvent contains player position event information.
 type PositionEvent struct {
-	X int32
-	Y int32
-	Z int32
+	X float64
+	Y float64
+	Z float64
 }
 
-// UpdatePosition updates the chunks based on the new position.
-func (m *Module) UpdatePosition(posEvent PositionEvent) {
+// UpdatePlayerPosition updates the chunks based on the new player position.
+func (m *Module) UpdatePlayerPosition(posEvent PositionEvent) {
 	m.c.updatePosition(posEvent)
 }
 
 type FnModule struct {
-	FnUpdatePosition func(posEvent PositionEvent)
+	FnUpdatePlayerPosition func(posEvent PositionEvent)
 }
 
-func (fn *FnModule) UpdatePosition(posEvent PositionEvent) {
-	if fn.FnUpdatePosition != nil {
-		fn.FnUpdatePosition(posEvent)
+func (fn *FnModule) UpdatePlayerPosition(posEvent PositionEvent) {
+	if fn.FnUpdatePlayerPosition != nil {
+		fn.FnUpdatePlayerPosition(posEvent)
 	}
 }

@@ -25,9 +25,9 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 
 	testCases := []struct {
 		direction player.MoveDirection
-		x         int32
-		y         int32
-		z         int32
+		x         float64
+		y         float64
+		z         float64
 	}{
 		{
 			direction: player.MoveForwards,
@@ -67,7 +67,7 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 
 			var evt chunk.PositionEvent
 			chunkMod := &chunk.FnModule{
-				FnUpdatePosition: func(posEvent chunk.PositionEvent) {
+				FnUpdatePlayerPosition: func(posEvent chunk.PositionEvent) {
 					evt = posEvent
 				},
 			}
@@ -93,7 +93,7 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 	t.Run("updates chunk module position when moving multiple times", func(t *testing.T) {
 		var evt chunk.PositionEvent
 		chunkMod := &chunk.FnModule{
-			FnUpdatePosition: func(posEvent chunk.PositionEvent) {
+			FnUpdatePlayerPosition: func(posEvent chunk.PositionEvent) {
 				evt = posEvent
 			},
 		}

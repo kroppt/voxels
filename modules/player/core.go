@@ -27,11 +27,11 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 		c.x--
 	}
 	posEvent := chunk.PositionEvent{
-		X: c.x,
-		Y: c.y,
-		Z: c.z,
+		X: float64(c.x),
+		Y: float64(c.y),
+		Z: float64(c.z),
 	}
-	c.chunkMod.UpdatePosition(posEvent)
+	c.chunkMod.UpdatePlayerPosition(posEvent)
 }
 
 func (c *core) handleLookEvent(evt LookEvent) {
