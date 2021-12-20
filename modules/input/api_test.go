@@ -24,19 +24,6 @@ func TestModuleNew(t *testing.T) {
 	})
 }
 
-type fnGraphicsMod struct {
-	FnPollEvent     func() (sdl.Event, bool)
-	FnDestroyWindow func() error
-}
-
-func (fn fnGraphicsMod) PollEvent() (sdl.Event, bool) {
-	return fn.FnPollEvent()
-}
-
-func (fn fnGraphicsMod) DestroyWindow() error {
-	return fn.FnDestroyWindow()
-}
-
 func TestModuleRouteEvents(t *testing.T) {
 	t.Parallel()
 

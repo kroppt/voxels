@@ -18,19 +18,6 @@ import (
 // [ ]  - Test to check new chunks are shown
 // [ ]  - Test that old chunks are hidden
 
-type fnGraphicsMod struct {
-	fnUpdatePlayerDirection func(graphics.DirectionEvent)
-	fnShowVoxel             func(graphics.VoxelEvent)
-}
-
-func (fn fnGraphicsMod) UpdatePlayerDirection(directionEvent graphics.DirectionEvent) {
-	fn.fnUpdatePlayerDirection(directionEvent)
-}
-
-func (fn fnGraphicsMod) ShowVoxel(voxelEvent graphics.VoxelEvent) {
-	fn.fnShowVoxel(voxelEvent)
-}
-
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
 		graphicsMod := graphics.FnModule{
