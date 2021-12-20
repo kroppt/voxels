@@ -11,6 +11,7 @@ type Interface interface {
 	GetFOV() float64
 	SetResolution(width, height uint32)
 	GetResolution() (uint32, uint32)
+	SetRenderDistance(renderDistance uint32)
 	GetRenderDistance() uint32
 	SetFromReader(reader io.Reader) error
 }
@@ -64,6 +65,12 @@ func (r *Repository) GetResolution() (uint32, uint32) {
 	return r.c.getResolution()
 }
 
+// SetRenderDistance sets the render distance from the player in chunks.
+func (r *Repository) SetRenderDistance(renderDistance uint32) {
+	r.c.setRenderDistance(renderDistance)
+}
+
+// GetRenderDistance gets the render distance from the player in chunks.
 func (r *Repository) GetRenderDistance() uint32 {
 	return r.c.getRenderDistance()
 }
@@ -78,8 +85,9 @@ type FnRepository struct {
 	FnGetFOV            func() float64
 	FnSetResolution     func(width, height uint32)
 	FnGetResolution     func() (uint32, uint32)
-	FnSetFromReader     func(reader io.Reader) error
+	FnSetRenderDistance func(renderDistance uint32)
 	FnGetRenderDistance func() uint32
+	FnSetFromReader     func(reader io.Reader) error
 }
 
 func (fn FnRepository) SetFOV(degY float64) {
@@ -106,6 +114,12 @@ func (fn FnRepository) GetResolution() (uint32, uint32) {
 		return fn.FnGetResolution()
 	}
 	return 0, 0
+}
+
+func (fn FnRepository) SetRenderDistance(renderDistance uint32) {
+	if fn.FnGetRenderDistance != nil {
+		fn.FnSetRenderDistance(renderDistance)
+	}
 }
 
 func (fn FnRepository) GetRenderDistance() uint32 {

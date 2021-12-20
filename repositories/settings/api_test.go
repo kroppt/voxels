@@ -62,6 +62,23 @@ func TestRepositoryResolution(t *testing.T) {
 	})
 }
 
+func TestRepositoryRenderDistance(t *testing.T) {
+	t.Parallel()
+
+	t.Run("set then get is same", func(t *testing.T) {
+		t.Parallel()
+		settings := settings.New()
+		expected := uint32(10)
+
+		settings.SetRenderDistance(expected)
+		actual := settings.GetRenderDistance()
+
+		if expected != actual {
+			t.Fatalf("expected %v but got %v", expected, actual)
+		}
+	})
+}
+
 func TestRepositoryFromReader(t *testing.T) {
 	t.Parallel()
 
@@ -121,6 +138,7 @@ func TestRepositoryFromReader(t *testing.T) {
 			"fov=60",
 			"resolutionX=1920",
 			"resolutionY=1080",
+			"renderDistance=9",
 		}, "\n"))
 		settings := settings.New()
 
@@ -133,6 +151,7 @@ func TestRepositoryFromReader(t *testing.T) {
 		expectFOV := 60.0
 		expectResolutionX := 1920
 		expectResolutionY := 1080
+		expectRenderDistance := 9
 
 		fov := settings.GetFOV()
 		if fov != expectFOV {
@@ -144,6 +163,10 @@ func TestRepositoryFromReader(t *testing.T) {
 		}
 		if resolutionY != uint32(expectResolutionY) {
 			t.Fatalf("expected %v but got %v", expectResolutionY, resolutionY)
+		}
+		renderDistance := settings.GetRenderDistance()
+		if renderDistance != uint32(expectRenderDistance) {
+			t.Fatalf("expected %v but got %v", expectRenderDistance, renderDistance)
 		}
 	})
 }

@@ -33,6 +33,10 @@ func (c *core) getResolution() (uint32, uint32) {
 	return c.width, c.height
 }
 
+func (c *core) setRenderDistance(renderDistance uint32) {
+	c.renderDistance = renderDistance
+}
+
 func (c *core) getRenderDistance() uint32 {
 	return c.renderDistance
 }
@@ -87,6 +91,15 @@ func (c *core) setFromReader(reader io.Reader) error {
 				}
 			}
 			c.setResolution(c.width, uint32(resY))
+		case "renderDistance":
+			rd, err := strconv.Atoi(value)
+			if err != nil || rd < 0 {
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
+			}
+			c.setRenderDistance(uint32(rd))
 		default:
 			log.Warnf("invalid settings entry: %v=%v", key, value)
 		}
