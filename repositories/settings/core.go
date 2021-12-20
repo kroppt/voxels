@@ -10,9 +10,10 @@ import (
 )
 
 type core struct {
-	fovY   float64
-	width  uint32
-	height uint32
+	fovY           float64
+	width          uint32
+	height         uint32
+	renderDistance uint32
 }
 
 func (c *core) setFOV(degY float64) {
@@ -30,6 +31,10 @@ func (c *core) setResolution(width, height uint32) {
 
 func (c *core) getResolution() (uint32, uint32) {
 	return c.width, c.height
+}
+
+func (c *core) getRenderDistance() uint32 {
+	return c.renderDistance
 }
 
 func (c *core) setFromReader(reader io.Reader) error {

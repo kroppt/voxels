@@ -21,6 +21,9 @@ type DirectionEvent struct {
 
 // ChunkEvent contains chunk information.
 type ChunkEvent struct {
+	PositionX int32
+	PositionY int32
+	PositionZ int32
 }
 
 // CreateWindow creates an SDL window.

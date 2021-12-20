@@ -21,10 +21,10 @@ func main() {
 	log.SetColorized(false)
 
 	graphicsMod := graphics.New()
-	chunkMod := chunk.New(graphicsMod)
-	playerMod := player.New(chunkMod, graphicsMod)
 	fileMod := file.New()
 	settingsRepo := settings.New()
+	chunkMod := chunk.New(graphicsMod, settingsRepo)
+	playerMod := player.New(chunkMod, graphicsMod)
 	inputMod := input.New(graphicsMod, playerMod, settingsRepo)
 
 	if readCloser, err := fileMod.GetReadCloser("settings.conf"); err != nil {
