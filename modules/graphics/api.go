@@ -10,7 +10,7 @@ type Interface interface {
 	ShowWindow()
 	PollEvent() (sdl.Event, bool)
 	UpdatePlayerDirection(directionEvent DirectionEvent)
-	ShowVoxel(voxelEvent VoxelEvent)
+	ShowChunk(chunkEvent ChunkEvent)
 	DestroyWindow() error
 }
 
@@ -19,8 +19,8 @@ type DirectionEvent struct {
 	Rotation mgl.Quat
 }
 
-// VoxelEvent contains voxel information.
-type VoxelEvent struct {
+// ChunkEvent contains chunk information.
+type ChunkEvent struct {
 }
 
 // CreateWindow creates an SDL window.
@@ -43,9 +43,9 @@ func (m *Module) UpdatePlayerDirection(directionEvent DirectionEvent) {
 	m.c.updatePlayerDirection(directionEvent)
 }
 
-// ShowVoxel shows a voxel.
-func (m *Module) ShowVoxel(voxelEvent VoxelEvent) {
-	m.c.showVoxel(voxelEvent)
+// ShowChunk shows a chunk.
+func (m *Module) ShowChunk(chunkEvent ChunkEvent) {
+	m.c.showChunk(chunkEvent)
 }
 
 // DestroyWindow destroys an SDL window.
@@ -58,7 +58,7 @@ type FnModule struct {
 	FnShowWindow            func()
 	FnPollEvent             func() (sdl.Event, bool)
 	FnUpdatePlayerDirection func(DirectionEvent)
-	FnShowVoxel             func(voxelEvent VoxelEvent)
+	FnShowChunk             func(chunkEvent ChunkEvent)
 	FnDestroyWindow         func() error
 }
 
@@ -88,9 +88,9 @@ func (fn FnModule) UpdatePlayerDirection(directionEvent DirectionEvent) {
 	}
 }
 
-func (fn FnModule) ShowVoxel(voxelEvent VoxelEvent) {
-	if fn.FnShowVoxel != nil {
-		fn.FnShowVoxel(voxelEvent)
+func (fn FnModule) ShowChunk(chunkEvent ChunkEvent) {
+	if fn.FnShowChunk != nil {
+		fn.FnShowChunk(chunkEvent)
 	}
 }
 

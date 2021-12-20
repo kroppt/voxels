@@ -6,11 +6,5 @@ type core struct {
 	graphicsMod graphics.Interface
 }
 
-func (c core) init(chunkSize uint) {
-	for i := uint(0); i < chunkSize*chunkSize; i++ {
-		c.graphicsMod.ShowVoxel(graphics.VoxelEvent{})
-	}
-}
-
 func (c core) updatePosition(posEvent PositionEvent) {
 }

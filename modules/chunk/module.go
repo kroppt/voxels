@@ -8,15 +8,10 @@ type Module struct {
 }
 
 // New creates a chunk module.
-func New(graphicsMod graphics.Interface, chunkSize uint) *Module {
-	if chunkSize == 0 {
-		panic("chunk size cannot be 0")
-	}
-
+func New(graphicsMod graphics.Interface) *Module {
 	core := core{
 		graphicsMod: graphicsMod,
 	}
-	core.init(chunkSize)
 	return &Module{
 		core,
 	}

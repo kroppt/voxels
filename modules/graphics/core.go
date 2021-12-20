@@ -80,7 +80,7 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 func (c *core) updatePlayerDirection(directionEvent DirectionEvent) {
 }
 
-func (c *core) showVoxel(voxelEvent VoxelEvent) {
+func (c *core) showChunk(chunkEvent ChunkEvent) {
 }
 
 func (c *core) destroyWindow() error {
