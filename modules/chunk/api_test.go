@@ -10,7 +10,7 @@ import (
 
 // Test Plan:
 // [X] Change name of graphics mod Update{Position,Direction} to UpdatePlayer{Position,Direction}
-// [ ] Make interfaces for each module in their packages
+// [X] Make interfaces for each module in their packages
 // [ ] On startup, renders chunks around player
 // [ ]  - Change graphics mod ShowVoxel to ShowChunk
 // [ ]  - Change graphics mod VoxelEvent to ChunkEvent
