@@ -1,5 +1,10 @@
 package player
 
+type Interface interface {
+	HandleMovementEvent(MovementEvent)
+	HandleLookEvent(LookEvent)
+}
+
 // MoveDirection represents a direction of movement.
 type MoveDirection int
 
@@ -47,4 +52,21 @@ func (m *Module) HandleMovementEvent(evt MovementEvent) {
 // HandleLookEvent handles a look event.
 func (m *Module) HandleLookEvent(evt LookEvent) {
 	m.c.handleLookEvent(evt)
+}
+
+type FnModule struct {
+	FnHandleMovementEvent func(MovementEvent)
+	FnHandleLookEvent     func(LookEvent)
+}
+
+func (fn *FnModule) HandleMovementEvent(movementEvent MovementEvent) {
+	if fn.FnHandleMovementEvent != nil {
+		fn.FnHandleMovementEvent(movementEvent)
+	}
+}
+
+func (fn *FnModule) HandleLookEvent(lookEvent LookEvent) {
+	if fn.FnHandleLookEvent != nil {
+		fn.FnHandleLookEvent(lookEvent)
+	}
 }

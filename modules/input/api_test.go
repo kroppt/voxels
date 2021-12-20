@@ -37,19 +37,6 @@ func (fn fnGraphicsMod) DestroyWindow() error {
 	return fn.FnDestroyWindow()
 }
 
-type fnPlayerMod struct {
-	FnHandleMovementEvent func(player.MovementEvent)
-	FnHandleLookEvent     func(player.LookEvent)
-}
-
-func (fn fnPlayerMod) HandleMovementEvent(evt player.MovementEvent) {
-	fn.FnHandleMovementEvent(evt)
-}
-
-func (fn fnPlayerMod) HandleLookEvent(evt player.LookEvent) {
-	fn.FnHandleLookEvent(evt)
-}
-
 func TestModuleRouteEvents(t *testing.T) {
 	t.Parallel()
 
@@ -168,7 +155,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				Direction: tC.direction,
 			}
 			var evtHandle *player.MovementEvent
-			playerMod := &fnPlayerMod{
+			playerMod := &player.FnModule{
 				FnHandleMovementEvent: func(evt player.MovementEvent) {
 					evtHandle = &evt
 				},
@@ -250,7 +237,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				},
 			}
 			var evtHandle *player.LookEvent
-			playerMod := &fnPlayerMod{
+			playerMod := &player.FnModule{
 				FnHandleLookEvent: func(evt player.LookEvent) {
 					evtHandle = &evt
 				},

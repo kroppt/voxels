@@ -11,7 +11,7 @@ import (
 
 type core struct {
 	graphicsMod  graphics.Interface
-	playerMod    playerMod
+	playerMod    player.Interface
 	settingsRepo settingsRepo
 	quit         bool
 }

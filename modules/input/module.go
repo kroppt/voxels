@@ -10,11 +10,6 @@ type Module struct {
 	c core
 }
 
-type playerMod interface {
-	HandleMovementEvent(player.MovementEvent)
-	HandleLookEvent(player.LookEvent)
-}
-
 type settingsRepo interface {
 	GetFOV() float64
 	GetResolution() (uint32, uint32)
@@ -23,7 +18,7 @@ type settingsRepo interface {
 // New creates a synchronous input module.
 func New(
 	graphicsMod graphics.Interface,
-	playerMod playerMod,
+	playerMod player.Interface,
 	settingsRepo settingsRepo,
 ) *Module {
 	return &Module{
