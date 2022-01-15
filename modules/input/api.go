@@ -2,7 +2,6 @@ package input
 
 type Interface interface {
 	RouteEvents()
-	PixelsToRadians(xRel, yRel int32) (float64, float64)
 }
 
 // RouteEvents polls for input events and routes them to other modules.
