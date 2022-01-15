@@ -37,28 +37,30 @@ func (m *core) routeEvent(e sdl.Event) {
 		}
 		m.quit = true
 	case *sdl.KeyboardEvent:
-		if evt.Type != sdl.KEYDOWN {
-			break
-		}
+		pressed := evt.Type == sdl.KEYDOWN
 		switch evt.Keysym.Scancode {
 		case sdl.SCANCODE_W:
 			forward := player.MovementEvent{
 				Direction: player.MoveForwards,
+				Pressed:   pressed,
 			}
 			m.playerMod.HandleMovementEvent(forward)
 		case sdl.SCANCODE_D:
 			right := player.MovementEvent{
 				Direction: player.MoveRight,
+				Pressed:   pressed,
 			}
 			m.playerMod.HandleMovementEvent(right)
 		case sdl.SCANCODE_S:
 			back := player.MovementEvent{
 				Direction: player.MoveBackwards,
+				Pressed:   pressed,
 			}
 			m.playerMod.HandleMovementEvent(back)
 		case sdl.SCANCODE_A:
 			left := player.MovementEvent{
 				Direction: player.MoveLeft,
+				Pressed:   pressed,
 			}
 			m.playerMod.HandleMovementEvent(left)
 		}

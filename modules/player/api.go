@@ -36,6 +36,7 @@ const (
 // MovementEvent contains movement event information.
 type MovementEvent struct {
 	Direction MoveDirection
+	Pressed   bool
 }
 
 // LookEvent contains look event information.

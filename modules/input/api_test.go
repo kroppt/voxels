@@ -73,33 +73,75 @@ func TestModuleRouteEvents(t *testing.T) {
 
 	testCases := []struct {
 		message   string
+		evtType   uint32
 		scancode  sdl.Scancode
 		sym       sdl.Keycode
 		direction player.MoveDirection
+		pressed   bool
 	}{
 		{
 			message:   "forward",
+			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_W,
 			sym:       sdl.K_w,
 			direction: player.MoveForwards,
+			pressed:   true,
 		},
 		{
 			message:   "backward",
+			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_S,
 			sym:       sdl.K_s,
 			direction: player.MoveBackwards,
+			pressed:   true,
 		},
 		{
 			message:   "left",
+			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_A,
 			sym:       sdl.K_a,
 			direction: player.MoveLeft,
+			pressed:   true,
 		},
 		{
 			message:   "right",
+			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_D,
 			sym:       sdl.K_d,
 			direction: player.MoveRight,
+			pressed:   true,
+		},
+		{
+			message:   "forward",
+			evtType:   sdl.KEYUP,
+			scancode:  sdl.SCANCODE_W,
+			sym:       sdl.K_w,
+			direction: player.MoveForwards,
+			pressed:   false,
+		},
+		{
+			message:   "backward",
+			evtType:   sdl.KEYUP,
+			scancode:  sdl.SCANCODE_S,
+			sym:       sdl.K_s,
+			direction: player.MoveBackwards,
+			pressed:   false,
+		},
+		{
+			message:   "left",
+			evtType:   sdl.KEYUP,
+			scancode:  sdl.SCANCODE_A,
+			sym:       sdl.K_a,
+			direction: player.MoveLeft,
+			pressed:   false,
+		},
+		{
+			message:   "right",
+			evtType:   sdl.KEYUP,
+			scancode:  sdl.SCANCODE_D,
+			sym:       sdl.K_d,
+			direction: player.MoveRight,
+			pressed:   false,
 		},
 	}
 
@@ -110,10 +152,10 @@ func TestModuleRouteEvents(t *testing.T) {
 
 			first := true
 			moveKeyboardEvent := sdl.KeyboardEvent{
-				Type:      sdl.KEYDOWN,
+				Type:      tC.evtType,
 				Timestamp: 0,
 				WindowID:  0,
-				State:     sdl.PRESSED,
+				State:     0,
 				Repeat:    0,
 				Keysym: sdl.Keysym{
 					Scancode: tC.scancode,
@@ -138,25 +180,26 @@ func TestModuleRouteEvents(t *testing.T) {
 				},
 			}
 
-			movementEvent := player.MovementEvent{
+			expectEvent := player.MovementEvent{
 				Direction: tC.direction,
+				Pressed:   tC.pressed,
 			}
-			var evtHandle *player.MovementEvent
+			var actualEvent *player.MovementEvent
 			playerMod := &player.FnModule{
 				FnHandleMovementEvent: func(evt player.MovementEvent) {
-					evtHandle = &evt
+					actualEvent = &evt
 				},
 			}
 			mod := input.New(graphicsMod, playerMod, nil)
 
 			mod.RouteEvents()
 
-			if evtHandle == nil {
-				t.Fatalf("expected %v but got %v", movementEvent, nil)
+			if actualEvent == nil {
+				t.Fatalf("expected %v but got %v", expectEvent, nil)
 			}
 
-			if movementEvent != *evtHandle {
-				t.Fatalf("expected %v but got %v", movementEvent, *evtHandle)
+			if expectEvent != *actualEvent {
+				t.Fatalf("expected %v but got %v", expectEvent, *actualEvent)
 			}
 		})
 	}
