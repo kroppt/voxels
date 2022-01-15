@@ -128,5 +128,15 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 		}
 		return false
 	})
+	old.forEach(func(pos chunkPos) bool {
+		if !new.contains(pos) {
+			c.graphicsMod.HideChunk(graphics.ChunkEvent{
+				PositionX: pos.x,
+				PositionY: pos.y,
+				PositionZ: pos.z,
+			})
+		}
+		return false
+	})
 	c.lastChunkPos = newChunkPos
 }

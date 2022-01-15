@@ -80,6 +80,9 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 func (c *core) updatePlayerDirection(directionEvent DirectionEvent) {
 }
 
+func (c *core) hideChunk(chunkEvent ChunkEvent) {
+}
+
 func (c *core) showChunk(chunkEvent ChunkEvent) {
 }
 

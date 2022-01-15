@@ -10,6 +10,7 @@ type Interface interface {
 	ShowWindow()
 	PollEvent() (sdl.Event, bool)
 	UpdatePlayerDirection(directionEvent DirectionEvent)
+	HideChunk(chunkEvent ChunkEvent)
 	ShowChunk(chunkEvent ChunkEvent)
 	DestroyWindow() error
 }
@@ -46,6 +47,11 @@ func (m *Module) UpdatePlayerDirection(directionEvent DirectionEvent) {
 	m.c.updatePlayerDirection(directionEvent)
 }
 
+// HideChunk hides a chunk.
+func (m *Module) HideChunk(chunkEvent ChunkEvent) {
+	m.c.hideChunk(chunkEvent)
+}
+
 // ShowChunk shows a chunk.
 func (m *Module) ShowChunk(chunkEvent ChunkEvent) {
 	m.c.showChunk(chunkEvent)
@@ -61,6 +67,7 @@ type FnModule struct {
 	FnShowWindow            func()
 	FnPollEvent             func() (sdl.Event, bool)
 	FnUpdatePlayerDirection func(DirectionEvent)
+	FnHideChunk             func(chunkEvent ChunkEvent)
 	FnShowChunk             func(chunkEvent ChunkEvent)
 	FnDestroyWindow         func() error
 }
@@ -88,6 +95,12 @@ func (fn FnModule) PollEvent() (sdl.Event, bool) {
 func (fn FnModule) UpdatePlayerDirection(directionEvent DirectionEvent) {
 	if fn.FnUpdatePlayerDirection != nil {
 		fn.FnUpdatePlayerDirection(directionEvent)
+	}
+}
+
+func (fn FnModule) HideChunk(chunkEvent ChunkEvent) {
+	if fn.FnHideChunk != nil {
+		fn.FnHideChunk(chunkEvent)
 	}
 }
 
