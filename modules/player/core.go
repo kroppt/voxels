@@ -16,6 +16,9 @@ type core struct {
 }
 
 func (c *core) handleMovementEvent(evt MovementEvent) {
+	if evt.Pressed {
+		return
+	}
 	switch evt.Direction {
 	case MoveForwards:
 		c.z--
@@ -32,6 +35,11 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 		Z: c.z,
 	}
 	c.chunkMod.UpdatePlayerPosition(posEvent)
+	c.graphicsMod.UpdatePlayerPosition(graphics.PositionEvent{
+		X: float64(c.x),
+		Y: float64(c.y),
+		Z: float64(c.z),
+	})
 }
 
 func (c *core) handleLookEvent(evt LookEvent) {

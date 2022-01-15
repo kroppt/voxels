@@ -20,9 +20,7 @@ func TestModuleNew(t *testing.T) {
 	})
 }
 
-func TestModuleHandleMovementEvent(t *testing.T) {
-	t.Parallel()
-
+func testMovementEventChunkMod(t *testing.T) {
 	testCases := []struct {
 		direction player.MoveDirection
 		x         int32
@@ -65,40 +63,44 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 		t.Run(fmt.Sprintf("updates chunk module position when moving %v", tC.direction.String()), func(t *testing.T) {
 			t.Parallel()
 
-			var evt chunk.PositionEvent
+			var actualEvent chunk.PositionEvent
 			chunkMod := &chunk.FnModule{
 				FnUpdatePlayerPosition: func(posEvent chunk.PositionEvent) {
-					evt = posEvent
+					actualEvent = posEvent
 				},
 			}
+			graphicsMod := &graphics.FnModule{}
 
-			mod := player.New(chunkMod, nil)
+			mod := player.New(chunkMod, graphicsMod)
 
 			movementEvent := player.MovementEvent{
 				Direction: tC.direction,
 			}
 			mod.HandleMovementEvent(movementEvent)
 
-			expected := chunk.PositionEvent{
+			expectEvent := chunk.PositionEvent{
 				X: tC.x,
 				Y: tC.y,
 				Z: tC.z,
 			}
-			if evt != expected {
-				t.Fatalf("expected %v but got %v", expected, evt)
+			if actualEvent != expectEvent {
+				t.Fatalf("expected %v but got %v", expectEvent, actualEvent)
 			}
 		})
 	}
 
 	t.Run("updates chunk module position when moving multiple times", func(t *testing.T) {
-		var evt chunk.PositionEvent
+		t.Parallel()
+
+		var actualEvent chunk.PositionEvent
 		chunkMod := &chunk.FnModule{
 			FnUpdatePlayerPosition: func(posEvent chunk.PositionEvent) {
-				evt = posEvent
+				actualEvent = posEvent
 			},
 		}
+		graphicsMod := &graphics.FnModule{}
 
-		mod := player.New(chunkMod, nil)
+		mod := player.New(chunkMod, graphicsMod)
 
 		moveRightEvent := player.MovementEvent{
 			Direction: player.MoveRight,
@@ -109,15 +111,109 @@ func TestModuleHandleMovementEvent(t *testing.T) {
 		mod.HandleMovementEvent(moveRightEvent)
 		mod.HandleMovementEvent(moveBackEvent)
 
-		expected := chunk.PositionEvent{
+		expectEvent := chunk.PositionEvent{
 			X: 1,
 			Y: 0,
 			Z: 1,
 		}
-		if evt != expected {
-			t.Fatalf("expected %v but got %v", expected, evt)
+		if actualEvent != expectEvent {
+			t.Fatalf("expected %v but got %v", expectEvent, actualEvent)
 		}
 	})
+}
+
+func testMovementEventGraphicsMod(t *testing.T) {
+	testCases := []struct {
+		name        string
+		moveEvents  []player.MovementEvent
+		expectEvent graphics.PositionEvent
+	}{
+		{
+			name: "forward 1",
+			moveEvents: []player.MovementEvent{
+				{Direction: player.MoveForwards, Pressed: true},
+				{Direction: player.MoveForwards, Pressed: false},
+			},
+			expectEvent: graphics.PositionEvent{
+				X: 0,
+				Y: 0,
+				Z: -1,
+			},
+		},
+		{
+			name: "right 1",
+			moveEvents: []player.MovementEvent{
+				{Direction: player.MoveRight, Pressed: true},
+				{Direction: player.MoveRight, Pressed: false},
+			},
+			expectEvent: graphics.PositionEvent{
+				X: 1,
+				Y: 0,
+				Z: 0,
+			},
+		},
+		{
+			name: "back 1",
+			moveEvents: []player.MovementEvent{
+				{Direction: player.MoveBackwards, Pressed: true},
+				{Direction: player.MoveBackwards, Pressed: false},
+			},
+			expectEvent: graphics.PositionEvent{
+				X: 0,
+				Y: 0,
+				Z: 1,
+			},
+		},
+		{
+			name: "left 1",
+			moveEvents: []player.MovementEvent{
+				{Direction: player.MoveLeft, Pressed: true},
+				{Direction: player.MoveLeft, Pressed: false},
+			},
+			expectEvent: graphics.PositionEvent{
+				X: -1,
+				Y: 0,
+				Z: 0,
+			},
+		},
+	}
+
+	for _, tC := range testCases {
+		tC := tC
+		t.Run("updates graphics module position when moving "+tC.name, func(t *testing.T) {
+			t.Parallel()
+
+			chunkMod := &chunk.FnModule{}
+			var actualEvent *graphics.PositionEvent
+			graphicsMod := &graphics.FnModule{
+				FnUpdatePlayerPosition: func(posEvent graphics.PositionEvent) {
+					actualEvent = &posEvent
+				},
+			}
+
+			mod := player.New(chunkMod, graphicsMod)
+
+			for _, me := range tC.moveEvents {
+				mod.HandleMovementEvent(me)
+			}
+
+			if actualEvent == nil {
+				t.Fatal("expected event but got none")
+			}
+
+			if *actualEvent != tC.expectEvent {
+				t.Fatalf("expected %v but got %v", tC.expectEvent, *actualEvent)
+			}
+		})
+	}
+}
+
+func TestModuleHandleMovementEvent(t *testing.T) {
+	t.Parallel()
+
+	testMovementEventChunkMod(t)
+
+	testMovementEventGraphicsMod(t)
 }
 
 func withinError(x, y float64, diff float64) bool {

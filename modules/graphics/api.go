@@ -10,9 +10,19 @@ type Interface interface {
 	ShowWindow()
 	PollEvent() (sdl.Event, bool)
 	UpdatePlayerDirection(directionEvent DirectionEvent)
+	UpdatePlayerPosition(positionEvent PositionEvent)
 	HideChunk(chunkEvent ChunkEvent)
 	ShowChunk(chunkEvent ChunkEvent)
 	DestroyWindow() error
+}
+
+// PositionEvent contains position information.
+//
+// X, Y, and Z are sub-voxel coordinates.
+type PositionEvent struct {
+	X float64
+	Y float64
+	Z float64
 }
 
 // DirectionEvent contains rotation information.
@@ -47,6 +57,11 @@ func (m *Module) UpdatePlayerDirection(directionEvent DirectionEvent) {
 	m.c.updatePlayerDirection(directionEvent)
 }
 
+// UpdatePlayerPosition updates the position of the player whose viewpoint is rendered.
+func (m *Module) UpdatePlayerPosition(positionEvent PositionEvent) {
+	m.c.updatePlayerPosition(positionEvent)
+}
+
 // HideChunk hides a chunk.
 func (m *Module) HideChunk(chunkEvent ChunkEvent) {
 	m.c.hideChunk(chunkEvent)
@@ -67,6 +82,7 @@ type FnModule struct {
 	FnShowWindow            func()
 	FnPollEvent             func() (sdl.Event, bool)
 	FnUpdatePlayerDirection func(DirectionEvent)
+	FnUpdatePlayerPosition  func(PositionEvent)
 	FnHideChunk             func(chunkEvent ChunkEvent)
 	FnShowChunk             func(chunkEvent ChunkEvent)
 	FnDestroyWindow         func() error
@@ -95,6 +111,12 @@ func (fn FnModule) PollEvent() (sdl.Event, bool) {
 func (fn FnModule) UpdatePlayerDirection(directionEvent DirectionEvent) {
 	if fn.FnUpdatePlayerDirection != nil {
 		fn.FnUpdatePlayerDirection(directionEvent)
+	}
+}
+
+func (fn FnModule) UpdatePlayerPosition(positionEvent PositionEvent) {
+	if fn.FnUpdatePlayerPosition != nil {
+		fn.FnUpdatePlayerPosition(positionEvent)
 	}
 }
 

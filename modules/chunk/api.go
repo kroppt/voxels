@@ -5,6 +5,8 @@ type Interface interface {
 }
 
 // PositionEvent contains player position event information.
+//
+// X, Y, and Z are voxel coordinates.
 type PositionEvent struct {
 	X int32
 	Y int32
