@@ -1,4 +1,4 @@
-package player
+package camera
 
 import (
 	mgl "github.com/go-gl/mathgl/mgl64"

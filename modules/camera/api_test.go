@@ -1,4 +1,4 @@
-package player_test
+package camera_test
 
 import (
 	"fmt"
@@ -6,14 +6,14 @@ import (
 	"testing"
 
 	mgl "github.com/go-gl/mathgl/mgl64"
+	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
-	"github.com/kroppt/voxels/modules/player"
 )
 
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
-		mod := player.New(nil, nil)
+		mod := camera.New(nil, nil)
 		if mod == nil {
 			t.Fatal("expected non-nil return")
 		}
@@ -22,31 +22,31 @@ func TestModuleNew(t *testing.T) {
 
 func testMovementEventChunkMod(t *testing.T) {
 	testCases := []struct {
-		direction player.MoveDirection
+		direction camera.MoveDirection
 		x         int32
 		y         int32
 		z         int32
 	}{
 		{
-			direction: player.MoveForwards,
+			direction: camera.MoveForwards,
 			x:         0,
 			y:         0,
 			z:         -1,
 		},
 		{
-			direction: player.MoveRight,
+			direction: camera.MoveRight,
 			x:         1,
 			y:         0,
 			z:         0,
 		},
 		{
-			direction: player.MoveBackwards,
+			direction: camera.MoveBackwards,
 			x:         0,
 			y:         0,
 			z:         1,
 		},
 		{
-			direction: player.MoveLeft,
+			direction: camera.MoveLeft,
 			x:         -1,
 			y:         0,
 			z:         0,
@@ -71,9 +71,9 @@ func testMovementEventChunkMod(t *testing.T) {
 			}
 			graphicsMod := &graphics.FnModule{}
 
-			mod := player.New(chunkMod, graphicsMod)
+			mod := camera.New(chunkMod, graphicsMod)
 
-			movementEvent := player.MovementEvent{
+			movementEvent := camera.MovementEvent{
 				Direction: tC.direction,
 			}
 			mod.HandleMovementEvent(movementEvent)
@@ -100,13 +100,13 @@ func testMovementEventChunkMod(t *testing.T) {
 		}
 		graphicsMod := &graphics.FnModule{}
 
-		mod := player.New(chunkMod, graphicsMod)
+		mod := camera.New(chunkMod, graphicsMod)
 
-		moveRightEvent := player.MovementEvent{
-			Direction: player.MoveRight,
+		moveRightEvent := camera.MovementEvent{
+			Direction: camera.MoveRight,
 		}
-		moveBackEvent := player.MovementEvent{
-			Direction: player.MoveBackwards,
+		moveBackEvent := camera.MovementEvent{
+			Direction: camera.MoveBackwards,
 		}
 		mod.HandleMovementEvent(moveRightEvent)
 		mod.HandleMovementEvent(moveBackEvent)
@@ -125,14 +125,14 @@ func testMovementEventChunkMod(t *testing.T) {
 func testMovementEventGraphicsMod(t *testing.T) {
 	testCases := []struct {
 		name        string
-		moveEvents  []player.MovementEvent
+		moveEvents  []camera.MovementEvent
 		expectEvent graphics.PositionEvent
 	}{
 		{
 			name: "forward 1",
-			moveEvents: []player.MovementEvent{
-				{Direction: player.MoveForwards, Pressed: true},
-				{Direction: player.MoveForwards, Pressed: false},
+			moveEvents: []camera.MovementEvent{
+				{Direction: camera.MoveForwards, Pressed: true},
+				{Direction: camera.MoveForwards, Pressed: false},
 			},
 			expectEvent: graphics.PositionEvent{
 				X: 0,
@@ -142,9 +142,9 @@ func testMovementEventGraphicsMod(t *testing.T) {
 		},
 		{
 			name: "right 1",
-			moveEvents: []player.MovementEvent{
-				{Direction: player.MoveRight, Pressed: true},
-				{Direction: player.MoveRight, Pressed: false},
+			moveEvents: []camera.MovementEvent{
+				{Direction: camera.MoveRight, Pressed: true},
+				{Direction: camera.MoveRight, Pressed: false},
 			},
 			expectEvent: graphics.PositionEvent{
 				X: 1,
@@ -154,9 +154,9 @@ func testMovementEventGraphicsMod(t *testing.T) {
 		},
 		{
 			name: "back 1",
-			moveEvents: []player.MovementEvent{
-				{Direction: player.MoveBackwards, Pressed: true},
-				{Direction: player.MoveBackwards, Pressed: false},
+			moveEvents: []camera.MovementEvent{
+				{Direction: camera.MoveBackwards, Pressed: true},
+				{Direction: camera.MoveBackwards, Pressed: false},
 			},
 			expectEvent: graphics.PositionEvent{
 				X: 0,
@@ -166,9 +166,9 @@ func testMovementEventGraphicsMod(t *testing.T) {
 		},
 		{
 			name: "left 1",
-			moveEvents: []player.MovementEvent{
-				{Direction: player.MoveLeft, Pressed: true},
-				{Direction: player.MoveLeft, Pressed: false},
+			moveEvents: []camera.MovementEvent{
+				{Direction: camera.MoveLeft, Pressed: true},
+				{Direction: camera.MoveLeft, Pressed: false},
 			},
 			expectEvent: graphics.PositionEvent{
 				X: -1,
@@ -191,7 +191,7 @@ func testMovementEventGraphicsMod(t *testing.T) {
 				},
 			}
 
-			mod := player.New(chunkMod, graphicsMod)
+			mod := camera.New(chunkMod, graphicsMod)
 
 			for _, me := range tC.moveEvents {
 				mod.HandleMovementEvent(me)
@@ -460,10 +460,10 @@ func TestModuleHandleLookEvent(t *testing.T) {
 				},
 			}
 
-			mod := player.New(nil, graphicsMod)
+			mod := camera.New(nil, graphicsMod)
 
 			for _, look := range tC.looks {
-				lookEvent := player.LookEvent{
+				lookEvent := camera.LookEvent{
 					Right: look.right,
 					Down:  look.down,
 				}

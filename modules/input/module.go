@@ -1,8 +1,8 @@
 package input
 
 import (
+	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/graphics"
-	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
 )
 
@@ -14,13 +14,13 @@ type Module struct {
 // New creates a synchronous input module.
 func New(
 	graphicsMod graphics.Interface,
-	playerMod player.Interface,
+	cameraMod camera.Interface,
 	settingsRepo settings.Interface,
 ) *Module {
 	return &Module{
 		core{
 			graphicsMod:  graphicsMod,
-			playerMod:    playerMod,
+			cameraMod:    cameraMod,
 			settingsRepo: settingsRepo,
 			quit:         false,
 		},

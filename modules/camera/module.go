@@ -1,4 +1,4 @@
-package player
+package camera
 
 import (
 	mgl "github.com/go-gl/mathgl/mgl64"
@@ -6,12 +6,12 @@ import (
 	"github.com/kroppt/voxels/modules/graphics"
 )
 
-// Module is a player.
+// Module is a camera.
 type Module struct {
 	c core
 }
 
-// New creates a player.
+// New creates a camera.
 func New(chunkMod chunk.Interface, graphicsMod graphics.Interface) *Module {
 	return &Module{
 		core{

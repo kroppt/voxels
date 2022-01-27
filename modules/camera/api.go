@@ -1,4 +1,4 @@
-package player
+package camera
 
 type Interface interface {
 	HandleMovementEvent(MovementEvent)

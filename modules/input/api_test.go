@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/input"
-	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -100,7 +100,7 @@ func TestModuleRouteEvents(t *testing.T) {
 		evtType   uint32
 		scancode  sdl.Scancode
 		sym       sdl.Keycode
-		direction player.MoveDirection
+		direction camera.MoveDirection
 		pressed   bool
 	}{
 		{
@@ -108,7 +108,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_W,
 			sym:       sdl.K_w,
-			direction: player.MoveForwards,
+			direction: camera.MoveForwards,
 			pressed:   true,
 		},
 		{
@@ -116,7 +116,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_S,
 			sym:       sdl.K_s,
-			direction: player.MoveBackwards,
+			direction: camera.MoveBackwards,
 			pressed:   true,
 		},
 		{
@@ -124,7 +124,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_A,
 			sym:       sdl.K_a,
-			direction: player.MoveLeft,
+			direction: camera.MoveLeft,
 			pressed:   true,
 		},
 		{
@@ -132,7 +132,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYDOWN,
 			scancode:  sdl.SCANCODE_D,
 			sym:       sdl.K_d,
-			direction: player.MoveRight,
+			direction: camera.MoveRight,
 			pressed:   true,
 		},
 		{
@@ -140,7 +140,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYUP,
 			scancode:  sdl.SCANCODE_W,
 			sym:       sdl.K_w,
-			direction: player.MoveForwards,
+			direction: camera.MoveForwards,
 			pressed:   false,
 		},
 		{
@@ -148,7 +148,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYUP,
 			scancode:  sdl.SCANCODE_S,
 			sym:       sdl.K_s,
-			direction: player.MoveBackwards,
+			direction: camera.MoveBackwards,
 			pressed:   false,
 		},
 		{
@@ -156,7 +156,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYUP,
 			scancode:  sdl.SCANCODE_A,
 			sym:       sdl.K_a,
-			direction: player.MoveLeft,
+			direction: camera.MoveLeft,
 			pressed:   false,
 		},
 		{
@@ -164,7 +164,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			evtType:   sdl.KEYUP,
 			scancode:  sdl.SCANCODE_D,
 			sym:       sdl.K_d,
-			direction: player.MoveRight,
+			direction: camera.MoveRight,
 			pressed:   false,
 		},
 	}
@@ -204,17 +204,17 @@ func TestModuleRouteEvents(t *testing.T) {
 				},
 			}
 
-			expectEvent := player.MovementEvent{
+			expectEvent := camera.MovementEvent{
 				Direction: tC.direction,
 				Pressed:   tC.pressed,
 			}
-			var actualEvent *player.MovementEvent
-			playerMod := &player.FnModule{
-				FnHandleMovementEvent: func(evt player.MovementEvent) {
+			var actualEvent *camera.MovementEvent
+			cameraMod := &camera.FnModule{
+				FnHandleMovementEvent: func(evt camera.MovementEvent) {
 					actualEvent = &evt
 				},
 			}
-			mod := input.New(graphicsMod, playerMod, nil)
+			mod := input.New(graphicsMod, cameraMod, nil)
 
 			mod.RouteEvents()
 
@@ -290,22 +290,22 @@ func TestModuleRouteEvents(t *testing.T) {
 					return nil
 				},
 			}
-			var evtHandle *player.LookEvent
-			playerMod := &player.FnModule{
-				FnHandleLookEvent: func(evt player.LookEvent) {
+			var evtHandle *camera.LookEvent
+			cameraMod := &camera.FnModule{
+				FnHandleLookEvent: func(evt camera.LookEvent) {
 					evtHandle = &evt
 				},
 			}
 			settingsRepo := settings.New()
 			settingsRepo.SetFOV(60)
 			settingsRepo.SetResolution(1920, 1080)
-			mod := input.New(graphicsMod, playerMod, settingsRepo)
+			mod := input.New(graphicsMod, cameraMod, settingsRepo)
 
 			mod.RouteEvents()
 
 			xRad := radPerPixel60Fov1080p * float64(tC.xRel)
 			yRad := radPerPixel60Fov1080p * float64(tC.yRel)
-			expectLookEvent := player.LookEvent{
+			expectLookEvent := camera.LookEvent{
 				Right: xRad,
 				Down:  yRad,
 			}

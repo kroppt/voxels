@@ -4,15 +4,15 @@ import (
 	"math"
 
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/graphics"
-	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type core struct {
 	graphicsMod  graphics.Interface
-	playerMod    player.Interface
+	cameraMod    camera.Interface
 	settingsRepo settings.Interface
 	quit         bool
 }
@@ -41,37 +41,37 @@ func (m *core) routeEvent(e sdl.Event) {
 		pressed := evt.Type == sdl.KEYDOWN
 		switch evt.Keysym.Scancode {
 		case sdl.SCANCODE_W:
-			forward := player.MovementEvent{
-				Direction: player.MoveForwards,
+			forward := camera.MovementEvent{
+				Direction: camera.MoveForwards,
 				Pressed:   pressed,
 			}
-			m.playerMod.HandleMovementEvent(forward)
+			m.cameraMod.HandleMovementEvent(forward)
 		case sdl.SCANCODE_D:
-			right := player.MovementEvent{
-				Direction: player.MoveRight,
+			right := camera.MovementEvent{
+				Direction: camera.MoveRight,
 				Pressed:   pressed,
 			}
-			m.playerMod.HandleMovementEvent(right)
+			m.cameraMod.HandleMovementEvent(right)
 		case sdl.SCANCODE_S:
-			back := player.MovementEvent{
-				Direction: player.MoveBackwards,
+			back := camera.MovementEvent{
+				Direction: camera.MoveBackwards,
 				Pressed:   pressed,
 			}
-			m.playerMod.HandleMovementEvent(back)
+			m.cameraMod.HandleMovementEvent(back)
 		case sdl.SCANCODE_A:
-			left := player.MovementEvent{
-				Direction: player.MoveLeft,
+			left := camera.MovementEvent{
+				Direction: camera.MoveLeft,
 				Pressed:   pressed,
 			}
-			m.playerMod.HandleMovementEvent(left)
+			m.cameraMod.HandleMovementEvent(left)
 		}
 	case *sdl.MouseMotionEvent:
 		xRad, yRad := m.pixelsToRadians(evt.XRel, evt.YRel)
-		lookEvt := player.LookEvent{
+		lookEvt := camera.LookEvent{
 			Right: xRad,
 			Down:  yRad,
 		}
-		m.playerMod.HandleLookEvent(lookEvt)
+		m.cameraMod.HandleLookEvent(lookEvt)
 	}
 
 }

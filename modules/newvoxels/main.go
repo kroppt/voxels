@@ -4,11 +4,11 @@ import (
 	"os"
 
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/file"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/input"
-	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/kroppt/voxels/util"
 )
@@ -26,8 +26,8 @@ func main() {
 	fileMod := file.New()
 	settingsRepo := settings.New()
 	chunkMod := chunk.New(graphicsMod, settingsRepo, 1)
-	playerMod := player.New(chunkMod, graphicsMod)
-	inputMod := input.New(graphicsMod, playerMod, settingsRepo)
+	cameraMod := camera.New(chunkMod, graphicsMod)
+	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
 
 	if readCloser, err := fileMod.GetReadCloser("settings.conf"); err != nil {
 		log.Warn(err)
