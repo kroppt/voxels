@@ -1,11 +1,11 @@
-package chunk_test
+package player_test
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
 )
 
@@ -22,7 +22,7 @@ func TestModuleNew(t *testing.T) {
 		}
 		settingsMod := settings.FnRepository{}
 
-		mod := chunk.New(graphicsMod, settingsMod, 1)
+		mod := player.New(graphicsMod, settingsMod, 1)
 
 		if mod == nil {
 			t.Fatal("expected non-nil return")
@@ -43,7 +43,7 @@ func TestModuleNew(t *testing.T) {
 			},
 		}
 
-		chunk.New(graphicsMod, nil, 1)
+		player.New(graphicsMod, nil, 1)
 	})
 
 	t.Run("when chunk module is created, show chunks in the render distance", func(t *testing.T) {
@@ -74,7 +74,7 @@ func TestModuleNew(t *testing.T) {
 			},
 		}
 
-		chunk.New(graphicsMod, settingsMod, 1)
+		player.New(graphicsMod, settingsMod, 1)
 
 		if !reflect.DeepEqual(expected, actual) {
 			t.Fatalf("expected %v but got %v", expected, actual)
@@ -102,7 +102,7 @@ func TestModuleNew(t *testing.T) {
 			},
 		}
 
-		chunk.New(graphicsMod, settingsMod, 1)
+		player.New(graphicsMod, settingsMod, 1)
 
 		if !reflect.DeepEqual(expected, actual) {
 			t.Fatalf("expected %v but got %v", expected, actual)
@@ -130,8 +130,8 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return 2
 			},
 		}
-		chunkMod := chunk.New(graphicsMod, settingsMod, chunkSize)
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
 			Z: 0,
@@ -141,7 +141,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			actual[chunkEvent] = struct{}{}
 		}
 
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: chunkSize + 5,
 			Y: 0,
 			Z: 0,
@@ -180,8 +180,8 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return 2
 			},
 		}
-		chunkMod := chunk.New(graphicsMod, settingsMod, chunkSize)
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
 			Z: 0,
@@ -191,7 +191,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			actual[chunkEvent] = struct{}{}
 		}
 
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5 - chunkSize,
 			Y: 0,
 			Z: 5 - chunkSize,
@@ -221,8 +221,8 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return 2
 			},
 		}
-		chunkMod := chunk.New(graphicsMod, settingsMod, chunkSize)
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
 			Z: 0,
@@ -232,7 +232,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			actual[chunkEvent] = struct{}{}
 		}
 
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: chunkSize + 5,
 			Y: 0,
 			Z: 0,
@@ -271,8 +271,8 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return 2
 			},
 		}
-		chunkMod := chunk.New(graphicsMod, settingsMod, chunkSize)
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
 			Z: 5,
@@ -282,7 +282,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			actual[chunkEvent] = struct{}{}
 		}
 
-		chunkMod.UpdatePlayerPosition(chunk.PositionEvent{
+		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5 - chunkSize,
 			Y: 0,
 			Z: 5 - chunkSize,

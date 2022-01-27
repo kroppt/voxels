@@ -1,4 +1,4 @@
-package chunk
+package player
 
 import (
 	"github.com/kroppt/voxels/modules/graphics"

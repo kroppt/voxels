@@ -2,8 +2,8 @@ package camera
 
 import (
 	mgl "github.com/go-gl/mathgl/mgl64"
-	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 )
 
 // Module is a camera.
@@ -12,10 +12,10 @@ type Module struct {
 }
 
 // New creates a camera.
-func New(chunkMod chunk.Interface, graphicsMod graphics.Interface) *Module {
+func New(playerMod player.Interface, graphicsMod graphics.Interface) *Module {
 	return &Module{
 		core{
-			chunkMod:    chunkMod,
+			playerMod:   playerMod,
 			graphicsMod: graphicsMod,
 			rot:         mgl.QuatIdent(),
 		},

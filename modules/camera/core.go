@@ -2,12 +2,12 @@ package camera
 
 import (
 	mgl "github.com/go-gl/mathgl/mgl64"
-	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 )
 
 type core struct {
-	chunkMod    chunk.Interface
+	playerMod   player.Interface
 	graphicsMod graphics.Interface
 	x           int32
 	y           int32
@@ -29,12 +29,12 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 	case MoveLeft:
 		c.x--
 	}
-	posEvent := chunk.PositionEvent{
+	posEvent := player.PositionEvent{
 		X: c.x,
 		Y: c.y,
 		Z: c.z,
 	}
-	c.chunkMod.UpdatePlayerPosition(posEvent)
+	c.playerMod.UpdatePlayerPosition(posEvent)
 	c.graphicsMod.UpdatePlayerPosition(graphics.PositionEvent{
 		X: float64(c.x),
 		Y: float64(c.y),

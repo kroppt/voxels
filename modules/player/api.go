@@ -1,4 +1,4 @@
-package chunk
+package player
 
 type Interface interface {
 	UpdatePlayerPosition(posEvent PositionEvent)

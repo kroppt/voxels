@@ -7,8 +7,8 @@ import (
 
 	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/modules/camera"
-	"github.com/kroppt/voxels/modules/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 )
 
 func TestModuleNew(t *testing.T) {
@@ -20,7 +20,7 @@ func TestModuleNew(t *testing.T) {
 	})
 }
 
-func testMovementEventChunkMod(t *testing.T) {
+func testMovementEventPlayerMod(t *testing.T) {
 	testCases := []struct {
 		direction camera.MoveDirection
 		x         int32
@@ -63,22 +63,22 @@ func testMovementEventChunkMod(t *testing.T) {
 		t.Run(fmt.Sprintf("updates chunk module position when moving %v", tC.direction.String()), func(t *testing.T) {
 			t.Parallel()
 
-			var actualEvent chunk.PositionEvent
-			chunkMod := &chunk.FnModule{
-				FnUpdatePlayerPosition: func(posEvent chunk.PositionEvent) {
+			var actualEvent player.PositionEvent
+			playerMod := &player.FnModule{
+				FnUpdatePlayerPosition: func(posEvent player.PositionEvent) {
 					actualEvent = posEvent
 				},
 			}
 			graphicsMod := &graphics.FnModule{}
 
-			mod := camera.New(chunkMod, graphicsMod)
+			mod := camera.New(playerMod, graphicsMod)
 
 			movementEvent := camera.MovementEvent{
 				Direction: tC.direction,
 			}
 			mod.HandleMovementEvent(movementEvent)
 
-			expectEvent := chunk.PositionEvent{
+			expectEvent := player.PositionEvent{
 				X: tC.x,
 				Y: tC.y,
 				Z: tC.z,
@@ -92,15 +92,15 @@ func testMovementEventChunkMod(t *testing.T) {
 	t.Run("updates chunk module position when moving multiple times", func(t *testing.T) {
 		t.Parallel()
 
-		var actualEvent chunk.PositionEvent
-		chunkMod := &chunk.FnModule{
-			FnUpdatePlayerPosition: func(posEvent chunk.PositionEvent) {
+		var actualEvent player.PositionEvent
+		playerMod := &player.FnModule{
+			FnUpdatePlayerPosition: func(posEvent player.PositionEvent) {
 				actualEvent = posEvent
 			},
 		}
 		graphicsMod := &graphics.FnModule{}
 
-		mod := camera.New(chunkMod, graphicsMod)
+		mod := camera.New(playerMod, graphicsMod)
 
 		moveRightEvent := camera.MovementEvent{
 			Direction: camera.MoveRight,
@@ -111,7 +111,7 @@ func testMovementEventChunkMod(t *testing.T) {
 		mod.HandleMovementEvent(moveRightEvent)
 		mod.HandleMovementEvent(moveBackEvent)
 
-		expectEvent := chunk.PositionEvent{
+		expectEvent := player.PositionEvent{
 			X: 1,
 			Y: 0,
 			Z: 1,
@@ -183,7 +183,7 @@ func testMovementEventGraphicsMod(t *testing.T) {
 		t.Run("updates graphics module position when moving "+tC.name, func(t *testing.T) {
 			t.Parallel()
 
-			chunkMod := &chunk.FnModule{}
+			playerMod := &player.FnModule{}
 			var actualEvent *graphics.PositionEvent
 			graphicsMod := &graphics.FnModule{
 				FnUpdatePlayerPosition: func(posEvent graphics.PositionEvent) {
@@ -191,7 +191,7 @@ func testMovementEventGraphicsMod(t *testing.T) {
 				},
 			}
 
-			mod := camera.New(chunkMod, graphicsMod)
+			mod := camera.New(playerMod, graphicsMod)
 
 			for _, me := range tC.moveEvents {
 				mod.HandleMovementEvent(me)
@@ -211,7 +211,7 @@ func testMovementEventGraphicsMod(t *testing.T) {
 func TestModuleHandleMovementEvent(t *testing.T) {
 	t.Parallel()
 
-	testMovementEventChunkMod(t)
+	testMovementEventPlayerMod(t)
 
 	testMovementEventGraphicsMod(t)
 }
