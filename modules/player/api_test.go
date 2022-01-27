@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
+	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 )
 
@@ -14,15 +14,10 @@ func TestModuleNew(t *testing.T) {
 
 	t.Run("return is non-nil", func(t *testing.T) {
 		t.Parallel()
-		graphicsMod := graphics.FnModule{
-			FnUpdatePlayerDirection: func(graphics.DirectionEvent) {
-			},
-			FnShowChunk: func(chunkEvent graphics.ChunkEvent) {
-			},
-		}
+		worldMod := &world.FnModule{}
 		settingsMod := settings.FnRepository{}
 
-		mod := player.New(graphicsMod, settingsMod, 1)
+		mod := player.New(worldMod, settingsMod, 1)
 
 		if mod == nil {
 			t.Fatal("expected non-nil return")
@@ -36,63 +31,21 @@ func TestModuleNew(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		graphicsMod := graphics.FnModule{
-			FnUpdatePlayerDirection: func(graphics.DirectionEvent) {
-			},
-			FnShowChunk: func(chunkEvent graphics.ChunkEvent) {
-			},
-		}
+		worldMod := &world.FnModule{}
 
-		player.New(graphicsMod, nil, 1)
-	})
-
-	t.Run("when player module is created, show chunks in the render distance", func(t *testing.T) {
-		t.Parallel()
-		expected := map[graphics.ChunkEvent]struct{}{}
-		for x := int32(-2); x <= 2; x++ {
-			for y := int32(-2); y <= 2; y++ {
-				for z := int32(-2); z <= 2; z++ {
-					expected[graphics.ChunkEvent{
-						PositionX: x,
-						PositionY: y,
-						PositionZ: z,
-					}] = struct{}{}
-				}
-			}
-		}
-		actual := map[graphics.ChunkEvent]struct{}{}
-		graphicsMod := graphics.FnModule{
-			FnUpdatePlayerDirection: func(graphics.DirectionEvent) {
-			},
-			FnShowChunk: func(chunkEvent graphics.ChunkEvent) {
-				actual[chunkEvent] = struct{}{}
-			},
-		}
-		settingsMod := settings.FnRepository{
-			FnGetRenderDistance: func() uint32 {
-				return 2
-			},
-		}
-
-		player.New(graphicsMod, settingsMod, 1)
-
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("expected %v but got %v", expected, actual)
-		}
+		player.New(worldMod, nil, 1)
 	})
 
 	t.Run("player position is 0, 0, 0 by default", func(t *testing.T) {
 		t.Parallel()
-		expected := graphics.ChunkEvent{
+		expected := world.ChunkEvent{
 			PositionX: 0,
 			PositionY: 0,
 			PositionZ: 0,
 		}
-		var actual graphics.ChunkEvent
-		graphicsMod := graphics.FnModule{
-			FnUpdatePlayerDirection: func(graphics.DirectionEvent) {
-			},
-			FnShowChunk: func(chunkEvent graphics.ChunkEvent) {
+		var actual world.ChunkEvent
+		worldMod := &world.FnModule{
+			FnLoadChunk: func(chunkEvent world.ChunkEvent) {
 				actual = chunkEvent
 			},
 		}
@@ -102,43 +55,85 @@ func TestModuleNew(t *testing.T) {
 			},
 		}
 
-		player.New(graphicsMod, settingsMod, 1)
+		player.New(worldMod, settingsMod, 1)
+
+		if !reflect.DeepEqual(expected, actual) {
+			t.Fatalf("expected %v but got %v", expected, actual)
+		}
+	})
+
+	t.Run("when player module is created, chunks are loaded in the render distance", func(t *testing.T) {
+		t.Parallel()
+		expected := map[world.ChunkEvent]struct{}{}
+		for x := int32(-2); x <= 2; x++ {
+			for y := int32(-2); y <= 2; y++ {
+				for z := int32(-2); z <= 2; z++ {
+					expected[world.ChunkEvent{
+						PositionX: x,
+						PositionY: y,
+						PositionZ: z,
+					}] = struct{}{}
+				}
+			}
+		}
+		actual := map[world.ChunkEvent]struct{}{}
+		worldMod := &world.FnModule{
+			FnLoadChunk: func(chunkEvent world.ChunkEvent) {
+				actual[chunkEvent] = struct{}{}
+			},
+		}
+		settingsMod := settings.FnRepository{
+			FnGetRenderDistance: func() uint32 {
+				return 2
+			},
+		}
+		player.New(worldMod, settingsMod, 1)
 
 		if !reflect.DeepEqual(expected, actual) {
 			t.Fatalf("expected %v but got %v", expected, actual)
 		}
 	})
 }
-
 func TestModuleUpdatePlayerPosition(t *testing.T) {
-	t.Run("when player position is moved, new chunks are shown", func(t *testing.T) {
+	t.Run("when player position is moved, the right chunks are loaded and unloaded", func(t *testing.T) {
 		t.Parallel()
 		const chunkSize = 10
-		expected := map[graphics.ChunkEvent]struct{}{}
+		expectedLoad := map[world.ChunkEvent]struct{}{}
+		expectedUnload := map[world.ChunkEvent]struct{}{}
 		for y := int32(-2); y <= 2; y++ {
 			for z := int32(-2); z <= 2; z++ {
-				expected[graphics.ChunkEvent{
+				expectedLoad[world.ChunkEvent{
 					PositionX: 3,
+					PositionY: y,
+					PositionZ: z,
+				}] = struct{}{}
+				expectedUnload[world.ChunkEvent{
+					PositionX: -2,
 					PositionY: y,
 					PositionZ: z,
 				}] = struct{}{}
 			}
 		}
-		graphicsMod := &graphics.FnModule{}
 		settingsMod := settings.FnRepository{
 			FnGetRenderDistance: func() uint32 {
 				return 2
 			},
 		}
-		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
+		worldMod := &world.FnModule{}
+		playerMod := player.New(worldMod, settingsMod, chunkSize)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
 			Z: 0,
 		})
-		actual := map[graphics.ChunkEvent]struct{}{}
-		graphicsMod.FnShowChunk = func(chunkEvent graphics.ChunkEvent) {
-			actual[chunkEvent] = struct{}{}
+		actualLoaded := map[world.ChunkEvent]struct{}{}
+		actualUnloaded := map[world.ChunkEvent]struct{}{}
+
+		worldMod.FnLoadChunk = func(chunkEvent world.ChunkEvent) {
+			actualLoaded[chunkEvent] = struct{}{}
+		}
+		worldMod.FnUnloadChunk = func(chunkEvent world.ChunkEvent) {
+			actualUnloaded[chunkEvent] = struct{}{}
 		}
 
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
@@ -147,18 +142,21 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			Z: 0,
 		})
 
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("expected %v but got %v", expected, actual)
+		if !reflect.DeepEqual(expectedLoad, actualLoaded) {
+			t.Fatalf("expected to load %v but got %v", expectedLoad, actualLoaded)
+		}
+		if !reflect.DeepEqual(expectedUnload, actualUnloaded) {
+			t.Fatalf("expected to unload %v but got %v", expectedUnload, actualUnloaded)
 		}
 	})
 
 	t.Run("when player position is moved diagonally, new chunks are shown", func(t *testing.T) {
 		t.Parallel()
 		const chunkSize = 10
-		expected := map[graphics.ChunkEvent]struct{}{}
+		expected := map[world.ChunkEvent]struct{}{}
 		for y := int32(-2); y <= 2; y++ {
 			for x := int32(-3); x <= 1; x++ {
-				expected[graphics.ChunkEvent{
+				expected[world.ChunkEvent{
 					PositionX: x,
 					PositionY: y,
 					PositionZ: -3,
@@ -167,27 +165,27 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 		}
 		for y := int32(-2); y <= 2; y++ {
 			for z := int32(-3); z <= 1; z++ {
-				expected[graphics.ChunkEvent{
+				expected[world.ChunkEvent{
 					PositionX: -3,
 					PositionY: y,
 					PositionZ: z,
 				}] = struct{}{}
 			}
 		}
-		graphicsMod := &graphics.FnModule{}
+		worldMod := &world.FnModule{}
 		settingsMod := settings.FnRepository{
 			FnGetRenderDistance: func() uint32 {
 				return 2
 			},
 		}
-		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, chunkSize)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
 			Z: 0,
 		})
-		actual := map[graphics.ChunkEvent]struct{}{}
-		graphicsMod.FnShowChunk = func(chunkEvent graphics.ChunkEvent) {
+		actual := map[world.ChunkEvent]struct{}{}
+		worldMod.FnLoadChunk = func(chunkEvent world.ChunkEvent) {
 			actual[chunkEvent] = struct{}{}
 		}
 
@@ -202,54 +200,13 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 		}
 	})
 
-	t.Run("when player position is moved, old chunks are hidden", func(t *testing.T) {
-		t.Parallel()
-		const chunkSize = 10
-		expected := map[graphics.ChunkEvent]struct{}{}
-		for y := int32(-2); y <= 2; y++ {
-			for z := int32(-2); z <= 2; z++ {
-				expected[graphics.ChunkEvent{
-					PositionX: -2,
-					PositionY: y,
-					PositionZ: z,
-				}] = struct{}{}
-			}
-		}
-		graphicsMod := &graphics.FnModule{}
-		settingsMod := settings.FnRepository{
-			FnGetRenderDistance: func() uint32 {
-				return 2
-			},
-		}
-		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
-		playerMod.UpdatePlayerPosition(player.PositionEvent{
-			X: 5,
-			Y: 0,
-			Z: 0,
-		})
-		actual := map[graphics.ChunkEvent]struct{}{}
-		graphicsMod.FnHideChunk = func(chunkEvent graphics.ChunkEvent) {
-			actual[chunkEvent] = struct{}{}
-		}
-
-		playerMod.UpdatePlayerPosition(player.PositionEvent{
-			X: chunkSize + 5,
-			Y: 0,
-			Z: 0,
-		})
-
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("expected %v but got %v", expected, actual)
-		}
-	})
-
 	t.Run("when player position is moved diagonally, old chunks are hidden", func(t *testing.T) {
 		t.Parallel()
 		const chunkSize = 10
-		expected := map[graphics.ChunkEvent]struct{}{}
+		expected := map[world.ChunkEvent]struct{}{}
 		for y := int32(-2); y <= 2; y++ {
 			for x := int32(-2); x <= 2; x++ {
-				expected[graphics.ChunkEvent{
+				expected[world.ChunkEvent{
 					PositionX: x,
 					PositionY: y,
 					PositionZ: 2,
@@ -258,27 +215,27 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 		}
 		for y := int32(-2); y <= 2; y++ {
 			for z := int32(-2); z <= 2; z++ {
-				expected[graphics.ChunkEvent{
+				expected[world.ChunkEvent{
 					PositionX: 2,
 					PositionY: y,
 					PositionZ: z,
 				}] = struct{}{}
 			}
 		}
-		graphicsMod := &graphics.FnModule{}
+		worldMod := &world.FnModule{}
 		settingsMod := settings.FnRepository{
 			FnGetRenderDistance: func() uint32 {
 				return 2
 			},
 		}
-		playerMod := player.New(graphicsMod, settingsMod, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, chunkSize)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
 			Z: 5,
 		})
-		actual := map[graphics.ChunkEvent]struct{}{}
-		graphicsMod.FnHideChunk = func(chunkEvent graphics.ChunkEvent) {
+		actual := map[world.ChunkEvent]struct{}{}
+		worldMod.FnUnloadChunk = func(chunkEvent world.ChunkEvent) {
 			actual[chunkEvent] = struct{}{}
 		}
 

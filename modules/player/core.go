@@ -1,12 +1,12 @@
 package player
 
 import (
-	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 )
 
 type core struct {
-	graphicsMod  graphics.Interface
+	worldMod     world.Interface
 	settingsMod  settings.Interface
 	chunkSize    uint32
 	lastChunkPos chunkPos
@@ -17,7 +17,7 @@ func (c *core) init() {
 	for x := int32(-renderDistance); x <= renderDistance; x++ {
 		for y := int32(-renderDistance); y <= renderDistance; y++ {
 			for z := int32(-renderDistance); z <= renderDistance; z++ {
-				c.graphicsMod.ShowChunk(graphics.ChunkEvent{PositionX: x, PositionY: y, PositionZ: z})
+				c.worldMod.LoadChunk(world.ChunkEvent{PositionX: x, PositionY: y, PositionZ: z})
 			}
 		}
 	}
@@ -120,7 +120,7 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	}
 	new.forEach(func(pos chunkPos) bool {
 		if !old.contains(pos) {
-			c.graphicsMod.ShowChunk(graphics.ChunkEvent{
+			c.worldMod.LoadChunk(world.ChunkEvent{
 				PositionX: pos.x,
 				PositionY: pos.y,
 				PositionZ: pos.z,
@@ -130,7 +130,7 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	})
 	old.forEach(func(pos chunkPos) bool {
 		if !new.contains(pos) {
-			c.graphicsMod.HideChunk(graphics.ChunkEvent{
+			c.worldMod.UnloadChunk(world.ChunkEvent{
 				PositionX: pos.x,
 				PositionY: pos.y,
 				PositionZ: pos.z,

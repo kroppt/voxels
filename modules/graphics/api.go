@@ -12,6 +12,7 @@ type Interface interface {
 	UpdatePlayerDirection(directionEvent DirectionEvent)
 	UpdatePlayerPosition(positionEvent PositionEvent)
 	HideChunk(chunkEvent ChunkEvent)
+	// TODO add LoadChunk and UnloadChunk
 	ShowChunk(chunkEvent ChunkEvent)
 	DestroyWindow() error
 	Render()
