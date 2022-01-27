@@ -27,7 +27,7 @@ func TestModuleNew(t *testing.T) {
 func TestModuleRouteEvents(t *testing.T) {
 	t.Parallel()
 
-	t.Run("returns on quit event", func(t *testing.T) {
+	t.Run("returns false on quit event", func(t *testing.T) {
 		t.Parallel()
 
 		graphicsMod := graphics.FnModule{
@@ -43,7 +43,31 @@ func TestModuleRouteEvents(t *testing.T) {
 		}
 		mod := input.New(graphicsMod, nil, nil)
 
-		mod.RouteEvents()
+		quitResult := mod.RouteEvents()
+		expected := false
+		if quitResult != expected {
+			t.Fatal("calling quit did not return false")
+		}
+	})
+
+	t.Run("returns true after consuming all events", func(t *testing.T) {
+		t.Parallel()
+
+		graphicsMod := graphics.FnModule{
+			FnPollEvent: func() (sdl.Event, bool) {
+				return nil, false
+			},
+			FnDestroyWindow: func() error {
+				return nil
+			},
+		}
+		mod := input.New(graphicsMod, nil, nil)
+
+		exhaustEventsResult := mod.RouteEvents()
+		expected := true
+		if exhaustEventsResult != expected {
+			t.Fatal("exhausting events did not return true")
+		}
 	})
 
 	t.Run("calls DestroyWindow on quit event", func(t *testing.T) {

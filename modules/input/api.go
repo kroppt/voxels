@@ -1,12 +1,12 @@
 package input
 
 type Interface interface {
-	RouteEvents()
+	RouteEvents() bool
 }
 
 // RouteEvents polls for input events and routes them to other modules.
-func (m *Module) RouteEvents() {
-	m.c.routeEvents()
+func (m *Module) RouteEvents() bool {
+	return m.c.routeEvents()
 }
 
 // PixelsToRadians converts from pixels to radians in terms of camera rotation.

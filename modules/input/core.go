@@ -17,15 +17,16 @@ type core struct {
 	quit         bool
 }
 
-func (m *core) routeEvents() {
+func (m *core) routeEvents() bool {
 	for !m.quit {
 		evt, ok := m.graphicsMod.PollEvent()
 		if !ok {
-			continue
+			return true
 		}
 
 		m.routeEvent(evt)
 	}
+	return false
 }
 
 func (m *core) routeEvent(e sdl.Event) {

@@ -45,5 +45,8 @@ func main() {
 
 	graphicsMod.ShowWindow()
 
-	inputMod.RouteEvents()
+	keepRunning := true
+	for keepRunning {
+		keepRunning = inputMod.RouteEvents()
+	}
 }
