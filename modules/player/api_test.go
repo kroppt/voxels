@@ -46,7 +46,7 @@ func TestModuleNew(t *testing.T) {
 		player.New(graphicsMod, nil, 1)
 	})
 
-	t.Run("when chunk module is created, show chunks in the render distance", func(t *testing.T) {
+	t.Run("when player module is created, show chunks in the render distance", func(t *testing.T) {
 		t.Parallel()
 		expected := map[graphics.ChunkEvent]struct{}{}
 		for x := int32(-2); x <= 2; x++ {
