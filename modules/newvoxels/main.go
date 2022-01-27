@@ -10,6 +10,7 @@ import (
 	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
+	"github.com/kroppt/voxels/util"
 )
 
 func main() {
@@ -19,6 +20,7 @@ func main() {
 	log.SetPerfOutput(os.Stderr)
 	log.SetFatalOutput(os.Stderr)
 	log.SetColorized(false)
+	util.SetMetricsEnabled(true)
 
 	graphicsMod := graphics.New()
 	fileMod := file.New()
@@ -47,6 +49,8 @@ func main() {
 
 	keepRunning := true
 	for keepRunning {
+		graphicsMod.Render()
 		keepRunning = inputMod.RouteEvents()
 	}
+	util.LogMetrics()
 }

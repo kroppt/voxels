@@ -14,6 +14,7 @@ type Interface interface {
 	HideChunk(chunkEvent ChunkEvent)
 	ShowChunk(chunkEvent ChunkEvent)
 	DestroyWindow() error
+	Render()
 }
 
 // PositionEvent contains position information.
@@ -77,6 +78,10 @@ func (m *Module) DestroyWindow() error {
 	return m.c.destroyWindow()
 }
 
+func (m *Module) Render() {
+	m.c.render()
+}
+
 type FnModule struct {
 	FnCreateWindow          func(string, uint32, uint32)
 	FnShowWindow            func()
@@ -86,6 +91,7 @@ type FnModule struct {
 	FnHideChunk             func(chunkEvent ChunkEvent)
 	FnShowChunk             func(chunkEvent ChunkEvent)
 	FnDestroyWindow         func() error
+	FnRender                func()
 }
 
 func (fn FnModule) CreateWindow(title string, width, height uint32) error {
@@ -137,4 +143,10 @@ func (fn FnModule) DestroyWindow() error {
 		return fn.FnDestroyWindow()
 	}
 	return nil
+}
+
+func (fn FnModule) Render() {
+	if fn.FnRender != nil {
+		fn.FnRender()
+	}
 }

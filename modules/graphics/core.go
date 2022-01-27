@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -93,4 +94,22 @@ func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	sdl.Quit()
 	return err
+}
+
+func (c *core) render() {
+	w, h := c.window.GetSize()
+	gl.Viewport(0, 0, w, h)
+
+	// clear with black
+	gl.ClearColor(0.0, 0.0, 0.0, 1.0)
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+	sw := util.Start()
+	// app.world.Render()
+	sw.StopRecordAverage("Total World Render")
+	c.window.GLSwap()
+
+	for glErr := gl.GetError(); glErr != gl.NO_ERROR; glErr = gl.GetError() {
+		log.Warnf("OpenGL error: %v", glErr)
+	}
 }
