@@ -36,17 +36,13 @@ func TestModuleNew(t *testing.T) {
 		player.New(worldMod, nil, 1)
 	})
 
-	t.Run("player position is 0, 0, 0 by default", func(t *testing.T) {
+	t.Run("nothing is loded by default", func(t *testing.T) {
 		t.Parallel()
-		expected := world.ChunkEvent{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: 0,
-		}
-		var actual world.ChunkEvent
+		expected := false
+		var loaded bool
 		worldMod := &world.FnModule{
 			FnLoadChunk: func(chunkEvent world.ChunkEvent) {
-				actual = chunkEvent
+				loaded = true
 			},
 		}
 		settingsMod := settings.FnRepository{
@@ -57,8 +53,8 @@ func TestModuleNew(t *testing.T) {
 
 		player.New(worldMod, settingsMod, 1)
 
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("expected %v but got %v", expected, actual)
+		if loaded != expected {
+			t.Fatal("expected no chunk to be loaded, but one was")
 		}
 	})
 

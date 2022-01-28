@@ -20,7 +20,6 @@ func New(worldMod world.Interface, settingsMod settings.Interface, chunkSize uin
 		settingsMod: settingsMod,
 		chunkSize:   chunkSize,
 	}
-	core.init()
 	return &Module{
 		core,
 	}

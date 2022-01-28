@@ -13,9 +13,33 @@ import (
 
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
-		mod := camera.New(nil, nil)
+		mod := camera.New(nil, nil, player.PositionEvent{})
 		if mod == nil {
 			t.Fatal("expected non-nil return")
+		}
+	})
+}
+
+func TestModuleNewInitialPos(t *testing.T) {
+	t.Run("return is non-nil", func(t *testing.T) {
+		expected := player.PositionEvent{
+			X: 1,
+			Y: 2,
+			Z: 3,
+		}
+		var actual player.PositionEvent
+		playerMod := &player.FnModule{
+			FnUpdatePlayerPosition: func(posEvent player.PositionEvent) {
+				actual = posEvent
+			},
+		}
+		camera.New(playerMod, nil, player.PositionEvent{
+			X: 1,
+			Y: 2,
+			Z: 3,
+		})
+		if actual != expected {
+			t.Fatalf("expected initial camera pos %v but got %v", expected, actual)
 		}
 	})
 }
@@ -72,7 +96,7 @@ func TestMovementEventPlayerMod(t *testing.T) {
 			}
 			graphicsMod := &graphics.FnModule{}
 
-			mod := camera.New(playerMod, graphicsMod)
+			mod := camera.New(playerMod, graphicsMod, player.PositionEvent{})
 
 			movementEvent := camera.MovementEvent{
 				Direction: tC.direction,
@@ -101,7 +125,7 @@ func TestMovementEventPlayerMod(t *testing.T) {
 		}
 		graphicsMod := &graphics.FnModule{}
 
-		mod := camera.New(playerMod, graphicsMod)
+		mod := camera.New(playerMod, graphicsMod, player.PositionEvent{})
 
 		moveRightEvent := camera.MovementEvent{
 			Direction: camera.MoveRight,
@@ -367,7 +391,7 @@ func TestModuleHandleLookEvent(t *testing.T) {
 				},
 			}
 
-			mod := camera.New(nil, graphicsMod)
+			mod := camera.New(nil, graphicsMod, player.PositionEvent{})
 
 			for _, look := range tC.looks {
 				lookEvent := camera.LookEvent{

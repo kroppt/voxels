@@ -12,17 +12,6 @@ type core struct {
 	lastChunkPos chunkPos
 }
 
-func (c *core) init() {
-	renderDistance := int32(c.settingsMod.GetRenderDistance())
-	for x := int32(-renderDistance); x <= renderDistance; x++ {
-		for y := int32(-renderDistance); y <= renderDistance; y++ {
-			for z := int32(-renderDistance); z <= renderDistance; z++ {
-				c.worldMod.LoadChunk(world.ChunkEvent{PositionX: x, PositionY: y, PositionZ: z})
-			}
-		}
-	}
-}
-
 func (c *core) playerToChunkPosition(pos PositionEvent) chunkPos {
 	x, y, z := pos.X, pos.Y, pos.Z
 	chunkSize := int32(c.chunkSize)

@@ -28,7 +28,7 @@ func main() {
 	settingsRepo := settings.New()
 	worldMod := world.New(graphicsMod)
 	playerMod := player.New(worldMod, settingsRepo, 1)
-	cameraMod := camera.New(playerMod, graphicsMod)
+	cameraMod := camera.New(playerMod, graphicsMod, player.PositionEvent{})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
 
 	if readCloser, err := fileMod.GetReadCloser("settings.conf"); err != nil {

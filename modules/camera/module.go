@@ -12,7 +12,10 @@ type Module struct {
 }
 
 // New creates a camera.
-func New(playerMod player.Interface, graphicsMod graphics.Interface) *Module {
+func New(playerMod player.Interface, graphicsMod graphics.Interface, initialPos player.PositionEvent) *Module {
+	if playerMod != nil {
+		playerMod.UpdatePlayerPosition(initialPos)
+	}
 	return &Module{
 		core{
 			playerMod:   playerMod,
