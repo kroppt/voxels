@@ -215,3 +215,40 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 		}
 	})
 }
+
+func TestNoCullingWithoutPos(t *testing.T) {
+	t.Parallel()
+	expected := false
+	var calledUpdateView bool
+	worldMod := &world.FnModule{
+		FnUpdateView: func() {
+			calledUpdateView = true
+		},
+	}
+	settingsMod := settings.FnRepository{}
+	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
+
+	if calledUpdateView != expected {
+		t.Fatal("expected update view to not be called, but it was")
+	}
+}
+
+func TestCullingWithPos(t *testing.T) {
+	t.Parallel()
+	expected := true
+	var calledUpdateView bool
+	worldMod := &world.FnModule{
+		FnUpdateView: func() {
+			calledUpdateView = true
+		},
+	}
+	settingsMod := settings.FnRepository{}
+	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{})
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
+
+	if calledUpdateView != expected {
+		t.Fatal("expected update view to be called, but it was not")
+	}
+}

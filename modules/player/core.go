@@ -10,6 +10,7 @@ type core struct {
 	settingsMod  settings.Interface
 	chunkSize    uint32
 	lastChunkPos chunkPos
+	posAssigned  bool
 }
 
 func (c *core) playerToChunkPosition(pos PositionEvent) chunkPos {
@@ -81,6 +82,7 @@ func (rng chunkRange) contains(pos chunkPos) bool {
 }
 
 func (c *core) updatePosition(posEvent PositionEvent) {
+	c.posAssigned = true
 	newChunkPos := c.playerToChunkPosition(posEvent)
 	renderDistance := int32(c.settingsMod.GetRenderDistance())
 	old := chunkRange{
@@ -131,4 +133,9 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 }
 
 func (c *core) updateDirection(dirEvent DirectionEvent) {
+	if !c.posAssigned {
+		return
+	}
+	// TODO do frustum culling
+	c.worldMod.UpdateView()
 }

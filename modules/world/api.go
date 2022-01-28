@@ -36,6 +36,7 @@ type Interface interface {
 	// (not removed from memory/opengl allocation - just updated metadata that will
 	// cause certain chunks to be rendered on the next render cycle)
 	// UpdateFrustumCulling(CameraUpdateEvent)
+	UpdateView()
 }
 
 type ChunkEvent struct {
@@ -69,6 +70,9 @@ func (m *Module) LoadChunk(ChunkEvent) {
 func (m *Module) UnloadChunk(ChunkEvent) {
 
 }
+func (m *Module) UpdateView() {
+
+}
 
 // func (m *Module) SaveLoadedChunks() {
 
@@ -85,6 +89,7 @@ func (m *Module) UnloadChunk(ChunkEvent) {
 type FnModule struct {
 	FnLoadChunk   func(ChunkEvent)
 	FnUnloadChunk func(ChunkEvent)
+	FnUpdateView  func()
 	// FnSaveLoadedChunks func()
 	// FnSetVoxelAt       func(VoxelEvent, VoxelAttribs)
 	// FnUpdateFrustumCulling func(CameraUpdateEvent)
@@ -99,6 +104,9 @@ func (fn *FnModule) UnloadChunk(evt ChunkEvent) {
 	if fn.FnUnloadChunk != nil {
 		fn.FnUnloadChunk(evt)
 	}
+}
+func (fn *FnModule) UpdateView() {
+	fn.FnUpdateView()
 }
 
 // func (fn *FnModule) SaveLoadedChunks() {
