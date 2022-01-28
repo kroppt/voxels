@@ -61,8 +61,8 @@ func (m *Module) LoadChunk(ChunkEvent) {
 func (m *Module) UnloadChunk(ChunkEvent) {
 
 }
-func (m *Module) UpdateView(map[ChunkEvent]struct{}) {
-
+func (m *Module) UpdateView(viewableChunks map[ChunkEvent]struct{}) {
+	m.c.updateView(viewableChunks)
 }
 
 // func (m *Module) SaveLoadedChunks() {
