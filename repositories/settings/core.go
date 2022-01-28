@@ -11,6 +11,8 @@ import (
 
 type core struct {
 	fovY           float64
+	near           float64
+	far            float64
 	width          uint32
 	height         uint32
 	renderDistance uint32
@@ -22,6 +24,22 @@ func (c *core) setFOV(degY float64) {
 
 func (c *core) getFOV() float64 {
 	return c.fovY
+}
+
+func (c *core) setNear(near float64) {
+	c.near = near
+}
+
+func (c *core) getNear() float64 {
+	return c.near
+}
+
+func (c *core) setFar(far float64) {
+	c.far = far
+}
+
+func (c *core) getFar() float64 {
+	return c.far
 }
 
 func (c *core) setResolution(width, height uint32) {
@@ -100,6 +118,24 @@ func (c *core) setFromReader(reader io.Reader) error {
 				}
 			}
 			c.setRenderDistance(uint32(rd))
+		case "near":
+			near, err := strconv.ParseFloat(value, 64)
+			if err != nil || near < 0 {
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
+			}
+			c.setNear(near)
+		case "far":
+			far, err := strconv.ParseFloat(value, 64)
+			if err != nil || far < 0 {
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
+			}
+			c.setFar(far)
 		default:
 			log.Warnf("invalid settings entry: %v=%v", key, value)
 		}

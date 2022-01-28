@@ -9,6 +9,10 @@ import (
 type Interface interface {
 	SetFOV(degY float64)
 	GetFOV() float64
+	SetNear(near float64)
+	GetNear() float64
+	SetFar(far float64)
+	GetFar() float64
 	SetResolution(width, height uint32)
 	GetResolution() (uint32, uint32)
 	SetRenderDistance(renderDistance uint32)
@@ -55,6 +59,26 @@ func (r *Repository) GetFOV() float64 {
 	return r.c.getFOV()
 }
 
+// SetNear sets the near plane of the viewing frustum.
+func (r *Repository) SetNear(near float64) {
+	r.c.setNear(near)
+}
+
+// GetNear gets the near plane of the viewing frustum.
+func (r *Repository) GetNear() float64 {
+	return r.c.getNear()
+}
+
+// SetFar sets the far plane of the viewing frustum.
+func (r *Repository) SetFar(far float64) {
+	r.c.setFar(far)
+}
+
+// GetFar gets the far plane of the viewing frustum.
+func (r *Repository) GetFar() float64 {
+	return r.c.getFar()
+}
+
 // SetResolution sets the width and height of the window in pixels.
 func (r *Repository) SetResolution(width, height uint32) {
 	r.c.setResolution(width, height)
@@ -83,6 +107,10 @@ func (r *Repository) SetFromReader(reader io.Reader) error {
 type FnRepository struct {
 	FnSetFOV            func(degY float64)
 	FnGetFOV            func() float64
+	FnSetFar            func(far float64)
+	FnGetFar            func() float64
+	FnSetNear           func(near float64)
+	FnGetNear           func() float64
 	FnSetResolution     func(width, height uint32)
 	FnGetResolution     func() (uint32, uint32)
 	FnSetRenderDistance func(renderDistance uint32)
@@ -99,6 +127,32 @@ func (fn FnRepository) SetFOV(degY float64) {
 func (fn FnRepository) GetFOV() float64 {
 	if fn.FnGetFOV != nil {
 		return fn.FnGetFOV()
+	}
+	return 0
+}
+
+func (fn FnRepository) SetNear(near float64) {
+	if fn.FnSetNear != nil {
+		fn.FnSetNear(near)
+	}
+}
+
+func (fn FnRepository) GetNear() float64 {
+	if fn.FnGetNear != nil {
+		return fn.FnGetNear()
+	}
+	return 0
+}
+
+func (fn FnRepository) SetFar(far float64) {
+	if fn.FnSetFar != nil {
+		fn.FnSetFar(far)
+	}
+}
+
+func (fn FnRepository) GetFar() float64 {
+	if fn.FnGetFar != nil {
+		return fn.FnGetFar()
 	}
 	return 0
 }
