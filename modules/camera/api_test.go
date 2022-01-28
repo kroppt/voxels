@@ -381,27 +381,27 @@ func TestModuleHandleLookEvent(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		tC := tC
-		t.Run(fmt.Sprintf("updates graphics module direction when looking %+v", tC.looks), func(t *testing.T) {
+		t.Run(fmt.Sprintf("updates player module direction when looking %+v", tC.looks), func(t *testing.T) {
 			t.Parallel()
 
-			var evt graphics.DirectionEvent
-			graphicsMod := graphics.FnModule{
-				FnUpdatePlayerDirection: func(directionEvent graphics.DirectionEvent) {
+			var evt player.DirectionEvent
+			playerMod := &player.FnModule{
+				FnUpdatePlayerDirection: func(directionEvent player.DirectionEvent) {
 					evt = directionEvent
 				},
 			}
 
-			mod := camera.New(nil, graphicsMod, player.PositionEvent{})
+			cameraMod := camera.New(playerMod, nil, player.PositionEvent{})
 
 			for _, look := range tC.looks {
 				lookEvent := camera.LookEvent{
 					Right: look.right,
 					Down:  look.down,
 				}
-				mod.HandleLookEvent(lookEvent)
+				cameraMod.HandleLookEvent(lookEvent)
 			}
 
-			expected := graphics.DirectionEvent{
+			expected := player.DirectionEvent{
 				Rotation: tC.rotation,
 			}
 			if !withinErrorQuat(expected.Rotation, evt.Rotation, errMargin) {

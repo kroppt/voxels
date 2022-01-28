@@ -129,3 +129,6 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	})
 	c.lastChunkPos = newChunkPos
 }
+
+func (c *core) updateDirection(dirEvent DirectionEvent) {
+}
