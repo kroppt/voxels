@@ -235,7 +235,25 @@ func TestNoCullingWithoutPos(t *testing.T) {
 	}
 }
 
-func TestCullingWithPos(t *testing.T) {
+func TestNoCullingWithoutDirection(t *testing.T) {
+	t.Parallel()
+	expected := false
+	var calledUpdateView bool
+	worldMod := &world.FnModule{
+		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+			calledUpdateView = true
+		},
+	}
+	settingsMod := settings.FnRepository{}
+	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{})
+
+	if calledUpdateView != expected {
+		t.Fatal("expected update view to not be called, but it was")
+	}
+}
+
+func TestCullingWithPosAndDir(t *testing.T) {
 	t.Parallel()
 	expected := true
 	var calledUpdateView bool
@@ -250,7 +268,14 @@ func TestCullingWithPos(t *testing.T) {
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
 
 	if calledUpdateView != expected {
-		t.Fatal("expected update view to be called, but it was not")
+		t.Fatal("expected update view to be called after updating direction, but it was not")
+	}
+
+	calledUpdateView = false
+	playerMod.UpdatePlayerPosition(player.PositionEvent{})
+
+	if calledUpdateView != expected {
+		t.Fatal("expected update view to be called after updating position, but it was not")
 	}
 }
 
@@ -414,6 +439,47 @@ func TestFrustumCullingLargeChunks(t *testing.T) {
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
 		Rotation: mgl64.QuatIdent(),
 	})
+
+	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
+		t.Fatalf("expected viewed chunks: %v but got viewed chunks %v", expectedViewedChunks, actualViewedChunks)
+	}
+}
+
+func TestFrustumCullingDueToPositionChange(t *testing.T) {
+	t.Parallel()
+	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: 0,
+		}: {},
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: -1,
+		}: {},
+	}
+	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	worldMod := &world.FnModule{
+		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+			actualViewedChunks = viewChunks
+		},
+	}
+	settingsMod := settings.New()
+	settingsMod.SetFOV(33.398488467987)
+	settingsMod.SetNear(0.1)
+	settingsMod.SetFar(10)
+	settingsMod.SetRenderDistance(1)
+	settingsMod.SetResolution(1, 1)
+	playerMod := player.New(worldMod, settingsMod, 1)
+	// setting direction first without position set should not trigger a view update
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{
+		Rotation: mgl64.QuatIdent(),
+	})
+	if len(actualViewedChunks) != 0 {
+		t.Fatal("expected update view map to be empty, but it had elements already")
+	}
+	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
 
 	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
 		t.Fatalf("expected viewed chunks: %v but got viewed chunks %v", expectedViewedChunks, actualViewedChunks)

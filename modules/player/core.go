@@ -16,6 +16,8 @@ type core struct {
 	lastChunkPos chunkPos
 	posAssigned  bool
 	position     PositionEvent
+	dirAssigned  bool
+	direction    DirectionEvent
 }
 
 func (c *core) playerToChunkPosition(pos voxelPos) chunkPos {
@@ -113,6 +115,9 @@ func (rng chunkRange) contains(pos chunkPos) bool {
 func (c *core) updatePosition(posEvent PositionEvent) {
 	c.posAssigned = true
 	c.position = posEvent
+	if c.dirAssigned {
+		c.worldMod.UpdateView(c.getFrustumCulledChunks())
+	}
 	voxelPos := toVoxelPos(posEvent)
 	newChunkPos := c.playerToChunkPosition(voxelPos)
 	renderDistance := int32(c.settingsMod.GetRenderDistance())
@@ -161,6 +166,14 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 		return false
 	})
 	c.lastChunkPos = newChunkPos
+}
+
+func (c *core) updateDirection(dirEvent DirectionEvent) {
+	c.dirAssigned = true
+	c.direction = dirEvent
+	if c.posAssigned {
+		c.worldMod.UpdateView(c.getFrustumCulledChunks())
+	}
 }
 
 type camera struct {
@@ -280,9 +293,9 @@ func (c *core) isWithinFrustum(cam *camera, pos chunkPos, chunkSize uint32) bool
 	return true
 }
 
-func (c *core) updateDirection(dirEvent DirectionEvent) {
-	if !c.posAssigned {
-		return
+func (c *core) getFrustumCulledChunks() map[world.ChunkEvent]struct{} {
+	if !c.dirAssigned || !c.posAssigned {
+		panic("position and direction required for frustum culling calculations")
 	}
 	voxelPos := toVoxelPos(c.position)
 	newChunkPos := c.playerToChunkPosition(voxelPos)
@@ -301,11 +314,11 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 	}
 	viewChunks := map[world.ChunkEvent]struct{}{}
 	cam := createCamera(glm.Quat{
-		W: float32(dirEvent.Rotation.W),
+		W: float32(c.direction.Rotation.W),
 		V: glm.Vec3{
-			float32(dirEvent.Rotation.X()),
-			float32(dirEvent.Rotation.Y()),
-			float32(dirEvent.Rotation.Z()),
+			float32(c.direction.Rotation.X()),
+			float32(c.direction.Rotation.Y()),
+			float32(c.direction.Rotation.Z()),
 		},
 	}, glm.Vec3{
 		float32(c.position.X),
@@ -325,5 +338,5 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 		return false
 	})
 
-	c.worldMod.UpdateView(viewChunks)
+	return viewChunks
 }
