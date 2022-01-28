@@ -57,39 +57,8 @@ func TestModuleNew(t *testing.T) {
 			t.Fatal("expected no chunk to be loaded, but one was")
 		}
 	})
-
-	t.Run("when player module is created, chunks are loaded in the render distance", func(t *testing.T) {
-		t.Parallel()
-		expected := map[world.ChunkEvent]struct{}{}
-		for x := int32(-2); x <= 2; x++ {
-			for y := int32(-2); y <= 2; y++ {
-				for z := int32(-2); z <= 2; z++ {
-					expected[world.ChunkEvent{
-						PositionX: x,
-						PositionY: y,
-						PositionZ: z,
-					}] = struct{}{}
-				}
-			}
-		}
-		actual := map[world.ChunkEvent]struct{}{}
-		worldMod := &world.FnModule{
-			FnLoadChunk: func(chunkEvent world.ChunkEvent) {
-				actual[chunkEvent] = struct{}{}
-			},
-		}
-		settingsMod := settings.FnRepository{
-			FnGetRenderDistance: func() uint32 {
-				return 2
-			},
-		}
-		player.New(worldMod, settingsMod, 1)
-
-		if !reflect.DeepEqual(expected, actual) {
-			t.Fatalf("expected %v but got %v", expected, actual)
-		}
-	})
 }
+
 func TestModuleUpdatePlayerPosition(t *testing.T) {
 	t.Run("when player position is moved, the right chunks are loaded and unloaded", func(t *testing.T) {
 		t.Parallel()
