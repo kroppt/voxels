@@ -20,7 +20,8 @@ func TestModuleNew(t *testing.T) {
 	})
 }
 
-func testMovementEventPlayerMod(t *testing.T) {
+func TestMovementEventPlayerMod(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		direction camera.MoveDirection
 		x         int32
@@ -120,100 +121,6 @@ func testMovementEventPlayerMod(t *testing.T) {
 			t.Fatalf("expected %v but got %v", expectEvent, actualEvent)
 		}
 	})
-}
-
-func testMovementEventGraphicsMod(t *testing.T) {
-	testCases := []struct {
-		name        string
-		moveEvents  []camera.MovementEvent
-		expectEvent graphics.PositionEvent
-	}{
-		{
-			name: "forward 1",
-			moveEvents: []camera.MovementEvent{
-				{Direction: camera.MoveForwards, Pressed: true},
-				{Direction: camera.MoveForwards, Pressed: false},
-			},
-			expectEvent: graphics.PositionEvent{
-				X: 0,
-				Y: 0,
-				Z: -1,
-			},
-		},
-		{
-			name: "right 1",
-			moveEvents: []camera.MovementEvent{
-				{Direction: camera.MoveRight, Pressed: true},
-				{Direction: camera.MoveRight, Pressed: false},
-			},
-			expectEvent: graphics.PositionEvent{
-				X: 1,
-				Y: 0,
-				Z: 0,
-			},
-		},
-		{
-			name: "back 1",
-			moveEvents: []camera.MovementEvent{
-				{Direction: camera.MoveBackwards, Pressed: true},
-				{Direction: camera.MoveBackwards, Pressed: false},
-			},
-			expectEvent: graphics.PositionEvent{
-				X: 0,
-				Y: 0,
-				Z: 1,
-			},
-		},
-		{
-			name: "left 1",
-			moveEvents: []camera.MovementEvent{
-				{Direction: camera.MoveLeft, Pressed: true},
-				{Direction: camera.MoveLeft, Pressed: false},
-			},
-			expectEvent: graphics.PositionEvent{
-				X: -1,
-				Y: 0,
-				Z: 0,
-			},
-		},
-	}
-
-	for _, tC := range testCases {
-		tC := tC
-		t.Run("updates graphics module position when moving "+tC.name, func(t *testing.T) {
-			t.Parallel()
-
-			playerMod := &player.FnModule{}
-			var actualEvent *graphics.PositionEvent
-			graphicsMod := &graphics.FnModule{
-				FnUpdatePlayerPosition: func(posEvent graphics.PositionEvent) {
-					actualEvent = &posEvent
-				},
-			}
-
-			mod := camera.New(playerMod, graphicsMod)
-
-			for _, me := range tC.moveEvents {
-				mod.HandleMovementEvent(me)
-			}
-
-			if actualEvent == nil {
-				t.Fatal("expected event but got none")
-			}
-
-			if *actualEvent != tC.expectEvent {
-				t.Fatalf("expected %v but got %v", tC.expectEvent, *actualEvent)
-			}
-		})
-	}
-}
-
-func TestModuleHandleMovementEvent(t *testing.T) {
-	t.Parallel()
-
-	testMovementEventPlayerMod(t)
-
-	testMovementEventGraphicsMod(t)
 }
 
 func withinError(x, y float64, diff float64) bool {
