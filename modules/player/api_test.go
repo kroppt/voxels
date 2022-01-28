@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -221,7 +222,7 @@ func TestNoCullingWithoutPos(t *testing.T) {
 	expected := false
 	var calledUpdateView bool
 	worldMod := &world.FnModule{
-		FnUpdateView: func() {
+		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
 			calledUpdateView = true
 		},
 	}
@@ -239,7 +240,7 @@ func TestCullingWithPos(t *testing.T) {
 	expected := true
 	var calledUpdateView bool
 	worldMod := &world.FnModule{
-		FnUpdateView: func() {
+		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
 			calledUpdateView = true
 		},
 	}
@@ -250,5 +251,119 @@ func TestCullingWithPos(t *testing.T) {
 
 	if calledUpdateView != expected {
 		t.Fatal("expected update view to be called, but it was not")
+	}
+}
+
+func TestFrustumCulling(t *testing.T) {
+	t.Parallel()
+	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: 0,
+		}: {},
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: -1,
+		}: {},
+	}
+	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	worldMod := &world.FnModule{
+		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+			actualViewedChunks = viewChunks
+		},
+	}
+	settingsMod := settings.New()
+	settingsMod.SetFOV(33.398488467987)
+	settingsMod.SetNear(0.1)
+	settingsMod.SetFar(10)
+	settingsMod.SetRenderDistance(1)
+	settingsMod.SetResolution(1, 1)
+	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{
+		Rotation: mgl64.QuatIdent(),
+	})
+
+	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
+		t.Fatalf("expected viewed chunks: %v but got viewed chunks %v", expectedViewedChunks, actualViewedChunks)
+	}
+}
+
+func TestFrustumCullingWideAngle(t *testing.T) {
+	t.Parallel()
+	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: 0,
+		}: {},
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: -1,
+			PositionY: 0,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: -1,
+			PositionY: 1,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: -1,
+			PositionY: -1,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: 0,
+			PositionY: -1,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: 0,
+			PositionY: 1,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: 1,
+			PositionY: 0,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: 1,
+			PositionY: -1,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: 1,
+			PositionY: 1,
+			PositionZ: -1,
+		}: {},
+	}
+	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	worldMod := &world.FnModule{
+		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+			actualViewedChunks = viewChunks
+		},
+	}
+	settingsMod := settings.New()
+	settingsMod.SetFOV(89.5)
+	settingsMod.SetNear(0.1)
+	settingsMod.SetFar(10)
+	settingsMod.SetRenderDistance(1)
+	settingsMod.SetResolution(1, 1)
+	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{
+		Rotation: mgl64.QuatIdent(),
+	})
+
+	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
+		t.Fatalf("expected viewed chunks: %v but got viewed chunks %v", expectedViewedChunks, actualViewedChunks)
 	}
 }

@@ -27,16 +27,7 @@ type Interface interface {
 	// the flat data per chunk is a fixed size, but this could change in the future
 	// if we figure out how to "not store air".
 	// SetVoxelAt(VoxelEvent, VoxelAttribs)
-	// UpdateFrustumCulling is called whenever there is a change in camera position/angle
-	// Since the world knows about all the chunks, and we want to keep frustum
-	// culling processing out of the graphics thread, the world will accept
-	// camera movement events to re-calculate frustum culling, and then tell the
-	// graphics module that some chunks should be temporarily hidden, or show those
-	// that have come into view again.
-	// (not removed from memory/opengl allocation - just updated metadata that will
-	// cause certain chunks to be rendered on the next render cycle)
-	// UpdateFrustumCulling(CameraUpdateEvent)
-	UpdateView()
+	UpdateView(map[ChunkEvent]struct{})
 }
 
 type ChunkEvent struct {
@@ -70,7 +61,7 @@ func (m *Module) LoadChunk(ChunkEvent) {
 func (m *Module) UnloadChunk(ChunkEvent) {
 
 }
-func (m *Module) UpdateView() {
+func (m *Module) UpdateView(viewChunks []ChunkEvent) {
 
 }
 
@@ -82,17 +73,12 @@ func (m *Module) UpdateView() {
 
 // }
 
-// func (m *Module) UpdateFrustumCulling(CameraUpdateEvent) {
-
-// }
-
 type FnModule struct {
 	FnLoadChunk   func(ChunkEvent)
 	FnUnloadChunk func(ChunkEvent)
-	FnUpdateView  func()
+	FnUpdateView  func(map[ChunkEvent]struct{})
 	// FnSaveLoadedChunks func()
 	// FnSetVoxelAt       func(VoxelEvent, VoxelAttribs)
-	// FnUpdateFrustumCulling func(CameraUpdateEvent)
 }
 
 func (fn *FnModule) LoadChunk(evt ChunkEvent) {
@@ -105,8 +91,10 @@ func (fn *FnModule) UnloadChunk(evt ChunkEvent) {
 		fn.FnUnloadChunk(evt)
 	}
 }
-func (fn *FnModule) UpdateView() {
-	fn.FnUpdateView()
+func (fn *FnModule) UpdateView(viewChunks map[ChunkEvent]struct{}) {
+	if fn.FnUpdateView != nil {
+		fn.FnUpdateView(viewChunks)
+	}
 }
 
 // func (fn *FnModule) SaveLoadedChunks() {
@@ -118,11 +106,5 @@ func (fn *FnModule) UpdateView() {
 // func (fn *FnModule) SetVoxelAt(evt VoxelEvent, attrs VoxelAttribs) {
 // 	if fn.FnSetVoxelAt != nil {
 // 		fn.SetVoxelAt(evt, attrs)
-// 	}
-// }
-
-// func (fn *FnModule) UpdateFrustumCulling(evt CameraUpdateEvent) {
-// 	if fn.FnUpdateFrustumCulling != nil {
-// 		fn.UpdateFrustumCulling(evt)
 // 	}
 // }

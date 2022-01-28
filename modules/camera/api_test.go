@@ -48,9 +48,9 @@ func TestMovementEventPlayerMod(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		direction camera.MoveDirection
-		x         int32
-		y         int32
-		z         int32
+		x         float64
+		y         float64
+		z         float64
 	}{
 		{
 			direction: camera.MoveForwards,

@@ -9,9 +9,9 @@ import (
 type core struct {
 	playerMod   player.Interface
 	graphicsMod graphics.Interface
-	x           int32
-	y           int32
-	z           int32
+	x           float64
+	y           float64
+	z           float64
 	rot         mgl.Quat
 }
 

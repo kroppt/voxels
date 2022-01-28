@@ -13,9 +13,9 @@ type Interface interface {
 //
 // X, Y, and Z are voxel coordinates.
 type PositionEvent struct {
-	X int32
-	Y int32
-	Z int32
+	X float64
+	Y float64
+	Z float64
 }
 
 // DirectionEvent contains rotation information.
