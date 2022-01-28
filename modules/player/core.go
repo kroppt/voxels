@@ -197,11 +197,14 @@ type worldRange struct {
 	Z fRange
 }
 
-func (rng worldRange) ForEach(fn func(glm.Vec3)) {
+func (rng worldRange) ForEach(fn func(glm.Vec3) bool) {
 	for x := rng.X.Min; x <= rng.X.Max; x += rng.X.delta {
 		for y := rng.Y.Min; y <= rng.Y.Max; y += rng.Y.delta {
 			for z := rng.Z.Min; z <= rng.Z.Max; z += rng.Z.delta {
-				fn(glm.Vec3{x, y, z})
+				stop := fn(glm.Vec3{x, y, z})
+				if stop {
+					return
+				}
 			}
 		}
 	}
@@ -256,12 +259,13 @@ func (c *core) isWithinFrustum(cam *camera, corner glm.Vec3, dx, dy, dz float32)
 	}
 	for _, tri := range planeTriangles {
 		in := 0
-		cubeRange.ForEach(func(v glm.Vec3) {
+		cubeRange.ForEach(func(v glm.Vec3) bool {
 			// every corner of cube
 			if !geo.PointOutsidePlane(&v, &tri[0], &tri[1], &tri[2]) {
 				in++
-				// TODO break early, change ForEach
+				return true
 			}
+			return false
 		})
 		if in == 0 {
 			return false
