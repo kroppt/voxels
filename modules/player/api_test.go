@@ -367,3 +367,55 @@ func TestFrustumCullingWideAngle(t *testing.T) {
 		t.Fatalf("expected viewed chunks: %v but got viewed chunks %v", expectedViewedChunks, actualViewedChunks)
 	}
 }
+
+func TestFrustumCullingLargeChunks(t *testing.T) {
+	t.Parallel()
+	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: 0,
+		}: {},
+		{
+			PositionX: 0,
+			PositionY: 0,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: -1,
+			PositionY: 0,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: 0,
+			PositionY: -1,
+			PositionZ: -1,
+		}: {},
+		{
+			PositionX: -1,
+			PositionY: -1,
+			PositionZ: -1,
+		}: {},
+	}
+	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	worldMod := &world.FnModule{
+		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+			actualViewedChunks = viewChunks
+		},
+	}
+	settingsMod := settings.New()
+	settingsMod.SetFOV(70)
+	settingsMod.SetNear(0.1)
+	settingsMod.SetFar(10)
+	settingsMod.SetRenderDistance(1)
+	settingsMod.SetResolution(1, 1)
+	playerMod := player.New(worldMod, settingsMod, 3)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{
+		Rotation: mgl64.QuatIdent(),
+	})
+
+	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
+		t.Fatalf("expected viewed chunks: %v but got viewed chunks %v", expectedViewedChunks, actualViewedChunks)
+	}
+}

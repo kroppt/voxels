@@ -210,7 +210,12 @@ func (rng worldRange) ForEach(fn func(glm.Vec3) bool) {
 	}
 }
 
-func (c *core) isWithinFrustum(cam *camera, corner glm.Vec3, dx, dy, dz float32) bool {
+func (c *core) isWithinFrustum(cam *camera, pos chunkPos, chunkSize uint32) bool {
+	corner := glm.Vec3{
+		float32(chunkSize) * float32(pos.x),
+		float32(chunkSize) * float32(pos.y),
+		float32(chunkSize) * float32(pos.z),
+	}
 	near := float32(c.settingsMod.GetNear())
 	far := float32(c.settingsMod.GetFar())
 	fovyDeg := float32(c.settingsMod.GetFOV())
@@ -253,9 +258,9 @@ func (c *core) isWithinFrustum(cam *camera, corner glm.Vec3, dx, dy, dz float32)
 		{nearCenter, nup, nleft}, // near
 	}
 	cubeRange := worldRange{
-		X: fRange{corner.X(), corner.X() + dx, dx},
-		Y: fRange{corner.Y(), corner.Y() + dy, dy},
-		Z: fRange{corner.Z(), corner.Z() + dz, dz},
+		X: fRange{corner.X(), corner.X() + float32(chunkSize), float32(chunkSize)},
+		Y: fRange{corner.Y(), corner.Y() + float32(chunkSize), float32(chunkSize)},
+		Z: fRange{corner.Z(), corner.Z() + float32(chunkSize), float32(chunkSize)},
 	}
 	for _, tri := range planeTriangles {
 		in := 0
@@ -307,14 +312,15 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 		float32(c.position.Y),
 		float32(c.position.Z),
 	})
+
 	rng.forEach(func(pos chunkPos) bool {
-		if c.isWithinFrustum(cam, glm.Vec3{float32(pos.x), float32(pos.y), float32(pos.z)},
-			float32(c.chunkSize), float32(c.chunkSize), float32(c.chunkSize)) {
-			viewChunks[world.ChunkEvent{
+		if c.isWithinFrustum(cam, pos, c.chunkSize) {
+			key := world.ChunkEvent{
 				PositionX: pos.x,
 				PositionY: pos.y,
 				PositionZ: pos.z,
-			}] = struct{}{}
+			}
+			viewChunks[key] = struct{}{}
 		}
 		return false
 	})
