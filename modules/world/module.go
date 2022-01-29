@@ -9,7 +9,8 @@ type Module struct {
 func New(graphicsMod graphics.Interface) *Module {
 	return &Module{
 		core{
-			graphicsMod: graphicsMod,
+			graphicsMod:  graphicsMod,
+			chunksLoaded: map[ChunkEvent]struct{}{},
 		},
 	}
 }
