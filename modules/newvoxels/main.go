@@ -28,7 +28,7 @@ func main() {
 	fileMod := file.New()
 	settingsRepo := settings.New()
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(_ world.ChunkEvent) chunk.Chunk {
+		FnGenerateChunk: func(_ chunk.Position) chunk.Chunk {
 			newChunk := chunk.New(chunk.Position{
 				X: 0,
 				Y: 0,

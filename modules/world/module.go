@@ -1,6 +1,9 @@
 package world
 
-import "github.com/kroppt/voxels/modules/graphics"
+import (
+	"github.com/kroppt/voxels/chunk"
+	"github.com/kroppt/voxels/modules/graphics"
+)
 
 type Module struct {
 	c core
@@ -11,7 +14,7 @@ func New(graphicsMod graphics.Interface, generator Generator) *Module {
 		core{
 			graphicsMod:  graphicsMod,
 			generator:    generator,
-			chunksLoaded: map[ChunkEvent]struct{}{},
+			chunksLoaded: map[chunk.Position]struct{}{},
 		},
 	}
 }

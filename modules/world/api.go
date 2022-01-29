@@ -1,27 +1,23 @@
 package world
 
+import "github.com/kroppt/voxels/chunk"
+
 type Interface interface {
-	LoadChunk(ChunkEvent)
-	UnloadChunk(ChunkEvent)
-	UpdateView(map[ChunkEvent]struct{})
+	LoadChunk(chunk.Position)
+	UnloadChunk(chunk.Position)
+	UpdateView(map[chunk.Position]struct{})
 	CountLoadedChunks() int
 }
 
-type ChunkEvent struct {
-	PositionX int32
-	PositionY int32
-	PositionZ int32
+func (m *Module) LoadChunk(pos chunk.Position) {
+	m.c.loadChunk(pos)
 }
 
-func (m *Module) LoadChunk(chunkEvent ChunkEvent) {
-	m.c.loadChunk(chunkEvent)
+func (m *Module) UnloadChunk(pos chunk.Position) {
+	m.c.unloadChunk(pos)
 }
 
-func (m *Module) UnloadChunk(chunkEvent ChunkEvent) {
-	m.c.unloadChunk(chunkEvent)
-}
-
-func (m *Module) UpdateView(viewableChunks map[ChunkEvent]struct{}) {
+func (m *Module) UpdateView(viewableChunks map[chunk.Position]struct{}) {
 	m.c.updateView(viewableChunks)
 }
 
@@ -30,23 +26,23 @@ func (m *Module) CountLoadedChunks() int {
 }
 
 type FnModule struct {
-	FnLoadChunk         func(ChunkEvent)
-	FnUnloadChunk       func(ChunkEvent)
-	FnUpdateView        func(map[ChunkEvent]struct{})
+	FnLoadChunk         func(chunk.Position)
+	FnUnloadChunk       func(chunk.Position)
+	FnUpdateView        func(map[chunk.Position]struct{})
 	FnCountLoadedChunks func() int
 }
 
-func (fn *FnModule) LoadChunk(evt ChunkEvent) {
+func (fn *FnModule) LoadChunk(pos chunk.Position) {
 	if fn.FnLoadChunk != nil {
-		fn.FnLoadChunk(evt)
+		fn.FnLoadChunk(pos)
 	}
 }
-func (fn *FnModule) UnloadChunk(evt ChunkEvent) {
+func (fn *FnModule) UnloadChunk(pos chunk.Position) {
 	if fn.FnUnloadChunk != nil {
-		fn.FnUnloadChunk(evt)
+		fn.FnUnloadChunk(pos)
 	}
 }
-func (fn *FnModule) UpdateView(viewChunks map[ChunkEvent]struct{}) {
+func (fn *FnModule) UpdateView(viewChunks map[chunk.Position]struct{}) {
 	if fn.FnUpdateView != nil {
 		fn.FnUpdateView(viewChunks)
 	}

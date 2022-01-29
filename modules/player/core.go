@@ -5,6 +5,7 @@ import (
 
 	"github.com/engoengine/glm"
 	"github.com/engoengine/glm/geo"
+	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -147,20 +148,20 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	}
 	new.forEach(func(pos chunkPos) bool {
 		if !old.contains(pos) {
-			c.worldMod.LoadChunk(world.ChunkEvent{
-				PositionX: pos.x,
-				PositionY: pos.y,
-				PositionZ: pos.z,
+			c.worldMod.LoadChunk(chunk.Position{
+				X: pos.x,
+				Y: pos.y,
+				Z: pos.z,
 			})
 		}
 		return false
 	})
 	old.forEach(func(pos chunkPos) bool {
 		if !new.contains(pos) {
-			c.worldMod.UnloadChunk(world.ChunkEvent{
-				PositionX: pos.x,
-				PositionY: pos.y,
-				PositionZ: pos.z,
+			c.worldMod.UnloadChunk(chunk.Position{
+				X: pos.x,
+				Y: pos.y,
+				Z: pos.z,
 			})
 		}
 		return false
@@ -293,7 +294,7 @@ func (c *core) isWithinFrustum(cam *camera, pos chunkPos, chunkSize uint32) bool
 	return true
 }
 
-func (c *core) getFrustumCulledChunks() map[world.ChunkEvent]struct{} {
+func (c *core) getFrustumCulledChunks() map[chunk.Position]struct{} {
 	if !c.dirAssigned || !c.posAssigned {
 		panic("position and direction required for frustum culling calculations")
 	}
@@ -312,7 +313,7 @@ func (c *core) getFrustumCulledChunks() map[world.ChunkEvent]struct{} {
 			z: newChunkPos.z + renderDistance,
 		},
 	}
-	viewChunks := map[world.ChunkEvent]struct{}{}
+	viewChunks := map[chunk.Position]struct{}{}
 	cam := createCamera(glm.Quat{
 		W: float32(c.direction.Rotation.W),
 		V: glm.Vec3{
@@ -328,10 +329,10 @@ func (c *core) getFrustumCulledChunks() map[world.ChunkEvent]struct{} {
 
 	rng.forEach(func(pos chunkPos) bool {
 		if c.isWithinFrustum(cam, pos, c.chunkSize) {
-			key := world.ChunkEvent{
-				PositionX: pos.x,
-				PositionY: pos.y,
-				PositionZ: pos.z,
+			key := chunk.Position{
+				X: pos.x,
+				Y: pos.y,
+				Z: pos.z,
 			}
 			viewChunks[key] = struct{}{}
 		}

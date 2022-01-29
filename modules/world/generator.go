@@ -3,20 +3,16 @@ package world
 import "github.com/kroppt/voxels/chunk"
 
 type Generator interface {
-	GenerateChunk(ChunkEvent) chunk.Chunk
+	GenerateChunk(chunk.Position) chunk.Chunk
 }
 
 type FnGenerator struct {
-	FnGenerateChunk func(ChunkEvent) chunk.Chunk
+	FnGenerateChunk func(chunk.Position) chunk.Chunk
 }
 
-func (fn *FnGenerator) GenerateChunk(chunkEvent ChunkEvent) chunk.Chunk {
+func (fn *FnGenerator) GenerateChunk(pos chunk.Position) chunk.Chunk {
 	if fn.FnGenerateChunk != nil {
-		return fn.FnGenerateChunk(chunkEvent)
+		return fn.FnGenerateChunk(pos)
 	}
-	return chunk.New(chunk.Position{
-		X: chunkEvent.PositionX,
-		Y: chunkEvent.PositionY,
-		Z: chunkEvent.PositionZ,
-	}, 0)
+	return chunk.New(pos, 0)
 }

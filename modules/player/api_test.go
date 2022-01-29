@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/go-gl/mathgl/mgl64"
+	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -42,7 +43,7 @@ func TestModuleNew(t *testing.T) {
 		expected := false
 		var loaded bool
 		worldMod := &world.FnModule{
-			FnLoadChunk: func(chunkEvent world.ChunkEvent) {
+			FnLoadChunk: func(pos chunk.Position) {
 				loaded = true
 			},
 		}
@@ -64,19 +65,19 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 	t.Run("when player position is moved, the right chunks are loaded and unloaded", func(t *testing.T) {
 		t.Parallel()
 		const chunkSize = 10
-		expectedLoad := map[world.ChunkEvent]struct{}{}
-		expectedUnload := map[world.ChunkEvent]struct{}{}
+		expectedLoad := map[chunk.Position]struct{}{}
+		expectedUnload := map[chunk.Position]struct{}{}
 		for y := int32(-2); y <= 2; y++ {
 			for z := int32(-2); z <= 2; z++ {
-				expectedLoad[world.ChunkEvent{
-					PositionX: 3,
-					PositionY: y,
-					PositionZ: z,
+				expectedLoad[chunk.Position{
+					X: 3,
+					Y: y,
+					Z: z,
 				}] = struct{}{}
-				expectedUnload[world.ChunkEvent{
-					PositionX: -2,
-					PositionY: y,
-					PositionZ: z,
+				expectedUnload[chunk.Position{
+					X: -2,
+					Y: y,
+					Z: z,
 				}] = struct{}{}
 			}
 		}
@@ -92,14 +93,14 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			Y: 0,
 			Z: 0,
 		})
-		actualLoaded := map[world.ChunkEvent]struct{}{}
-		actualUnloaded := map[world.ChunkEvent]struct{}{}
+		actualLoaded := map[chunk.Position]struct{}{}
+		actualUnloaded := map[chunk.Position]struct{}{}
 
-		worldMod.FnLoadChunk = func(chunkEvent world.ChunkEvent) {
-			actualLoaded[chunkEvent] = struct{}{}
+		worldMod.FnLoadChunk = func(pos chunk.Position) {
+			actualLoaded[pos] = struct{}{}
 		}
-		worldMod.FnUnloadChunk = func(chunkEvent world.ChunkEvent) {
-			actualUnloaded[chunkEvent] = struct{}{}
+		worldMod.FnUnloadChunk = func(pos chunk.Position) {
+			actualUnloaded[pos] = struct{}{}
 		}
 
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
@@ -119,22 +120,22 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 	t.Run("when player position is moved diagonally, new chunks are shown", func(t *testing.T) {
 		t.Parallel()
 		const chunkSize = 10
-		expected := map[world.ChunkEvent]struct{}{}
+		expected := map[chunk.Position]struct{}{}
 		for y := int32(-2); y <= 2; y++ {
 			for x := int32(-3); x <= 1; x++ {
-				expected[world.ChunkEvent{
-					PositionX: x,
-					PositionY: y,
-					PositionZ: -3,
+				expected[chunk.Position{
+					X: x,
+					Y: y,
+					Z: -3,
 				}] = struct{}{}
 			}
 		}
 		for y := int32(-2); y <= 2; y++ {
 			for z := int32(-3); z <= 1; z++ {
-				expected[world.ChunkEvent{
-					PositionX: -3,
-					PositionY: y,
-					PositionZ: z,
+				expected[chunk.Position{
+					X: -3,
+					Y: y,
+					Z: z,
 				}] = struct{}{}
 			}
 		}
@@ -150,9 +151,9 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			Y: 0,
 			Z: 0,
 		})
-		actual := map[world.ChunkEvent]struct{}{}
-		worldMod.FnLoadChunk = func(chunkEvent world.ChunkEvent) {
-			actual[chunkEvent] = struct{}{}
+		actual := map[chunk.Position]struct{}{}
+		worldMod.FnLoadChunk = func(pos chunk.Position) {
+			actual[pos] = struct{}{}
 		}
 
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
@@ -169,22 +170,22 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 	t.Run("when player position is moved diagonally, old chunks are hidden", func(t *testing.T) {
 		t.Parallel()
 		const chunkSize = 10
-		expected := map[world.ChunkEvent]struct{}{}
+		expected := map[chunk.Position]struct{}{}
 		for y := int32(-2); y <= 2; y++ {
 			for x := int32(-2); x <= 2; x++ {
-				expected[world.ChunkEvent{
-					PositionX: x,
-					PositionY: y,
-					PositionZ: 2,
+				expected[chunk.Position{
+					X: x,
+					Y: y,
+					Z: 2,
 				}] = struct{}{}
 			}
 		}
 		for y := int32(-2); y <= 2; y++ {
 			for z := int32(-2); z <= 2; z++ {
-				expected[world.ChunkEvent{
-					PositionX: 2,
-					PositionY: y,
-					PositionZ: z,
+				expected[chunk.Position{
+					X: 2,
+					Y: y,
+					Z: z,
 				}] = struct{}{}
 			}
 		}
@@ -200,9 +201,9 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			Y: 0,
 			Z: 5,
 		})
-		actual := map[world.ChunkEvent]struct{}{}
-		worldMod.FnUnloadChunk = func(chunkEvent world.ChunkEvent) {
-			actual[chunkEvent] = struct{}{}
+		actual := map[chunk.Position]struct{}{}
+		worldMod.FnUnloadChunk = func(pos chunk.Position) {
+			actual[pos] = struct{}{}
 		}
 
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
@@ -222,7 +223,7 @@ func TestNoCullingWithoutPos(t *testing.T) {
 	expected := false
 	var calledUpdateView bool
 	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
 			calledUpdateView = true
 		},
 	}
@@ -240,7 +241,7 @@ func TestNoCullingWithoutDirection(t *testing.T) {
 	expected := false
 	var calledUpdateView bool
 	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
 			calledUpdateView = true
 		},
 	}
@@ -258,7 +259,7 @@ func TestCullingWithPosAndDir(t *testing.T) {
 	expected := true
 	var calledUpdateView bool
 	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
 			calledUpdateView = true
 		},
 	}
@@ -281,21 +282,21 @@ func TestCullingWithPosAndDir(t *testing.T) {
 
 func TestFrustumCulling(t *testing.T) {
 	t.Parallel()
-	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+	expectedViewedChunks := map[chunk.Position]struct{}{
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: 0,
+			X: 0,
+			Y: 0,
+			Z: 0,
 		}: {},
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: -1,
+			X: 0,
+			Y: 0,
+			Z: -1,
 		}: {},
 	}
-	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -318,61 +319,61 @@ func TestFrustumCulling(t *testing.T) {
 
 func TestFrustumCullingWideAngle(t *testing.T) {
 	t.Parallel()
-	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+	expectedViewedChunks := map[chunk.Position]struct{}{
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: 0,
+			X: 0,
+			Y: 0,
+			Z: 0,
 		}: {},
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: -1,
+			X: 0,
+			Y: 0,
+			Z: -1,
 		}: {},
 		{
-			PositionX: -1,
-			PositionY: 0,
-			PositionZ: -1,
+			X: -1,
+			Y: 0,
+			Z: -1,
 		}: {},
 		{
-			PositionX: -1,
-			PositionY: 1,
-			PositionZ: -1,
+			X: -1,
+			Y: 1,
+			Z: -1,
 		}: {},
 		{
-			PositionX: -1,
-			PositionY: -1,
-			PositionZ: -1,
+			X: -1,
+			Y: -1,
+			Z: -1,
 		}: {},
 		{
-			PositionX: 0,
-			PositionY: -1,
-			PositionZ: -1,
+			X: 0,
+			Y: -1,
+			Z: -1,
 		}: {},
 		{
-			PositionX: 0,
-			PositionY: 1,
-			PositionZ: -1,
+			X: 0,
+			Y: 1,
+			Z: -1,
 		}: {},
 		{
-			PositionX: 1,
-			PositionY: 0,
-			PositionZ: -1,
+			X: 1,
+			Y: 0,
+			Z: -1,
 		}: {},
 		{
-			PositionX: 1,
-			PositionY: -1,
-			PositionZ: -1,
+			X: 1,
+			Y: -1,
+			Z: -1,
 		}: {},
 		{
-			PositionX: 1,
-			PositionY: 1,
-			PositionZ: -1,
+			X: 1,
+			Y: 1,
+			Z: -1,
 		}: {},
 	}
-	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -395,36 +396,36 @@ func TestFrustumCullingWideAngle(t *testing.T) {
 
 func TestFrustumCullingLargeChunks(t *testing.T) {
 	t.Parallel()
-	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+	expectedViewedChunks := map[chunk.Position]struct{}{
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: 0,
+			X: 0,
+			Y: 0,
+			Z: 0,
 		}: {},
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: -1,
+			X: 0,
+			Y: 0,
+			Z: -1,
 		}: {},
 		{
-			PositionX: -1,
-			PositionY: 0,
-			PositionZ: -1,
+			X: -1,
+			Y: 0,
+			Z: -1,
 		}: {},
 		{
-			PositionX: 0,
-			PositionY: -1,
-			PositionZ: -1,
+			X: 0,
+			Y: -1,
+			Z: -1,
 		}: {},
 		{
-			PositionX: -1,
-			PositionY: -1,
-			PositionZ: -1,
+			X: -1,
+			Y: -1,
+			Z: -1,
 		}: {},
 	}
-	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -447,21 +448,21 @@ func TestFrustumCullingLargeChunks(t *testing.T) {
 
 func TestFrustumCullingDueToPositionChange(t *testing.T) {
 	t.Parallel()
-	expectedViewedChunks := map[world.ChunkEvent]struct{}{
+	expectedViewedChunks := map[chunk.Position]struct{}{
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: 0,
+			X: 0,
+			Y: 0,
+			Z: 0,
 		}: {},
 		{
-			PositionX: 0,
-			PositionY: 0,
-			PositionZ: -1,
+			X: 0,
+			Y: 0,
+			Z: -1,
 		}: {},
 	}
-	actualViewedChunks := map[world.ChunkEvent]struct{}{}
+	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[world.ChunkEvent]struct{}) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
 			actualViewedChunks = viewChunks
 		},
 	}
