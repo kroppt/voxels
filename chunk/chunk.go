@@ -82,12 +82,16 @@ func (c Chunk) Size() uint32 {
 }
 
 func (c Chunk) isOutOfBounds(vpos VoxelCoordinate) bool {
-	if vpos.X < c.pos.X || vpos.Y < c.pos.Y || vpos.Z < c.pos.Z {
+	chMinX := c.pos.X * int32(c.size)
+	chMaxX := chMinX + int32(c.size)
+	chMinY := c.pos.Y * int32(c.size)
+	chMaxY := chMinY + int32(c.size)
+	chMinZ := c.pos.Z * int32(c.size)
+	chMaxZ := chMinZ + int32(c.size)
+	if vpos.X < chMinX || vpos.Y < chMinY || vpos.Z < chMinZ {
 		return true
 	}
-	if vpos.X >= c.pos.X+int32(c.size) ||
-		vpos.Y >= c.pos.Y+int32(c.size) ||
-		vpos.Z >= c.pos.Z+int32(c.size) {
+	if vpos.X >= chMaxX || vpos.Y >= chMaxY || vpos.Z >= chMaxZ {
 		return true
 	}
 	return false

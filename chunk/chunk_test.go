@@ -27,6 +27,16 @@ func TestInvalidChunk(t *testing.T) {
 		c := chunk.New(chunk.Position{0, 0, 0}, 2)
 		c.SetBlockType(chunk.VoxelCoordinate{2, 2, 2}, chunk.BlockTypeAir)
 	})
+	t.Run("cannot set block type out of chunk bounds complex coords", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{-1, -1, -1}, 2)
+		c.SetBlockType(chunk.VoxelCoordinate{-1, -1, 1}, chunk.BlockTypeAir)
+	})
 	t.Run("cannot get block type out of chunk bounds", func(t *testing.T) {
 		t.Parallel()
 		defer func() {
@@ -154,6 +164,28 @@ func TestChunk(t *testing.T) {
 		expected := chunk.BlockTypeDirt
 		voxelCoordinate := chunk.VoxelCoordinate{5, 5, 5}
 		chunk := chunk.New(chunk.Position{0, 0, 0}, 10)
+		chunk.SetBlockType(voxelCoordinate, expected)
+		actual := chunk.BlockType(voxelCoordinate)
+		if actual != expected {
+			t.Fatalf("expected to get back block type of %v but got %v", expected, actual)
+		}
+	})
+	t.Run("set block type of one voxel to dirt and get it back offset chunk", func(t *testing.T) {
+		t.Parallel()
+		expected := chunk.BlockTypeDirt
+		voxelCoordinate := chunk.VoxelCoordinate{12, 12, 12}
+		chunk := chunk.New(chunk.Position{1, 1, 1}, 10)
+		chunk.SetBlockType(voxelCoordinate, expected)
+		actual := chunk.BlockType(voxelCoordinate)
+		if actual != expected {
+			t.Fatalf("expected to get back block type of %v but got %v", expected, actual)
+		}
+	})
+	t.Run("set block type of one voxel to dirt and get it back in negative", func(t *testing.T) {
+		t.Parallel()
+		expected := chunk.BlockTypeDirt
+		voxelCoordinate := chunk.VoxelCoordinate{-2, -3, -4}
+		chunk := chunk.New(chunk.Position{-1, -1, -1}, 10)
 		chunk.SetBlockType(voxelCoordinate, expected)
 		actual := chunk.BlockType(voxelCoordinate)
 		if actual != expected {
