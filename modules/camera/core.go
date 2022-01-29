@@ -2,17 +2,15 @@ package camera
 
 import (
 	mgl "github.com/go-gl/mathgl/mgl64"
-	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
 )
 
 type core struct {
-	playerMod   player.Interface
-	graphicsMod graphics.Interface
-	x           float64
-	y           float64
-	z           float64
-	rot         mgl.Quat
+	playerMod player.Interface
+	x         float64
+	y         float64
+	z         float64
+	rot       mgl.Quat
 }
 
 func (c *core) handleMovementEvent(evt MovementEvent) {

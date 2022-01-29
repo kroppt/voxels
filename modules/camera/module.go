@@ -2,7 +2,6 @@ package camera
 
 import (
 	mgl "github.com/go-gl/mathgl/mgl64"
-	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
 )
 
@@ -12,15 +11,14 @@ type Module struct {
 }
 
 // New creates a camera.
-func New(playerMod player.Interface, graphicsMod graphics.Interface, initialPos player.PositionEvent) *Module {
+func New(playerMod player.Interface, initialPos player.PositionEvent) *Module {
 	if playerMod != nil {
 		playerMod.UpdatePlayerPosition(initialPos)
 	}
 	return &Module{
 		core{
-			playerMod:   playerMod,
-			graphicsMod: graphicsMod,
-			rot:         mgl.QuatIdent(),
+			playerMod: playerMod,
+			rot:       mgl.QuatIdent(),
 		},
 	}
 }

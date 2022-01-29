@@ -7,13 +7,12 @@ import (
 
 	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/modules/camera"
-	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
 )
 
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
-		mod := camera.New(nil, nil, player.PositionEvent{})
+		mod := camera.New(nil, player.PositionEvent{})
 		if mod == nil {
 			t.Fatal("expected non-nil return")
 		}
@@ -33,7 +32,7 @@ func TestModuleNewInitialPos(t *testing.T) {
 				actual = posEvent
 			},
 		}
-		camera.New(playerMod, nil, player.PositionEvent{
+		camera.New(playerMod, player.PositionEvent{
 			X: 1,
 			Y: 2,
 			Z: 3,
@@ -94,9 +93,7 @@ func TestMovementEventPlayerMod(t *testing.T) {
 					actualEvent = posEvent
 				},
 			}
-			graphicsMod := &graphics.FnModule{}
-
-			mod := camera.New(playerMod, graphicsMod, player.PositionEvent{})
+			mod := camera.New(playerMod, player.PositionEvent{})
 
 			movementEvent := camera.MovementEvent{
 				Direction: tC.direction,
@@ -123,9 +120,8 @@ func TestMovementEventPlayerMod(t *testing.T) {
 				actualEvent = posEvent
 			},
 		}
-		graphicsMod := &graphics.FnModule{}
 
-		mod := camera.New(playerMod, graphicsMod, player.PositionEvent{})
+		mod := camera.New(playerMod, player.PositionEvent{})
 
 		moveRightEvent := camera.MovementEvent{
 			Direction: camera.MoveRight,
@@ -391,7 +387,7 @@ func TestModuleHandleLookEvent(t *testing.T) {
 				},
 			}
 
-			cameraMod := camera.New(playerMod, nil, player.PositionEvent{})
+			cameraMod := camera.New(playerMod, player.PositionEvent{})
 
 			for _, look := range tC.looks {
 				lookEvent := camera.LookEvent{
