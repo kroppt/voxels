@@ -14,5 +14,5 @@ func (fn *FnGenerator) GenerateChunk(pos chunk.Position) chunk.Chunk {
 	if fn.FnGenerateChunk != nil {
 		return fn.FnGenerateChunk(pos)
 	}
-	return chunk.New(pos, 0)
+	return chunk.New(pos, 1)
 }

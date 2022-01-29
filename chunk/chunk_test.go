@@ -6,6 +6,119 @@ import (
 	"github.com/kroppt/voxels/chunk"
 )
 
+func TestInvalidChunk(t *testing.T) {
+	t.Parallel()
+	t.Run("cannot create chunk with size 0", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		chunk.New(chunk.Position{}, 0)
+	})
+	t.Run("cannot set block type out of chunk bounds", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.SetBlockType(chunk.VoxelCoordinate{2, 2, 2}, chunk.BlockTypeAir)
+	})
+	t.Run("cannot get block type out of chunk bounds", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.BlockType(chunk.VoxelCoordinate{2, 2, 2})
+	})
+	t.Run("cannot set lighting out of chunk bounds", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.SetLighting(chunk.VoxelCoordinate{2, 2, 2}, chunk.LightLeft, 5)
+	})
+	t.Run("cannot get lighting out of chunk bounds", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.Lighting(chunk.VoxelCoordinate{2, 2, 2}, chunk.LightFront)
+	})
+	t.Run("cannot set adjacency out of chunk bounds", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.SetAdjacency(chunk.VoxelCoordinate{2, 2, 2}, chunk.AdjacentBack)
+	})
+	t.Run("cannot get adjacency out of chunk bounds", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.Adjacency(chunk.VoxelCoordinate{2, 2, 2})
+	})
+	t.Run("cannot set invalid adjacency", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.SetAdjacency(chunk.VoxelCoordinate{0, 0, 0}, 0b1000000)
+	})
+	t.Run("cannot set invalid light intensity", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.SetLighting(chunk.VoxelCoordinate{0, 0, 0}, chunk.LightBack, 16)
+	})
+	t.Run("cannot specifcy invalid light face when setting", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.SetLighting(chunk.VoxelCoordinate{0, 0, 0}, 21, 5)
+	})
+	t.Run("cannot specifcy invalid light face when getting", func(t *testing.T) {
+		t.Parallel()
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but didn't")
+			}
+		}()
+		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c.Lighting(chunk.VoxelCoordinate{0, 0, 0}, 21)
+	})
+}
+
 func TestChunk(t *testing.T) {
 	t.Parallel()
 	t.Run("test get chunk position", func(t *testing.T) {

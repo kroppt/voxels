@@ -63,6 +63,9 @@ const (
 )
 
 func New(pos Position, size uint32) Chunk {
+	if size == 0 {
+		panic("chunk size cannot be 0")
+	}
 	return Chunk{
 		pos:      pos,
 		size:     size,
@@ -78,7 +81,22 @@ func (c Chunk) Size() uint32 {
 	return c.size
 }
 
+func (c Chunk) isOutOfBounds(vpos VoxelCoordinate) bool {
+	if vpos.X < c.pos.X || vpos.Y < c.pos.Y || vpos.Z < c.pos.Z {
+		return true
+	}
+	if vpos.X >= c.pos.X+int32(c.size) ||
+		vpos.Y >= c.pos.Y+int32(c.size) ||
+		vpos.Z >= c.pos.Z+int32(c.size) {
+		return true
+	}
+	return false
+}
+
 func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) {
+	if c.isOutOfBounds(vpos) {
+		panic("voxel position is out of chunk bounds")
+	}
 	size := int32(c.size)
 	i := vpos.X - c.pos.X*size
 	j := vpos.Y - c.pos.Y*size
@@ -90,6 +108,9 @@ func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) {
 }
 
 func (c Chunk) BlockType(vpos VoxelCoordinate) BlockType {
+	if c.isOutOfBounds(vpos) {
+		panic("voxel position is out of chunk bounds")
+	}
 	size := int32(c.size)
 	i := vpos.X - c.pos.X*size
 	j := vpos.Y - c.pos.Y*size
@@ -100,6 +121,12 @@ func (c Chunk) BlockType(vpos VoxelCoordinate) BlockType {
 }
 
 func (c Chunk) SetAdjacency(vpos VoxelCoordinate, adj AdjacentMask) {
+	if c.isOutOfBounds(vpos) {
+		panic("voxel position is out of chunk bounds")
+	}
+	if adj > AdjacentAll {
+		panic("invalid adj mask")
+	}
 	size := int32(c.size)
 	i := vpos.X - c.pos.X*size
 	j := vpos.Y - c.pos.Y*size
@@ -111,6 +138,9 @@ func (c Chunk) SetAdjacency(vpos VoxelCoordinate, adj AdjacentMask) {
 }
 
 func (c Chunk) Adjacency(vpos VoxelCoordinate) AdjacentMask {
+	if c.isOutOfBounds(vpos) {
+		panic("voxel position is out of chunk bounds")
+	}
 	size := int32(c.size)
 	i := vpos.X - c.pos.X*size
 	j := vpos.Y - c.pos.Y*size
@@ -121,6 +151,15 @@ func (c Chunk) Adjacency(vpos VoxelCoordinate) AdjacentMask {
 }
 
 func (c Chunk) SetLighting(vpos VoxelCoordinate, face LightFace, intensity uint32) {
+	if c.isOutOfBounds(vpos) {
+		panic("voxel position is out of chunk bounds")
+	}
+	if intensity > 15 {
+		panic("light intensity too high")
+	}
+	if face > bitsPerMask*5 {
+		panic("invalid light face specified")
+	}
 	size := int32(c.size)
 	i := vpos.X - c.pos.X*size
 	j := vpos.Y - c.pos.Y*size
@@ -131,6 +170,12 @@ func (c Chunk) SetLighting(vpos VoxelCoordinate, face LightFace, intensity uint3
 }
 
 func (c Chunk) Lighting(vpos VoxelCoordinate, face LightFace) uint32 {
+	if c.isOutOfBounds(vpos) {
+		panic("voxel position is out of chunk bounds")
+	}
+	if face > bitsPerMask*5 {
+		panic("invalid light face specified")
+	}
 	size := int32(c.size)
 	i := vpos.X - c.pos.X*size
 	j := vpos.Y - c.pos.Y*size
