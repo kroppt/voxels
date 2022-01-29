@@ -62,14 +62,31 @@ const (
 	lightAll              = 0x00FFFFFF
 )
 
-func New(pos Position, size uint32) Chunk {
-	if size == 0 {
+func New(chPos Position, chSize uint32) Chunk {
+	if chSize == 0 {
 		panic("chunk size cannot be 0")
 	}
+
+	flatData := make([]float32, vertSize*chSize*chSize*chSize)
+	size := int32(chSize)
+	for x := chPos.X * size; x < chPos.X*size+size; x++ {
+		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
+			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
+				i := x - chPos.X*size
+				j := y - chPos.Y*size
+				k := z - chPos.Z*size
+				off := (i + j*size*size + k*size) * 5
+				flatData[off] = float32(x)
+				flatData[off+1] = float32(y)
+				flatData[off+2] = float32(z)
+			}
+		}
+	}
+
 	return Chunk{
-		pos:      pos,
-		size:     size,
-		flatData: make([]float32, vertSize*size*size*size),
+		pos:      chPos,
+		size:     chSize,
+		flatData: flatData,
 	}
 }
 
@@ -79,6 +96,10 @@ func (c Chunk) Position() Position {
 
 func (c Chunk) Size() uint32 {
 	return c.size
+}
+
+func (c Chunk) GetFlatData() []float32 {
+	return c.flatData
 }
 
 func (c Chunk) isOutOfBounds(vpos VoxelCoordinate) bool {

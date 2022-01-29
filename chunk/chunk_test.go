@@ -1,6 +1,7 @@
 package chunk_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/kroppt/voxels/chunk"
@@ -190,6 +191,30 @@ func TestChunk(t *testing.T) {
 		actual := chunk.BlockType(voxelCoordinate)
 		if actual != expected {
 			t.Fatalf("expected to get back block type of %v but got %v", expected, actual)
+		}
+	})
+	t.Run("flat data contains correct indices of voxels", func(t *testing.T) {
+		t.Parallel()
+		chPos := chunk.Position{0, 0, 0}
+		size := int32(2)
+		expectedFlatData := make([]float32, 5*size*size*size)
+		for x := chPos.X * size; x < chPos.X*size+size; x++ {
+			for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
+				for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
+					i := x - chPos.X*size
+					j := y - chPos.Y*size
+					k := z - chPos.Z*size
+					off := (i + j*size*size + k*size) * 5
+					expectedFlatData[off] = float32(x)
+					expectedFlatData[off+1] = float32(y)
+					expectedFlatData[off+2] = float32(z)
+				}
+			}
+		}
+		ch := chunk.New(chPos, uint32(size))
+		actualFlatData := ch.GetFlatData()
+		if !reflect.DeepEqual(expectedFlatData, actualFlatData) {
+			t.Fatalf("expected flat data to be %v but got %v", expectedFlatData, actualFlatData)
 		}
 	})
 }
