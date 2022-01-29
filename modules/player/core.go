@@ -3,8 +3,7 @@ package player
 import (
 	"math"
 
-	"github.com/engoengine/glm"
-	"github.com/engoengine/glm/geo"
+	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -178,31 +177,31 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 }
 
 type camera struct {
-	eye   glm.Vec3
-	dir   glm.Vec3
-	left  glm.Vec3
-	right glm.Vec3
-	up    glm.Vec3
-	down  glm.Vec3
+	eye   mgl.Vec3
+	dir   mgl.Vec3
+	left  mgl.Vec3
+	right mgl.Vec3
+	up    mgl.Vec3
+	down  mgl.Vec3
 }
 
-func createCamera(rot glm.Quat, pos glm.Vec3) *camera {
+func createCamera(rot mgl.Quat, pos mgl.Vec3) *camera {
 	inverse := rot.Inverse()
 	return &camera{
 		eye:   pos,
-		dir:   inverse.Rotate(&glm.Vec3{0.0, 0.0, -1.0}),
-		left:  inverse.Rotate(&glm.Vec3{-1.0, 0.0, 0.0}),
-		right: inverse.Rotate(&glm.Vec3{1.0, 0.0, 0.0}),
-		up:    inverse.Rotate(&glm.Vec3{0.0, 1.0, 0.0}),
-		down:  inverse.Rotate(&glm.Vec3{0.0, -1.0, 0.0}),
+		dir:   inverse.Rotate(mgl.Vec3{0.0, 0.0, -1.0}),
+		left:  inverse.Rotate(mgl.Vec3{-1.0, 0.0, 0.0}),
+		right: inverse.Rotate(mgl.Vec3{1.0, 0.0, 0.0}),
+		up:    inverse.Rotate(mgl.Vec3{0.0, 1.0, 0.0}),
+		down:  inverse.Rotate(mgl.Vec3{0.0, -1.0, 0.0}),
 	}
 
 }
 
 type fRange struct {
-	Min   float32
-	Max   float32
-	delta float32
+	Min   float64
+	Max   float64
+	delta float64
 }
 
 type worldRange struct {
@@ -211,11 +210,11 @@ type worldRange struct {
 	Z fRange
 }
 
-func (rng worldRange) ForEach(fn func(glm.Vec3) bool) {
+func (rng worldRange) ForEach(fn func(mgl.Vec3) bool) {
 	for x := rng.X.Min; x <= rng.X.Max; x += rng.X.delta {
 		for y := rng.Y.Min; y <= rng.Y.Max; y += rng.Y.delta {
 			for z := rng.Z.Min; z <= rng.Z.Max; z += rng.Z.delta {
-				stop := fn(glm.Vec3{x, y, z})
+				stop := fn(mgl.Vec3{x, y, z})
 				if stop {
 					return
 				}
@@ -224,46 +223,61 @@ func (rng worldRange) ForEach(fn func(glm.Vec3) bool) {
 	}
 }
 
-func (c *core) isWithinFrustum(cam *camera, pos chunkPos, chunkSize uint32) bool {
-	corner := glm.Vec3{
-		float32(chunkSize) * float32(pos.x),
-		float32(chunkSize) * float32(pos.y),
-		float32(chunkSize) * float32(pos.z),
+func approxZero(a float64) bool {
+	epsilon := 0.000001
+	if a > 0 {
+		return a <= epsilon
 	}
-	near := float32(c.settingsMod.GetNear())
-	far := float32(c.settingsMod.GetFar())
-	fovyDeg := float32(c.settingsMod.GetFOV())
+	return -a <= epsilon
+}
+
+func pointOutsidePlane(p, a, b, c mgl.Vec3) bool {
+	ap, ab, ac := p.Sub(a), b.Sub(a), c.Sub(a)
+	abac := ab.Cross(ac)
+	d := ap.Dot(abac)
+	return d > 0 || approxZero(d)
+}
+
+func (c *core) isWithinFrustum(cam *camera, pos chunkPos, chunkSize uint32) bool {
+	corner := mgl.Vec3{
+		float64(chunkSize) * float64(pos.x),
+		float64(chunkSize) * float64(pos.y),
+		float64(chunkSize) * float64(pos.z),
+	}
+	near := c.settingsMod.GetNear()
+	far := c.settingsMod.GetFar()
+	fovyDeg := c.settingsMod.GetFOV()
 	width, height := c.settingsMod.GetResolution()
-	aspect := float32(width) / float32(height)
+	aspect := float64(width) / float64(height)
 	// far plane math
 	farDist := cam.dir.Mul(far)
-	farCenter := cam.eye.Add(&farDist)
-	fovyRad := glm.DegToRad(fovyDeg / 2.0)
-	fhh := far * float32(math.Tan(float64(fovyRad)))
+	farCenter := cam.eye.Add(farDist)
+	fovyRad := mgl.DegToRad(fovyDeg / 2.0)
+	fhh := far * math.Tan(fovyRad)
 	fhw := aspect * fhh
 	farLeftOff := cam.left.Mul(fhw)
 	farRightOff := cam.right.Mul(fhw)
 	farUpOff := cam.up.Mul(fhh)
 	farDownOff := cam.down.Mul(fhh)
-	ftl := farCenter.Add(&farLeftOff)
-	ftl = ftl.Add(&farUpOff)
-	fbl := farCenter.Add(&farLeftOff)
-	fbl = fbl.Add(&farDownOff)
-	ftr := farCenter.Add(&farRightOff)
-	ftr = ftr.Add(&farUpOff)
-	fbr := farCenter.Add(&farRightOff)
-	fbr = fbr.Add(&farDownOff)
+	ftl := farCenter.Add(farLeftOff)
+	ftl = ftl.Add(farUpOff)
+	fbl := farCenter.Add(farLeftOff)
+	fbl = fbl.Add(farDownOff)
+	ftr := farCenter.Add(farRightOff)
+	ftr = ftr.Add(farUpOff)
+	fbr := farCenter.Add(farRightOff)
+	fbr = fbr.Add(farDownOff)
 	// near plane math
 	nearDist := cam.dir.Mul(near)
-	nearCenter := cam.eye.Add(&nearDist)
-	nhh := near * float32(math.Tan(float64(fovyRad/2.0)))
+	nearCenter := cam.eye.Add(nearDist)
+	nhh := near * math.Tan(fovyRad/2.0)
 	nhw := aspect * nhh
 	nearLeftOff := cam.left.Mul(nhw)
 	nearUpOff := cam.up.Mul(nhh)
-	nleft := nearCenter.Add(&nearLeftOff)
-	nup := nearCenter.Add(&nearUpOff)
+	nleft := nearCenter.Add(nearLeftOff)
+	nup := nearCenter.Add(nearUpOff)
 
-	planeTriangles := [6][3]glm.Vec3{
+	planeTriangles := [6][3]mgl.Vec3{
 		{cam.eye, ftl, fbl},      // left
 		{cam.eye, ftr, ftl},      // top
 		{cam.eye, fbr, ftr},      // right
@@ -272,15 +286,15 @@ func (c *core) isWithinFrustum(cam *camera, pos chunkPos, chunkSize uint32) bool
 		{nearCenter, nup, nleft}, // near
 	}
 	cubeRange := worldRange{
-		X: fRange{corner.X(), corner.X() + float32(chunkSize), float32(chunkSize)},
-		Y: fRange{corner.Y(), corner.Y() + float32(chunkSize), float32(chunkSize)},
-		Z: fRange{corner.Z(), corner.Z() + float32(chunkSize), float32(chunkSize)},
+		X: fRange{corner.X(), corner.X() + float64(chunkSize), float64(chunkSize)},
+		Y: fRange{corner.Y(), corner.Y() + float64(chunkSize), float64(chunkSize)},
+		Z: fRange{corner.Z(), corner.Z() + float64(chunkSize), float64(chunkSize)},
 	}
 	for _, tri := range planeTriangles {
 		in := 0
-		cubeRange.ForEach(func(v glm.Vec3) bool {
+		cubeRange.ForEach(func(v mgl.Vec3) bool {
 			// every corner of cube
-			if !geo.PointOutsidePlane(&v, &tri[0], &tri[1], &tri[2]) {
+			if !pointOutsidePlane(v, tri[0], tri[1], tri[2]) {
 				in++
 				return true
 			}
@@ -314,17 +328,17 @@ func (c *core) getFrustumCulledChunks() map[chunk.Position]struct{} {
 		},
 	}
 	viewChunks := map[chunk.Position]struct{}{}
-	cam := createCamera(glm.Quat{
-		W: float32(c.direction.Rotation.W),
-		V: glm.Vec3{
-			float32(c.direction.Rotation.X()),
-			float32(c.direction.Rotation.Y()),
-			float32(c.direction.Rotation.Z()),
+	cam := createCamera(mgl.Quat{
+		W: c.direction.Rotation.W,
+		V: mgl.Vec3{
+			c.direction.Rotation.X(),
+			c.direction.Rotation.Y(),
+			c.direction.Rotation.Z(),
 		},
-	}, glm.Vec3{
-		float32(c.position.X),
-		float32(c.position.Y),
-		float32(c.position.Z),
+	}, mgl.Vec3{
+		c.position.X,
+		c.position.Y,
+		c.position.Z,
 	})
 
 	rng.forEach(func(pos chunkPos) bool {
