@@ -1,6 +1,7 @@
 package graphics
 
 import (
+	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -11,7 +12,7 @@ type Interface interface {
 	PollEvent() (sdl.Event, bool)
 	LoadChunk(chunk.Chunk)
 	UnloadChunk(chunk.Position)
-	UpdateViewableChunks(map[chunk.Position]struct{})
+	UpdateView(map[chunk.Position]struct{}, mgl.Mat4)
 	DestroyWindow() error
 	Render()
 }
@@ -39,10 +40,10 @@ func (m *Module) LoadChunk(chunk chunk.Chunk) {
 func (m *Module) UnloadChunk(chunk.Position) {
 }
 
-// UpdateViewableChunks updates what chunks the graphics module should
+// UpdateView updates what chunks the graphics module should
 // try to render.
-func (m *Module) UpdateViewableChunks(map[chunk.Position]struct{}) {
-
+func (m *Module) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+	m.c.updateView(viewableChunks, viewMat)
 }
 
 // DestroyWindow destroys an SDL window.
@@ -55,14 +56,14 @@ func (m *Module) Render() {
 }
 
 type FnModule struct {
-	FnCreateWindow         func(string, uint32, uint32)
-	FnShowWindow           func()
-	FnPollEvent            func() (sdl.Event, bool)
-	FnLoadChunk            func(chunk.Chunk)
-	FnUnloadChunk          func(chunk.Position)
-	FnUpdateViewableChunks func(map[chunk.Position]struct{})
-	FnDestroyWindow        func() error
-	FnRender               func()
+	FnCreateWindow  func(string, uint32, uint32)
+	FnShowWindow    func()
+	FnPollEvent     func() (sdl.Event, bool)
+	FnLoadChunk     func(chunk.Chunk)
+	FnUnloadChunk   func(chunk.Position)
+	FnUpdateView    func(map[chunk.Position]struct{}, mgl.Mat4)
+	FnDestroyWindow func() error
+	FnRender        func()
 }
 
 func (fn FnModule) CreateWindow(title string, width, height uint32) error {
@@ -97,9 +98,9 @@ func (fn FnModule) UnloadChunk(pos chunk.Position) {
 	}
 }
 
-func (fn FnModule) UpdateViewableChunks(viewableChunks map[chunk.Position]struct{}) {
-	if fn.FnUpdateViewableChunks != nil {
-		fn.FnUpdateViewableChunks(viewableChunks)
+func (fn FnModule) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+	if fn.FnUpdateView != nil {
+		fn.FnUpdateView(viewableChunks, viewMat)
 	}
 }
 

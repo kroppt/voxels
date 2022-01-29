@@ -27,13 +27,14 @@ func main() {
 	graphicsMod := graphics.New()
 	fileMod := file.New()
 	settingsRepo := settings.New()
+	chunkSize := uint32(1)
 	testGen := &world.FnGenerator{
 		FnGenerateChunk: func(_ chunk.Position) chunk.Chunk {
 			newChunk := chunk.New(chunk.Position{
 				X: 0,
 				Y: 0,
 				Z: 0,
-			}, 1)
+			}, chunkSize)
 			newChunk.SetBlockType(chunk.VoxelCoordinate{
 				X: 0,
 				Y: 0,
@@ -43,7 +44,7 @@ func main() {
 		},
 	}
 	worldMod := world.New(graphicsMod, testGen)
-	playerMod := player.New(worldMod, settingsRepo, 1)
+	playerMod := player.New(worldMod, settingsRepo, graphicsMod, chunkSize)
 	cameraMod := camera.New(playerMod, player.PositionEvent{})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
 

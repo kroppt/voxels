@@ -5,6 +5,7 @@ import (
 
 	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
+	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -12,6 +13,7 @@ import (
 type core struct {
 	worldMod     world.Interface
 	settingsMod  settings.Interface
+	graphicsMod  graphics.Interface
 	chunkSize    uint32
 	lastChunkPos chunkPos
 	posAssigned  bool
@@ -116,7 +118,7 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	c.posAssigned = true
 	c.position = posEvent
 	if c.dirAssigned {
-		c.worldMod.UpdateView(c.getFrustumCulledChunks())
+		c.graphicsMod.UpdateView(c.getFrustumCulledChunks(), c.getUpdatedViewMatrix())
 	}
 	voxelPos := toVoxelPos(posEvent)
 	newChunkPos := c.playerToChunkPosition(voxelPos)
@@ -172,8 +174,20 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 	c.dirAssigned = true
 	c.direction = dirEvent
 	if c.posAssigned {
-		c.worldMod.UpdateView(c.getFrustumCulledChunks())
+		c.graphicsMod.UpdateView(c.getFrustumCulledChunks(), c.getUpdatedViewMatrix())
 	}
+}
+
+func (c *core) getUpdatedViewMatrix() mgl.Mat4 {
+	if !c.dirAssigned || !c.posAssigned {
+		panic("attempted to calc view matrix with unassigned direction or position")
+	}
+	view := mgl.Ident4()
+	cur := c.direction.Rotation.Mat4()
+	view = view.Mul4(cur)
+	pos := mgl.Translate3D(-c.position.X, -c.position.Y, -c.position.Z)
+	view = view.Mul4(pos)
+	return view
 }
 
 type camera struct {

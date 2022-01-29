@@ -4,6 +4,8 @@ import (
 	"runtime"
 
 	"github.com/go-gl/gl/v2.1/gl"
+	mgl "github.com/go-gl/mathgl/mgl64"
+	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/util"
 	"github.com/veandco/go-sdl2/sdl"
@@ -82,6 +84,10 @@ func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	sdl.Quit()
 	return err
+}
+
+func (c *core) updateView(viewableChunk map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+
 }
 
 func (c *core) render() {

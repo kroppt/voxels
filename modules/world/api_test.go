@@ -1,34 +1,12 @@
 package world_test
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/world"
 )
-
-func TestWorldUpdateChunkView(t *testing.T) {
-	t.Parallel()
-	expectedViewableChunks := map[chunk.Position]struct{}{
-		{X: 1, Y: 2, Z: 3}: {},
-	}
-	var actualViewableChunks map[chunk.Position]struct{}
-	graphicsMod := graphics.FnModule{
-		FnUpdateViewableChunks: func(viewableChunks map[chunk.Position]struct{}) {
-			actualViewableChunks = viewableChunks
-		},
-	}
-	worldMod := world.New(graphicsMod, nil)
-	worldMod.UpdateView(map[chunk.Position]struct{}{
-		{X: 1, Y: 2, Z: 3}: {},
-	})
-
-	if !reflect.DeepEqual(expectedViewableChunks, actualViewableChunks) {
-		t.Fatalf("expected graphics modules to receive %v viewable chunks, but got %v", expectedViewableChunks, actualViewableChunks)
-	}
-}
 
 func TestWorldLoadedChunkCount(t *testing.T) {
 	t.Parallel()

@@ -24,7 +24,3 @@ func (c *core) unloadChunk(pos chunk.Position) {
 func (c *core) countLoadedChunks() int {
 	return len(c.chunksLoaded)
 }
-
-func (c *core) updateView(viewableChunks map[chunk.Position]struct{}) {
-	c.graphicsMod.UpdateViewableChunks(viewableChunks)
-}

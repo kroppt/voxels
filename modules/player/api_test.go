@@ -4,8 +4,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/go-gl/mathgl/mgl64"
+	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
+	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -16,10 +17,8 @@ func TestModuleNew(t *testing.T) {
 
 	t.Run("return is non-nil", func(t *testing.T) {
 		t.Parallel()
-		worldMod := &world.FnModule{}
-		settingsMod := settings.FnRepository{}
 
-		mod := player.New(worldMod, settingsMod, 1)
+		mod := player.New(world.FnModule{}, settings.FnRepository{}, graphics.FnModule{}, 1)
 
 		if mod == nil {
 			t.Fatal("expected non-nil return")
@@ -33,16 +32,15 @@ func TestModuleNew(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		worldMod := &world.FnModule{}
 
-		player.New(worldMod, nil, 1)
+		player.New(world.FnModule{}, nil, graphics.FnModule{}, 1)
 	})
 
 	t.Run("nothing is loded by default", func(t *testing.T) {
 		t.Parallel()
 		expected := false
 		var loaded bool
-		worldMod := &world.FnModule{
+		worldMod := world.FnModule{
 			FnLoadChunk: func(pos chunk.Position) {
 				loaded = true
 			},
@@ -53,7 +51,7 @@ func TestModuleNew(t *testing.T) {
 			},
 		}
 
-		player.New(worldMod, settingsMod, 1)
+		player.New(worldMod, settingsMod, graphics.FnModule{}, 1)
 
 		if loaded != expected {
 			t.Fatal("expected no chunk to be loaded, but one was")
@@ -87,7 +85,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			},
 		}
 		worldMod := &world.FnModule{}
-		playerMod := player.New(worldMod, settingsMod, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{}, chunkSize)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -145,7 +143,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return 2
 			},
 		}
-		playerMod := player.New(worldMod, settingsMod, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{}, chunkSize)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -195,7 +193,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return 2
 			},
 		}
-		playerMod := player.New(worldMod, settingsMod, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{}, chunkSize)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -222,13 +220,13 @@ func TestNoCullingWithoutPos(t *testing.T) {
 	t.Parallel()
 	expected := false
 	var calledUpdateView bool
-	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
 			calledUpdateView = true
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
 
 	if calledUpdateView != expected {
@@ -240,13 +238,13 @@ func TestNoCullingWithoutDirection(t *testing.T) {
 	t.Parallel()
 	expected := false
 	var calledUpdateView bool
-	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
 			calledUpdateView = true
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{})
 
 	if calledUpdateView != expected {
@@ -258,13 +256,13 @@ func TestCullingWithPosAndDir(t *testing.T) {
 	t.Parallel()
 	expected := true
 	var calledUpdateView bool
-	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
 			calledUpdateView = true
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
 
@@ -287,8 +285,8 @@ func TestFrustumCulling(t *testing.T) {
 		{X: 0, Y: 0, Z: -1}: {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
-	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -298,10 +296,10 @@ func TestFrustumCulling(t *testing.T) {
 	settingsMod.SetFar(10)
 	settingsMod.SetRenderDistance(1)
 	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
-		Rotation: mgl64.QuatIdent(),
+		Rotation: mgl.QuatIdent(),
 	})
 
 	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
@@ -324,8 +322,8 @@ func TestFrustumCullingWideAngle(t *testing.T) {
 		{X: 1, Y: 1, Z: -1}:   {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
-	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -335,10 +333,10 @@ func TestFrustumCullingWideAngle(t *testing.T) {
 	settingsMod.SetFar(10)
 	settingsMod.SetRenderDistance(1)
 	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
-		Rotation: mgl64.QuatIdent(),
+		Rotation: mgl.QuatIdent(),
 	})
 
 	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
@@ -356,8 +354,8 @@ func TestFrustumCullingLargeChunks(t *testing.T) {
 		{X: -1, Y: -1, Z: -1}: {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
-	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -367,10 +365,10 @@ func TestFrustumCullingLargeChunks(t *testing.T) {
 	settingsMod.SetFar(10)
 	settingsMod.SetRenderDistance(1)
 	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(worldMod, settingsMod, 3)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 3)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
-		Rotation: mgl64.QuatIdent(),
+		Rotation: mgl.QuatIdent(),
 	})
 
 	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
@@ -385,8 +383,8 @@ func TestFrustumCullingDueToPositionChange(t *testing.T) {
 		{X: 0, Y: 0, Z: -1}: {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
-	worldMod := &world.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}) {
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -396,10 +394,10 @@ func TestFrustumCullingDueToPositionChange(t *testing.T) {
 	settingsMod.SetFar(10)
 	settingsMod.SetRenderDistance(1)
 	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(worldMod, settingsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
 	// setting direction first without position set should not trigger a view update
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
-		Rotation: mgl64.QuatIdent(),
+		Rotation: mgl.QuatIdent(),
 	})
 	if len(actualViewedChunks) != 0 {
 		t.Fatal("expected update view map to be empty, but it had elements already")
@@ -408,5 +406,51 @@ func TestFrustumCullingDueToPositionChange(t *testing.T) {
 
 	if !reflect.DeepEqual(expectedViewedChunks, actualViewedChunks) {
 		t.Fatalf("expected viewed chunks: %v but got viewed chunks %v", expectedViewedChunks, actualViewedChunks)
+	}
+}
+
+func TestViewMatrixCalculationOnDirTrigger(t *testing.T) {
+	t.Parallel()
+	pos := mgl.Vec3{0.5, -1, 2}
+	rot := mgl.QuatIdent()
+	posNeg := pos.Mul(-1)
+	posMat := mgl.Translate3D(posNeg.X(), posNeg.Y(), posNeg.Z())
+	expected := mgl.Ident4().Mul4(rot.Mat4()).Mul4(posMat)
+	var actual mgl.Mat4
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+			actual = viewMat
+		},
+	}
+	settingsMod := settings.FnRepository{}
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{X: pos.X(), Y: pos.Y(), Z: pos.Z()})
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: rot})
+
+	if actual != expected {
+		t.Fatalf("expected graphics to receive view matrix:\n%v but got:\n%v", expected, actual)
+	}
+}
+
+func TestViewMatrixCalculationOnPosTrigger(t *testing.T) {
+	t.Parallel()
+	pos := mgl.Vec3{0.5, -1, 2}
+	rot := mgl.QuatIdent()
+	posNeg := pos.Mul(-1)
+	posMat := mgl.Translate3D(posNeg.X(), posNeg.Y(), posNeg.Z())
+	expected := mgl.Ident4().Mul4(rot.Mat4()).Mul4(posMat)
+	var actual mgl.Mat4
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+			actual = viewMat
+		},
+	}
+	settingsMod := settings.FnRepository{}
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: rot})
+	playerMod.UpdatePlayerPosition(player.PositionEvent{X: pos.X(), Y: pos.Y(), Z: pos.Z()})
+
+	if actual != expected {
+		t.Fatalf("expected graphics to receive view matrix:\n%v but got:\n%v", expected, actual)
 	}
 }
