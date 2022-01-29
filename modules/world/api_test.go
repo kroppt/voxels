@@ -128,9 +128,15 @@ func TestWorldUnloadChunkPassesToGraphics(t *testing.T) {
 func TestWorldGeneration(t *testing.T) {
 	t.Parallel()
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(_ chunk.Position) chunk.Chunk {
-			newChunk := chunk.New(chunk.Position{X: 0, Y: 0, Z: 0}, 1)
-			newChunk.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
+		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
+			newChunk := chunk.New(key, 1)
+			if key == (chunk.Position{X: 0, Y: 0, Z: 0}) {
+				newChunk.SetBlockType(chunk.VoxelCoordinate{
+					X: 0,
+					Y: 0,
+					Z: 0,
+				}, chunk.BlockTypeDirt)
+			}
 			return newChunk
 		},
 	}

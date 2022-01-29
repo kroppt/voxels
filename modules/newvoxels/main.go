@@ -29,17 +29,15 @@ func main() {
 	settingsRepo := settings.New()
 	chunkSize := uint32(1)
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(_ chunk.Position) chunk.Chunk {
-			newChunk := chunk.New(chunk.Position{
-				X: 0,
-				Y: 0,
-				Z: 0,
-			}, chunkSize)
-			newChunk.SetBlockType(chunk.VoxelCoordinate{
-				X: 0,
-				Y: 0,
-				Z: 0,
-			}, chunk.BlockTypeDirt)
+		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
+			newChunk := chunk.New(key, chunkSize)
+			if key == (chunk.Position{X: 0, Y: 0, Z: 0}) {
+				newChunk.SetBlockType(chunk.VoxelCoordinate{
+					X: 0,
+					Y: 0,
+					Z: 0,
+				}, chunk.BlockTypeDirt)
+			}
 			return newChunk
 		},
 	}
