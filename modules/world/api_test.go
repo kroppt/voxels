@@ -11,7 +11,11 @@ import (
 func TestWorldUpdateChunkView(t *testing.T) {
 	t.Parallel()
 	expectedViewableChunks := map[graphics.ChunkEvent]struct{}{
-		{1, 2, 3}: {},
+		{
+			PositionX: 1,
+			PositionY: 2,
+			PositionZ: 3,
+		}: {},
 	}
 	var actualViewableChunks map[graphics.ChunkEvent]struct{}
 	graphicsMod := graphics.FnModule{
@@ -112,3 +116,44 @@ func TestWorldLoadedChunkCount(t *testing.T) {
 		})
 	}
 }
+
+func TestWorldLoadChunkPassesToGraphics(t *testing.T) {
+	t.Parallel()
+	var actual graphics.ChunkEvent
+	graphicsMod := graphics.FnModule{
+		FnLoadChunk: func(chunkEvent graphics.ChunkEvent) {
+			actual = chunkEvent
+		},
+	}
+	worldMod := world.New(graphicsMod)
+	worldMod.LoadChunk(world.ChunkEvent{1, 2, 3})
+	expected := graphics.ChunkEvent{
+		PositionX: 1,
+		PositionY: 2,
+		PositionZ: 3,
+	}
+	if actual != expected {
+		t.Fatalf("expected graphics to receive %v but got %v", expected, actual)
+	}
+}
+
+func TestWorldUnloadChunkPassesToGraphics(t *testing.T) {
+	t.Parallel()
+	var actual graphics.ChunkEvent
+	graphicsMod := graphics.FnModule{
+		FnUnloadChunk: func(chunkEvent graphics.ChunkEvent) {
+			actual = chunkEvent
+		},
+	}
+	worldMod := world.New(graphicsMod)
+	worldMod.UnloadChunk(world.ChunkEvent{1, 2, 3})
+	expected := graphics.ChunkEvent{
+		PositionX: 1,
+		PositionY: 2,
+		PositionZ: 3,
+	}
+	if actual != expected {
+		t.Fatalf("expected graphics to receive %v but got %v", expected, actual)
+	}
+}
+

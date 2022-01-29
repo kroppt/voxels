@@ -9,11 +9,8 @@ type Interface interface {
 	CreateWindow(title string, width, height uint32) error
 	ShowWindow()
 	PollEvent() (sdl.Event, bool)
-	// UpdatePlayerDirection(directionEvent DirectionEvent)
-	// UpdatePlayerPosition(positionEvent PositionEvent)
-	// HideChunk(chunkEvent ChunkEvent)
-	// TODO add LoadChunk and UnloadChunk
-	// ShowChunk(chunkEvent ChunkEvent)
+	LoadChunk(ChunkEvent)
+	UnloadChunk(ChunkEvent)
 	UpdateViewableChunks(map[ChunkEvent]struct{})
 	DestroyWindow() error
 	Render()
@@ -55,25 +52,13 @@ func (m *Module) PollEvent() (sdl.Event, bool) {
 	return m.c.pollEvent()
 }
 
-// UpdatePlayerDirection updates the direction of the camera from which to render.
-// func (m *Module) UpdatePlayerDirection(directionEvent DirectionEvent) {
-// 	m.c.updatePlayerDirection(directionEvent)
-// }
+// LoadChunk loads a chunk.
+func (m *Module) LoadChunk(chunkEvent ChunkEvent) {
+}
 
-// UpdatePlayerPosition updates the position of the player whose viewpoint is rendered.
-// func (m *Module) UpdatePlayerPosition(positionEvent PositionEvent) {
-// 	m.c.updatePlayerPosition(positionEvent)
-// }
-
-// HideChunk hides a chunk.
-// func (m *Module) HideChunk(chunkEvent ChunkEvent) {
-// 	m.c.hideChunk(chunkEvent)
-// }
-
-// ShowChunk shows a chunk.
-// func (m *Module) ShowChunk(chunkEvent ChunkEvent) {
-// 	m.c.showChunk(chunkEvent)
-// }
+// UnloadChunk unloads a chunk.
+func (m *Module) UnloadChunk(chunkEvent ChunkEvent) {
+}
 
 // UpdateViewableChunks updates what chunks the graphics module should
 // try to render.
@@ -91,13 +76,11 @@ func (m *Module) Render() {
 }
 
 type FnModule struct {
-	FnCreateWindow func(string, uint32, uint32)
-	FnShowWindow   func()
-	FnPollEvent    func() (sdl.Event, bool)
-	// FnUpdatePlayerDirection func(DirectionEvent)
-	// FnUpdatePlayerPosition  func(PositionEvent)
-	// FnHideChunk             func(chunkEvent ChunkEvent)
-	// FnShowChunk             func(chunkEvent ChunkEvent)
+	FnCreateWindow         func(string, uint32, uint32)
+	FnShowWindow           func()
+	FnPollEvent            func() (sdl.Event, bool)
+	FnLoadChunk            func(chunkEvent ChunkEvent)
+	FnUnloadChunk          func(chunkEvent ChunkEvent)
 	FnUpdateViewableChunks func(map[ChunkEvent]struct{})
 	FnDestroyWindow        func() error
 	FnRender               func()
@@ -123,29 +106,17 @@ func (fn FnModule) PollEvent() (sdl.Event, bool) {
 	return nil, false
 }
 
-// func (fn FnModule) UpdatePlayerDirection(directionEvent DirectionEvent) {
-// 	if fn.FnUpdatePlayerDirection != nil {
-// 		fn.FnUpdatePlayerDirection(directionEvent)
-// 	}
-// }
+func (fn FnModule) LoadChunk(chunkEvent ChunkEvent) {
+	if fn.FnLoadChunk != nil {
+		fn.FnLoadChunk(chunkEvent)
+	}
+}
 
-// func (fn FnModule) UpdatePlayerPosition(positionEvent PositionEvent) {
-// 	if fn.FnUpdatePlayerPosition != nil {
-// 		fn.FnUpdatePlayerPosition(positionEvent)
-// 	}
-// }
-
-// func (fn FnModule) HideChunk(chunkEvent ChunkEvent) {
-// 	if fn.FnHideChunk != nil {
-// 		fn.FnHideChunk(chunkEvent)
-// 	}
-// }
-
-// func (fn FnModule) ShowChunk(chunkEvent ChunkEvent) {
-// 	if fn.FnShowChunk != nil {
-// 		fn.FnShowChunk(chunkEvent)
-// 	}
-// }
+func (fn FnModule) UnloadChunk(chunkEvent ChunkEvent) {
+	if fn.FnUnloadChunk != nil {
+		fn.FnUnloadChunk(chunkEvent)
+	}
+}
 
 func (fn FnModule) UpdateViewableChunks(viewableChunks map[ChunkEvent]struct{}) {
 	if fn.FnUpdateViewableChunks != nil {

@@ -9,10 +9,12 @@ type core struct {
 
 func (c *core) loadChunk(chunkEvent ChunkEvent) {
 	c.chunksLoaded[chunkEvent] = struct{}{}
+	c.graphicsMod.LoadChunk(graphics.ChunkEvent(chunkEvent))
 }
 
 func (c *core) unloadChunk(chunkEvent ChunkEvent) {
 	delete(c.chunksLoaded, chunkEvent)
+	c.graphicsMod.UnloadChunk(graphics.ChunkEvent(chunkEvent))
 }
 
 func (c *core) countLoadedChunks() int {
