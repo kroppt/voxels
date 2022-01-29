@@ -1,7 +1,6 @@
 package graphics
 
 import (
-	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -15,11 +14,6 @@ type Interface interface {
 	UpdateViewableChunks(map[chunk.Position]struct{})
 	DestroyWindow() error
 	Render()
-}
-
-// DirectionEvent contains rotation information.
-type DirectionEvent struct {
-	Rotation mgl.Quat
 }
 
 // CreateWindow creates an SDL window.
