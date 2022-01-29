@@ -283,16 +283,8 @@ func TestCullingWithPosAndDir(t *testing.T) {
 func TestFrustumCulling(t *testing.T) {
 	t.Parallel()
 	expectedViewedChunks := map[chunk.Position]struct{}{
-		{
-			X: 0,
-			Y: 0,
-			Z: 0,
-		}: {},
-		{
-			X: 0,
-			Y: 0,
-			Z: -1,
-		}: {},
+		{X: 0, Y: 0, Z: 0}:  {},
+		{X: 0, Y: 0, Z: -1}: {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
@@ -320,56 +312,16 @@ func TestFrustumCulling(t *testing.T) {
 func TestFrustumCullingWideAngle(t *testing.T) {
 	t.Parallel()
 	expectedViewedChunks := map[chunk.Position]struct{}{
-		{
-			X: 0,
-			Y: 0,
-			Z: 0,
-		}: {},
-		{
-			X: 0,
-			Y: 0,
-			Z: -1,
-		}: {},
-		{
-			X: -1,
-			Y: 0,
-			Z: -1,
-		}: {},
-		{
-			X: -1,
-			Y: 1,
-			Z: -1,
-		}: {},
-		{
-			X: -1,
-			Y: -1,
-			Z: -1,
-		}: {},
-		{
-			X: 0,
-			Y: -1,
-			Z: -1,
-		}: {},
-		{
-			X: 0,
-			Y: 1,
-			Z: -1,
-		}: {},
-		{
-			X: 1,
-			Y: 0,
-			Z: -1,
-		}: {},
-		{
-			X: 1,
-			Y: -1,
-			Z: -1,
-		}: {},
-		{
-			X: 1,
-			Y: 1,
-			Z: -1,
-		}: {},
+		{X: 0, Y: 0, Z: 0}:    {},
+		{X: 0, Y: 0, Z: -1}:   {},
+		{X: -1, Y: 0, Z: -1}:  {},
+		{X: -1, Y: 1, Z: -1}:  {},
+		{X: -1, Y: -1, Z: -1}: {},
+		{X: 0, Y: -1, Z: -1}:  {},
+		{X: 0, Y: 1, Z: -1}:   {},
+		{X: 1, Y: 0, Z: -1}:   {},
+		{X: 1, Y: -1, Z: -1}:  {},
+		{X: 1, Y: 1, Z: -1}:   {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
@@ -397,31 +349,11 @@ func TestFrustumCullingWideAngle(t *testing.T) {
 func TestFrustumCullingLargeChunks(t *testing.T) {
 	t.Parallel()
 	expectedViewedChunks := map[chunk.Position]struct{}{
-		{
-			X: 0,
-			Y: 0,
-			Z: 0,
-		}: {},
-		{
-			X: 0,
-			Y: 0,
-			Z: -1,
-		}: {},
-		{
-			X: -1,
-			Y: 0,
-			Z: -1,
-		}: {},
-		{
-			X: 0,
-			Y: -1,
-			Z: -1,
-		}: {},
-		{
-			X: -1,
-			Y: -1,
-			Z: -1,
-		}: {},
+		{X: 0, Y: 0, Z: 0}:    {},
+		{X: 0, Y: 0, Z: -1}:   {},
+		{X: -1, Y: 0, Z: -1}:  {},
+		{X: 0, Y: -1, Z: -1}:  {},
+		{X: -1, Y: -1, Z: -1}: {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
@@ -449,16 +381,8 @@ func TestFrustumCullingLargeChunks(t *testing.T) {
 func TestFrustumCullingDueToPositionChange(t *testing.T) {
 	t.Parallel()
 	expectedViewedChunks := map[chunk.Position]struct{}{
-		{
-			X: 0,
-			Y: 0,
-			Z: 0,
-		}: {},
-		{
-			X: 0,
-			Y: 0,
-			Z: -1,
-		}: {},
+		{X: 0, Y: 0, Z: 0}:  {},
+		{X: 0, Y: 0, Z: -1}: {},
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	worldMod := &world.FnModule{
