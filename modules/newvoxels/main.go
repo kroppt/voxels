@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 
+	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/file"
@@ -26,7 +27,22 @@ func main() {
 	graphicsMod := graphics.New()
 	fileMod := file.New()
 	settingsRepo := settings.New()
-	worldMod := world.New(graphicsMod)
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(_ world.ChunkEvent) chunk.Chunk {
+			newChunk := chunk.New(chunk.Position{
+				X: 0,
+				Y: 0,
+				Z: 0,
+			}, 1)
+			newChunk.SetBlockType(chunk.VoxelCoordinate{
+				X: 0,
+				Y: 0,
+				Z: 0,
+			}, chunk.BlockTypeDirt)
+			return newChunk
+		},
+	}
+	worldMod := world.New(graphicsMod, testGen)
 	playerMod := player.New(worldMod, settingsRepo, 1)
 	cameraMod := camera.New(playerMod, player.PositionEvent{})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)

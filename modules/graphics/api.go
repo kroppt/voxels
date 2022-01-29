@@ -2,6 +2,7 @@ package graphics
 
 import (
 	mgl "github.com/go-gl/mathgl/mgl64"
+	"github.com/kroppt/voxels/chunk"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -9,32 +10,16 @@ type Interface interface {
 	CreateWindow(title string, width, height uint32) error
 	ShowWindow()
 	PollEvent() (sdl.Event, bool)
-	LoadChunk(ChunkEvent)
-	UnloadChunk(ChunkEvent)
-	UpdateViewableChunks(map[ChunkEvent]struct{})
+	LoadChunk(chunk.Chunk)
+	UnloadChunk(chunk.Position)
+	UpdateViewableChunks(map[chunk.Position]struct{})
 	DestroyWindow() error
 	Render()
-}
-
-// PositionEvent contains position information.
-//
-// X, Y, and Z are sub-voxel coordinates.
-type PositionEvent struct {
-	X float64
-	Y float64
-	Z float64
 }
 
 // DirectionEvent contains rotation information.
 type DirectionEvent struct {
 	Rotation mgl.Quat
-}
-
-// ChunkEvent contains chunk information.
-type ChunkEvent struct {
-	PositionX int32
-	PositionY int32
-	PositionZ int32
 }
 
 // CreateWindow creates an SDL window.
@@ -53,16 +38,16 @@ func (m *Module) PollEvent() (sdl.Event, bool) {
 }
 
 // LoadChunk loads a chunk.
-func (m *Module) LoadChunk(chunkEvent ChunkEvent) {
+func (m *Module) LoadChunk(chunk chunk.Chunk) {
 }
 
 // UnloadChunk unloads a chunk.
-func (m *Module) UnloadChunk(chunkEvent ChunkEvent) {
+func (m *Module) UnloadChunk(chunk.Position) {
 }
 
 // UpdateViewableChunks updates what chunks the graphics module should
 // try to render.
-func (m *Module) UpdateViewableChunks(map[ChunkEvent]struct{}) {
+func (m *Module) UpdateViewableChunks(map[chunk.Position]struct{}) {
 
 }
 
@@ -79,9 +64,9 @@ type FnModule struct {
 	FnCreateWindow         func(string, uint32, uint32)
 	FnShowWindow           func()
 	FnPollEvent            func() (sdl.Event, bool)
-	FnLoadChunk            func(chunkEvent ChunkEvent)
-	FnUnloadChunk          func(chunkEvent ChunkEvent)
-	FnUpdateViewableChunks func(map[ChunkEvent]struct{})
+	FnLoadChunk            func(chunk.Chunk)
+	FnUnloadChunk          func(chunk.Position)
+	FnUpdateViewableChunks func(map[chunk.Position]struct{})
 	FnDestroyWindow        func() error
 	FnRender               func()
 }
@@ -106,19 +91,19 @@ func (fn FnModule) PollEvent() (sdl.Event, bool) {
 	return nil, false
 }
 
-func (fn FnModule) LoadChunk(chunkEvent ChunkEvent) {
+func (fn FnModule) LoadChunk(chunk chunk.Chunk) {
 	if fn.FnLoadChunk != nil {
-		fn.FnLoadChunk(chunkEvent)
+		fn.FnLoadChunk(chunk)
 	}
 }
 
-func (fn FnModule) UnloadChunk(chunkEvent ChunkEvent) {
+func (fn FnModule) UnloadChunk(pos chunk.Position) {
 	if fn.FnUnloadChunk != nil {
-		fn.FnUnloadChunk(chunkEvent)
+		fn.FnUnloadChunk(pos)
 	}
 }
 
-func (fn FnModule) UpdateViewableChunks(viewableChunks map[ChunkEvent]struct{}) {
+func (fn FnModule) UpdateViewableChunks(viewableChunks map[chunk.Position]struct{}) {
 	if fn.FnUpdateViewableChunks != nil {
 		fn.FnUpdateViewableChunks(viewableChunks)
 	}

@@ -4,26 +4,27 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/world"
 )
 
 func TestWorldUpdateChunkView(t *testing.T) {
 	t.Parallel()
-	expectedViewableChunks := map[graphics.ChunkEvent]struct{}{
+	expectedViewableChunks := map[chunk.Position]struct{}{
 		{
-			PositionX: 1,
-			PositionY: 2,
-			PositionZ: 3,
+			X: 1,
+			Y: 2,
+			Z: 3,
 		}: {},
 	}
-	var actualViewableChunks map[graphics.ChunkEvent]struct{}
+	var actualViewableChunks map[chunk.Position]struct{}
 	graphicsMod := graphics.FnModule{
-		FnUpdateViewableChunks: func(viewableChunks map[graphics.ChunkEvent]struct{}) {
+		FnUpdateViewableChunks: func(viewableChunks map[chunk.Position]struct{}) {
 			actualViewableChunks = viewableChunks
 		},
 	}
-	worldMod := world.New(graphicsMod)
+	worldMod := world.New(graphicsMod, nil)
 	worldMod.UpdateView(map[world.ChunkEvent]struct{}{
 		{1, 2, 3}: {},
 	})
@@ -102,7 +103,7 @@ func TestWorldLoadedChunkCount(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
 			graphicsMod := graphics.FnModule{}
-			worldMod := world.New(graphicsMod)
+			worldMod := world.New(graphicsMod, &world.FnGenerator{})
 			for _, loadChunk := range tC.loadChunks {
 				worldMod.LoadChunk(loadChunk)
 			}
@@ -119,18 +120,19 @@ func TestWorldLoadedChunkCount(t *testing.T) {
 
 func TestWorldLoadChunkPassesToGraphics(t *testing.T) {
 	t.Parallel()
-	var actual graphics.ChunkEvent
+	var actual chunk.Position
 	graphicsMod := graphics.FnModule{
-		FnLoadChunk: func(chunkEvent graphics.ChunkEvent) {
-			actual = chunkEvent
+		FnLoadChunk: func(ch chunk.Chunk) {
+			actual = ch.Position()
 		},
 	}
-	worldMod := world.New(graphicsMod)
+
+	worldMod := world.New(graphicsMod, &world.FnGenerator{})
 	worldMod.LoadChunk(world.ChunkEvent{1, 2, 3})
-	expected := graphics.ChunkEvent{
-		PositionX: 1,
-		PositionY: 2,
-		PositionZ: 3,
+	expected := chunk.Position{
+		X: 1,
+		Y: 2,
+		Z: 3,
 	}
 	if actual != expected {
 		t.Fatalf("expected graphics to receive %v but got %v", expected, actual)
@@ -139,21 +141,57 @@ func TestWorldLoadChunkPassesToGraphics(t *testing.T) {
 
 func TestWorldUnloadChunkPassesToGraphics(t *testing.T) {
 	t.Parallel()
-	var actual graphics.ChunkEvent
+	var actual chunk.Position
 	graphicsMod := graphics.FnModule{
-		FnUnloadChunk: func(chunkEvent graphics.ChunkEvent) {
-			actual = chunkEvent
+		FnUnloadChunk: func(pos chunk.Position) {
+			actual = pos
 		},
 	}
-	worldMod := world.New(graphicsMod)
+	worldMod := world.New(graphicsMod, nil)
 	worldMod.UnloadChunk(world.ChunkEvent{1, 2, 3})
-	expected := graphics.ChunkEvent{
-		PositionX: 1,
-		PositionY: 2,
-		PositionZ: 3,
+	expected := chunk.Position{
+		X: 1,
+		Y: 2,
+		Z: 3,
 	}
 	if actual != expected {
 		t.Fatalf("expected graphics to receive %v but got %v", expected, actual)
 	}
 }
 
+func TestWorldGeneration(t *testing.T) {
+	t.Parallel()
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(_ world.ChunkEvent) chunk.Chunk {
+			newChunk := chunk.New(chunk.Position{
+				X: 0,
+				Y: 0,
+				Z: 0,
+			}, 1)
+			newChunk.SetBlockType(chunk.VoxelCoordinate{
+				X: 0,
+				Y: 0,
+				Z: 0,
+			}, chunk.BlockTypeDirt)
+			return newChunk
+		},
+	}
+	expected := chunk.BlockTypeDirt
+	var actual chunk.BlockType
+	graphicsMod := graphics.FnModule{
+		FnLoadChunk: func(ch chunk.Chunk) {
+			actual = ch.BlockType(chunk.VoxelCoordinate{
+				X: 0,
+				Y: 0,
+				Z: 0,
+			})
+		},
+	}
+	worldMod := world.New(graphicsMod, testGen)
+	worldMod.LoadChunk(world.ChunkEvent{0, 0, 0})
+
+	if actual != expected {
+		t.Fatalf("expected to retrieve block type %v but got %v", expected, actual)
+	}
+
+}

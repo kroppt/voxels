@@ -78,18 +78,6 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 	return evt, evt != nil
 }
 
-func (c *core) updatePlayerDirection(directionEvent DirectionEvent) {
-}
-
-func (c *core) updatePlayerPosition(positionEvent PositionEvent) {
-}
-
-func (c *core) hideChunk(chunkEvent ChunkEvent) {
-}
-
-func (c *core) showChunk(chunkEvent ChunkEvent) {
-}
-
 func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	sdl.Quit()

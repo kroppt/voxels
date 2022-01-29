@@ -6,10 +6,11 @@ type Module struct {
 	c core
 }
 
-func New(graphicsMod graphics.Interface) *Module {
+func New(graphicsMod graphics.Interface, generator Generator) *Module {
 	return &Module{
 		core{
 			graphicsMod:  graphicsMod,
+			generator:    generator,
 			chunksLoaded: map[ChunkEvent]struct{}{},
 		},
 	}
