@@ -6,33 +6,64 @@ import (
 )
 
 type core struct {
-	playerMod player.Interface
-	x         float64
-	y         float64
-	z         float64
-	rot       mgl.Quat
+	playerMod     player.Interface
+	pos           mgl.Vec3
+	rot           mgl.Quat
+	moveForwards  bool
+	moveLeft      bool
+	moveBackwards bool
+	moveRight     bool
+}
+
+func (c *core) tick() {
+	moved := false
+	forward := c.rot.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
+	if c.moveForwards {
+		moved = true
+		c.pos = c.pos.Add(forward)
+	} else if c.moveBackwards {
+		moved = true
+		c.pos = c.pos.Add(mgl.Vec3{0, 0, 1})
+	}
+	if c.moveRight {
+		moved = true
+		c.pos = c.pos.Add(mgl.Vec3{1, 0, 0})
+	} else if c.moveLeft {
+		moved = true
+		c.pos = c.pos.Add(mgl.Vec3{-1, 0, 0})
+	}
+	if moved {
+		c.playerMod.UpdatePlayerPosition(player.PositionEvent{
+			X: c.pos.X(),
+			Y: c.pos.Y(),
+			Z: c.pos.Z(),
+		})
+	}
 }
 
 func (c *core) handleMovementEvent(evt MovementEvent) {
-	if evt.Pressed {
-		return
-	}
 	switch evt.Direction {
 	case MoveForwards:
-		c.z--
+		c.moveForwards = evt.Pressed
+		if c.moveForwards && c.moveBackwards {
+			c.moveBackwards = false
+		}
 	case MoveRight:
-		c.x++
+		c.moveRight = evt.Pressed
+		if c.moveRight && c.moveLeft {
+			c.moveLeft = false
+		}
 	case MoveBackwards:
-		c.z++
+		c.moveBackwards = evt.Pressed
+		if c.moveBackwards && c.moveForwards {
+			c.moveForwards = false
+		}
 	case MoveLeft:
-		c.x--
+		c.moveLeft = evt.Pressed
+		if c.moveLeft && c.moveRight {
+			c.moveRight = false
+		}
 	}
-	posEvent := player.PositionEvent{
-		X: c.x,
-		Y: c.y,
-		Z: c.z,
-	}
-	c.playerMod.UpdatePlayerPosition(posEvent)
 }
 
 func (c *core) handleLookEvent(evt LookEvent) {

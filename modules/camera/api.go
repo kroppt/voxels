@@ -3,6 +3,7 @@ package camera
 type Interface interface {
 	HandleMovementEvent(MovementEvent)
 	HandleLookEvent(LookEvent)
+	Tick()
 }
 
 // MoveDirection represents a direction of movement.
@@ -45,6 +46,10 @@ type LookEvent struct {
 	Down  float64
 }
 
+func (m *Module) Tick() {
+	m.c.tick()
+}
+
 // HandleMovementEvent handles a movement event.
 func (m *Module) HandleMovementEvent(evt MovementEvent) {
 	m.c.handleMovementEvent(evt)
@@ -58,6 +63,7 @@ func (m *Module) HandleLookEvent(evt LookEvent) {
 type FnModule struct {
 	FnHandleMovementEvent func(MovementEvent)
 	FnHandleLookEvent     func(LookEvent)
+	FnTick                func()
 }
 
 func (fn *FnModule) HandleMovementEvent(movementEvent MovementEvent) {
@@ -69,5 +75,11 @@ func (fn *FnModule) HandleMovementEvent(movementEvent MovementEvent) {
 func (fn *FnModule) HandleLookEvent(lookEvent LookEvent) {
 	if fn.FnHandleLookEvent != nil {
 		fn.FnHandleLookEvent(lookEvent)
+	}
+}
+
+func (fn *FnModule) Tick() {
+	if fn.FnTick != nil {
+		fn.FnTick()
 	}
 }
