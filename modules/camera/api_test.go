@@ -20,27 +20,25 @@ func TestModuleNew(t *testing.T) {
 }
 
 func TestModuleNewInitialPos(t *testing.T) {
-	t.Run("return is non-nil", func(t *testing.T) {
-		expected := player.PositionEvent{
-			X: 1,
-			Y: 2,
-			Z: 3,
-		}
-		var actual player.PositionEvent
-		playerMod := &player.FnModule{
-			FnUpdatePlayerPosition: func(posEvent player.PositionEvent) {
-				actual = posEvent
-			},
-		}
-		camera.New(playerMod, player.PositionEvent{
-			X: 1,
-			Y: 2,
-			Z: 3,
-		})
-		if actual != expected {
-			t.Fatalf("expected initial camera pos %v but got %v", expected, actual)
-		}
+	expected := player.PositionEvent{
+		X: 1,
+		Y: 2,
+		Z: 3,
+	}
+	var actual player.PositionEvent
+	playerMod := &player.FnModule{
+		FnUpdatePlayerPosition: func(posEvent player.PositionEvent) {
+			actual = posEvent
+		},
+	}
+	camera.New(playerMod, player.PositionEvent{
+		X: 1,
+		Y: 2,
+		Z: 3,
 	})
+	if actual != expected {
+		t.Fatalf("expected initial camera pos %v but got %v", expected, actual)
+	}
 }
 
 func TestMovementEventPlayerMod(t *testing.T) {
