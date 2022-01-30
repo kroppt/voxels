@@ -119,7 +119,7 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	c.posAssigned = true
 	c.position = posEvent
 	if c.dirAssigned {
-		c.graphicsMod.UpdateView(c.getFrustumCulledChunks(), c.getUpdatedViewMatrix())
+		c.graphicsMod.UpdateView(c.getFrustumCulledChunks(), c.getUpdatedViewMatrix(), c.getUpdatedProjMatrix())
 	}
 	voxelPos := toVoxelPos(posEvent)
 	newChunkPos := c.playerToChunkPosition(voxelPos)
@@ -178,7 +178,7 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 	c.dirAssigned = true
 	c.direction = dirEvent
 	if c.posAssigned {
-		c.graphicsMod.UpdateView(c.getFrustumCulledChunks(), c.getUpdatedViewMatrix())
+		c.graphicsMod.UpdateView(c.getFrustumCulledChunks(), c.getUpdatedViewMatrix(), c.getUpdatedProjMatrix())
 	}
 }
 
@@ -192,6 +192,15 @@ func (c *core) getUpdatedViewMatrix() mgl.Mat4 {
 	pos := mgl.Translate3D(-c.position.X, -c.position.Y, -c.position.Z)
 	view = view.Mul4(pos)
 	return view
+}
+
+func (c *core) getUpdatedProjMatrix() mgl.Mat4 {
+	fovRad := mgl.DegToRad(c.settingsMod.GetFOV())
+	near := c.settingsMod.GetNear()
+	far := c.settingsMod.GetFar()
+	width, height := c.settingsMod.GetResolution()
+	aspect := float64(width) / float64(height)
+	return mgl.Perspective(fovRad, aspect, near, far)
 }
 
 type camera struct {

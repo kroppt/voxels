@@ -1,10 +1,13 @@
 package graphics
 
 import (
+	"fmt"
 	"runtime"
+	"unsafe"
 
 	"github.com/go-gl/gl/v2.1/gl"
 	mgl "github.com/go-gl/mathgl/mgl64"
+	"github.com/kroppt/gfx"
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -13,9 +16,10 @@ import (
 )
 
 type core struct {
+	ubo            *gfx.BufferObject
 	window         *sdl.Window
 	settingsRepo   settings.Interface
-	loadedChunks   map[chunk.Position]chunk.Chunk
+	loadedChunks   map[chunk.Position]*ChunkObject
 	viewableChunks map[chunk.Position]struct{}
 }
 
@@ -77,7 +81,15 @@ func (c *core) createWindow(title string) error {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Debug("OpenGL version ", version)
 
+	ubo := gfx.NewBufferObject()
+	var mat mgl.Mat4
+	// opengl memory allocation, 2x mat4 = 1 for proj + 1 for view
+	ubo.BufferData(gl.UNIFORM_BUFFER, uint32(2*unsafe.Sizeof(mat)), gl.Ptr(nil), gl.STATIC_DRAW)
+	// use binding = 0
+	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
+
 	c.window = window
+	c.ubo = ubo
 	return nil
 }
 
@@ -92,32 +104,55 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 
 func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
+	c.ubo.Destroy()
+	for _, obj := range c.loadedChunks {
+		obj.Destroy()
+	}
+	c.loadedChunks = nil
 	sdl.Quit()
 	return err
 }
 
-func (c *core) updateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+func (c *core) updateView(viewableChunks map[chunk.Position]struct{}, view mgl.Mat4, proj mgl.Mat4) {
 	c.viewableChunks = viewableChunks
 
-	// TODO UBO upload to tell shader about new view matrix
+	viewmat32 := [16]float32{}
+	projmat32 := [16]float32{}
+	for i := range viewmat32 {
+		viewmat32[i] = float32(view[i])
+		projmat32[i] = float32(proj[i])
+	}
+
+	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(viewmat32)), gl.Ptr(&viewmat32[0]))
+	if err != nil {
+		panic(fmt.Sprintf("failed to upload camera view to ubo: %v", err))
+	}
+	err = c.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(viewmat32)), uint32(unsafe.Sizeof(projmat32)), gl.Ptr(&projmat32[0]))
+	if err != nil {
+		panic(fmt.Sprintf("failed to upload camera proj to ubo: %v", err))
+	}
 }
 
 func (c *core) loadChunk(chunk chunk.Chunk) {
 	if _, ok := c.loadedChunks[chunk.Position()]; ok {
 		panic("attempting to load over an already-loaded chunk")
 	}
-	c.loadedChunks[chunk.Position()] = chunk
 
-	// TODO actually the load chunk data in opengl
+	chunkObj, err := NewChunkObject()
+	if err != nil {
+		panic(err)
+	}
+	chunkObj.SetData(chunk.GetFlatData())
+
+	c.loadedChunks[chunk.Position()] = chunkObj
 }
 
 func (c *core) unloadChunk(key chunk.Position) {
 	if _, ok := c.loadedChunks[key]; !ok {
 		panic("attempting to unload a chunk that is not loaded")
 	}
+	c.loadedChunks[key].Destroy()
 	delete(c.loadedChunks, key)
-
-	// TODO free the opengl buffer object
 }
 
 func (c *core) render() {
@@ -129,7 +164,14 @@ func (c *core) render() {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 	sw := util.Start()
-	// app.world.Render()
+
+	gl.LineWidth(2)
+	gl.Disable(gl.DEPTH_TEST)
+	for _, chunkObj := range c.loadedChunks {
+		chunkObj.Render()
+	}
+	gl.Enable(gl.DEPTH_TEST)
+
 	sw.StopRecordAverage("Total World Render")
 	c.window.GLSwap()
 

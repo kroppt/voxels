@@ -34,6 +34,11 @@ func main() {
 	}
 
 	graphicsMod := graphics.New(settingsRepo)
+	err := graphicsMod.CreateWindow("newvoxels")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	chunkSize := uint32(1)
 	testGen := &world.FnGenerator{
 		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
@@ -52,12 +57,6 @@ func main() {
 	playerMod := player.New(worldMod, settingsRepo, graphicsMod, chunkSize)
 	cameraMod := camera.New(playerMod, player.PositionEvent{})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
-
-	err := graphicsMod.CreateWindow("newvoxels")
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	graphicsMod.ShowWindow()
 
 	keepRunning := true

@@ -1,6 +1,7 @@
 package player_test
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -221,7 +222,7 @@ func TestNoCullingWithoutPos(t *testing.T) {
 	expected := false
 	var calledUpdateView bool
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			calledUpdateView = true
 		},
 	}
@@ -239,7 +240,7 @@ func TestNoCullingWithoutDirection(t *testing.T) {
 	expected := false
 	var calledUpdateView bool
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			calledUpdateView = true
 		},
 	}
@@ -257,7 +258,7 @@ func TestCullingWithPosAndDir(t *testing.T) {
 	expected := true
 	var calledUpdateView bool
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			calledUpdateView = true
 		},
 	}
@@ -286,7 +287,7 @@ func TestFrustumCulling(t *testing.T) {
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -323,7 +324,7 @@ func TestFrustumCullingWideAngle(t *testing.T) {
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -355,7 +356,7 @@ func TestFrustumCullingLargeChunks(t *testing.T) {
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -384,7 +385,7 @@ func TestFrustumCullingDueToPositionChange(t *testing.T) {
 	}
 	actualViewedChunks := map[chunk.Position]struct{}{}
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			actualViewedChunks = viewChunks
 		},
 	}
@@ -418,7 +419,7 @@ func TestViewMatrixCalculationOnDirTrigger(t *testing.T) {
 	expected := mgl.Ident4().Mul4(rot.Mat4()).Mul4(posMat)
 	var actual mgl.Mat4
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			actual = viewMat
 		},
 	}
@@ -441,7 +442,7 @@ func TestViewMatrixCalculationOnPosTrigger(t *testing.T) {
 	expected := mgl.Ident4().Mul4(rot.Mat4()).Mul4(posMat)
 	var actual mgl.Mat4
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 			actual = viewMat
 		},
 	}
@@ -452,6 +453,46 @@ func TestViewMatrixCalculationOnPosTrigger(t *testing.T) {
 
 	if actual != expected {
 		t.Fatalf("expected graphics to receive view matrix:\n%v but got:\n%v", expected, actual)
+	}
+}
+
+func TestProjectionMatrixOnUpdateView(t *testing.T) {
+	t.Parallel()
+	fovRad := mgl.DegToRad(60)
+	nmf, f := 1/(0.1-100), 1./math.Tan(fovRad/2.0)
+	aspect := 16.0 / 9.0
+	expected := mgl.Mat4{
+		f / aspect, 0, 0, 0,
+		0, f, 0, 0,
+		0, 0, (0.1 + 100) * nmf, -1,
+		0, 0, (2. * 100 * 0.1) * nmf, 0,
+	}
+	var actual mgl.Mat4
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
+			actual = projMat
+		},
+	}
+	settingsMod := settings.FnRepository{
+		FnGetFOV: func() float64 {
+			return 60
+		},
+		FnGetFar: func() float64 {
+			return 100
+		},
+		FnGetNear: func() float64 {
+			return 0.1
+		},
+		FnGetResolution: func() (uint32, uint32) {
+			return 1280, 720
+		},
+	}
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: mgl.QuatIdent()})
+	playerMod.UpdatePlayerPosition(player.PositionEvent{X: 0, Y: 0, Z: 0})
+
+	if actual != expected {
+		t.Fatalf("expected graphics to receive proj matrix:\n%v but got:\n%v", expected, actual)
 	}
 }
 

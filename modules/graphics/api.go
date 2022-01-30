@@ -12,7 +12,7 @@ type Interface interface {
 	PollEvent() (sdl.Event, bool)
 	LoadChunk(chunk.Chunk)
 	UnloadChunk(chunk.Position)
-	UpdateView(map[chunk.Position]struct{}, mgl.Mat4)
+	UpdateView(map[chunk.Position]struct{}, mgl.Mat4, mgl.Mat4)
 	DestroyWindow() error
 	Render()
 }
@@ -44,8 +44,8 @@ func (m *Module) UnloadChunk(pos chunk.Position) {
 
 // UpdateView updates what chunks the graphics module should
 // try to render.
-func (m *Module) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
-	m.c.updateView(viewableChunks, viewMat)
+func (m *Module) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
+	m.c.updateView(viewableChunks, viewMat, projMat)
 }
 
 // DestroyWindow destroys an SDL window.
@@ -63,7 +63,7 @@ type FnModule struct {
 	FnPollEvent     func() (sdl.Event, bool)
 	FnLoadChunk     func(chunk.Chunk)
 	FnUnloadChunk   func(chunk.Position)
-	FnUpdateView    func(map[chunk.Position]struct{}, mgl.Mat4)
+	FnUpdateView    func(map[chunk.Position]struct{}, mgl.Mat4, mgl.Mat4)
 	FnDestroyWindow func() error
 	FnRender        func()
 }
@@ -100,9 +100,9 @@ func (fn FnModule) UnloadChunk(pos chunk.Position) {
 	}
 }
 
-func (fn FnModule) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+func (fn FnModule) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
 	if fn.FnUpdateView != nil {
-		fn.FnUpdateView(viewableChunks, viewMat)
+		fn.FnUpdateView(viewableChunks, viewMat, projMat)
 	}
 }
 
