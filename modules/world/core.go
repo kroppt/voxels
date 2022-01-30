@@ -13,33 +13,6 @@ type core struct {
 	chunksLoaded map[chunk.Position]chunk.Chunk
 }
 
-func (c *core) voxelPosToChunkPos(pos chunk.VoxelCoordinate) chunk.Position {
-	x, y, z := pos.X, pos.Y, pos.Z
-	chunkSize := int32(c.settingsRepo.GetChunkSize())
-	if pos.X < 0 {
-		x++
-	}
-	if pos.Y < 0 {
-		y++
-	}
-	if pos.Z < 0 {
-		z++
-	}
-	x /= chunkSize
-	y /= chunkSize
-	z /= chunkSize
-	if pos.X < 0 {
-		x--
-	}
-	if pos.Y < 0 {
-		y--
-	}
-	if pos.Z < 0 {
-		z--
-	}
-	return chunk.Position{X: x, Y: y, Z: z}
-}
-
 func (c *core) loadChunk(pos chunk.Position) {
 	if _, ok := c.chunksLoaded[pos]; ok {
 		panic("tried to load already-loaded chunk")
@@ -62,7 +35,7 @@ func (c *core) countLoadedChunks() int {
 }
 
 func (c *core) setBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
-	key := c.voxelPosToChunkPos(pos)
+	key := chunk.VoxelCoordToChunkCoord(pos, c.settingsRepo.GetChunkSize())
 	if _, ok := c.chunksLoaded[key]; !ok {
 		panic("tried to set block in non-loaded chunk")
 	}
@@ -70,7 +43,7 @@ func (c *core) setBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
 }
 
 func (c *core) getBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
-	key := c.voxelPosToChunkPos(pos)
+	key := chunk.VoxelCoordToChunkCoord(pos, c.settingsRepo.GetChunkSize())
 	if _, ok := c.chunksLoaded[key]; !ok {
 		panic("tried to get block from non-loaded chunk")
 	}

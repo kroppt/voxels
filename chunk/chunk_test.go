@@ -1,6 +1,7 @@
 package chunk_test
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -345,6 +346,72 @@ func TestChunkVoxelLight(t *testing.T) {
 			actual := chunk.Lighting(voxelCoordinate, tC.face)
 			if actual != tC.expect {
 				t.Fatalf("expected to get light value %v but got %v", tC.expect, actual)
+			}
+		})
+	}
+}
+
+func TestVoxelCoordToChunkCoordInvalidChunkSize(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	chunk.VoxelCoordToChunkCoord(chunk.VoxelCoordinate{0, 0, 0}, 0)
+}
+
+func TestVoxelCoordToChunkCoord(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		voxelCoord       chunk.VoxelCoordinate
+		expectChunkCoord chunk.Position
+		chunkSize        uint32
+	}{
+		{
+			voxelCoord:       chunk.VoxelCoordinate{0, 0, 0},
+			expectChunkCoord: chunk.Position{0, 0, 0},
+			chunkSize:        1,
+		},
+		{
+			voxelCoord:       chunk.VoxelCoordinate{1, 0, 0},
+			expectChunkCoord: chunk.Position{1, 0, 0},
+			chunkSize:        1,
+		},
+		{
+			voxelCoord:       chunk.VoxelCoordinate{1, -1, 3},
+			expectChunkCoord: chunk.Position{1, -1, 3},
+			chunkSize:        1,
+		},
+		{
+			voxelCoord:       chunk.VoxelCoordinate{1, 1, 1},
+			expectChunkCoord: chunk.Position{0, 0, 0},
+			chunkSize:        2,
+		},
+		{
+			voxelCoord:       chunk.VoxelCoordinate{-3, -1, -2},
+			expectChunkCoord: chunk.Position{-1, -1, -1},
+			chunkSize:        3,
+		},
+		{
+			voxelCoord:       chunk.VoxelCoordinate{29, 29, 29},
+			expectChunkCoord: chunk.Position{2, 2, 2},
+			chunkSize:        10,
+		},
+		{
+			voxelCoord:       chunk.VoxelCoordinate{30, 30, 30},
+			expectChunkCoord: chunk.Position{3, 3, 3},
+			chunkSize:        10,
+		},
+	}
+	for _, tC := range testCases {
+		tC := tC
+		t.Run(fmt.Sprintf("%v should be in chunk %v with size %v\n",
+			tC.voxelCoord, tC.expectChunkCoord, tC.chunkSize), func(t *testing.T) {
+			t.Parallel()
+			actualChunkCoord := chunk.VoxelCoordToChunkCoord(tC.voxelCoord, tC.chunkSize)
+			if actualChunkCoord != tC.expectChunkCoord {
+				t.Fatalf("expected chunk coord to be %v but was %v", tC.expectChunkCoord, actualChunkCoord)
 			}
 		})
 	}

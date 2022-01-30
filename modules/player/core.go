@@ -14,7 +14,7 @@ type core struct {
 	worldMod     world.Interface
 	settingsMod  settings.Interface
 	graphicsMod  graphics.Interface
-	lastChunkPos chunkPos
+	lastChunkPos chunk.Position
 	posAssigned  bool
 	position     PositionEvent
 	dirAssigned  bool
@@ -22,52 +22,13 @@ type core struct {
 	firstLoad    bool
 }
 
-func (c *core) playerToChunkPosition(pos voxelPos) chunkPos {
-	x, y, z := pos.x, pos.y, pos.z
-	chunkSize := int32(c.settingsMod.GetChunkSize())
-	if pos.x < 0 {
-		x++
-	}
-	if pos.y < 0 {
-		y++
-	}
-	if pos.z < 0 {
-		z++
-	}
-	x /= chunkSize
-	y /= chunkSize
-	z /= chunkSize
-	if pos.x < 0 {
-		x--
-	}
-	if pos.y < 0 {
-		y--
-	}
-	if pos.z < 0 {
-		z--
-	}
-	return chunkPos{x, y, z}
-}
-
-type voxelPos struct {
-	x int32
-	y int32
-	z int32
-}
-
-type chunkPos struct {
-	x int32
-	y int32
-	z int32
-}
-
 // chunkRange is the range of chunks between Min and Max.
 type chunkRange struct {
-	Min chunkPos
-	Max chunkPos
+	Min chunk.Position
+	Max chunk.Position
 }
 
-func toVoxelPos(playerPos PositionEvent) voxelPos {
+func toVoxelPos(playerPos PositionEvent) chunk.VoxelCoordinate {
 	x, y, z := playerPos.X, playerPos.Y, playerPos.Z
 	if x < 0 {
 		x--
@@ -78,20 +39,20 @@ func toVoxelPos(playerPos PositionEvent) voxelPos {
 	if z < 0 {
 		z--
 	}
-	return voxelPos{
-		x: int32(x),
-		y: int32(y),
-		z: int32(z),
+	return chunk.VoxelCoordinate{
+		X: int32(x),
+		Y: int32(y),
+		Z: int32(z),
 	}
 }
 
 // forEach executes the given function on every position in the this ChunkRange.
 // The return of fn indices whether to stop iterating
-func (rng chunkRange) forEach(fn func(pos chunkPos) bool) {
-	for x := rng.Min.x; x <= rng.Max.x; x++ {
-		for y := rng.Min.y; y <= rng.Max.y; y++ {
-			for z := rng.Min.z; z <= rng.Max.z; z++ {
-				stop := fn(chunkPos{x: x, y: y, z: z})
+func (rng chunkRange) forEach(fn func(pos chunk.Position) bool) {
+	for x := rng.Min.X; x <= rng.Max.X; x++ {
+		for y := rng.Min.Y; y <= rng.Max.Y; y++ {
+			for z := rng.Min.Z; z <= rng.Max.Z; z++ {
+				stop := fn(chunk.Position{X: x, Y: y, Z: z})
 				if stop {
 					return
 				}
@@ -101,14 +62,14 @@ func (rng chunkRange) forEach(fn func(pos chunkPos) bool) {
 }
 
 // contains returns whether this ChunkRange contains the given pos.
-func (rng chunkRange) contains(pos chunkPos) bool {
-	if pos.x < rng.Min.x || pos.x > rng.Max.x {
+func (rng chunkRange) contains(pos chunk.Position) bool {
+	if pos.X < rng.Min.X || pos.X > rng.Max.X {
 		return false
 	}
-	if pos.y < rng.Min.y || pos.y > rng.Max.y {
+	if pos.Y < rng.Min.Y || pos.Y > rng.Max.Y {
 		return false
 	}
-	if pos.z < rng.Min.z || pos.z > rng.Max.z {
+	if pos.Z < rng.Min.Z || pos.Z > rng.Max.Z {
 		return false
 	}
 	return true
@@ -120,50 +81,41 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	if c.dirAssigned {
 		c.graphicsMod.UpdateView(c.getFrustumCulledChunks(), c.getUpdatedViewMatrix(), c.getUpdatedProjMatrix())
 	}
-	voxelPos := toVoxelPos(posEvent)
-	newChunkPos := c.playerToChunkPosition(voxelPos)
+	newChunkPos := chunk.VoxelCoordToChunkCoord(toVoxelPos(posEvent), c.settingsMod.GetChunkSize())
 	renderDistance := int32(c.settingsMod.GetRenderDistance())
 	old := chunkRange{
-		Min: chunkPos{
-			x: c.lastChunkPos.x - renderDistance,
-			y: c.lastChunkPos.y - renderDistance,
-			z: c.lastChunkPos.z - renderDistance,
+		Min: chunk.Position{
+			X: c.lastChunkPos.X - renderDistance,
+			Y: c.lastChunkPos.Y - renderDistance,
+			Z: c.lastChunkPos.Z - renderDistance,
 		},
-		Max: chunkPos{
-			x: c.lastChunkPos.x + renderDistance,
-			y: c.lastChunkPos.y + renderDistance,
-			z: c.lastChunkPos.z + renderDistance,
+		Max: chunk.Position{
+			X: c.lastChunkPos.X + renderDistance,
+			Y: c.lastChunkPos.Y + renderDistance,
+			Z: c.lastChunkPos.Z + renderDistance,
 		},
 	}
 	new := chunkRange{
-		Min: chunkPos{
-			x: newChunkPos.x - renderDistance,
-			y: newChunkPos.y - renderDistance,
-			z: newChunkPos.z - renderDistance,
+		Min: chunk.Position{
+			X: newChunkPos.X - renderDistance,
+			Y: newChunkPos.Y - renderDistance,
+			Z: newChunkPos.Z - renderDistance,
 		},
-		Max: chunkPos{
-			x: newChunkPos.x + renderDistance,
-			y: newChunkPos.y + renderDistance,
-			z: newChunkPos.z + renderDistance,
+		Max: chunk.Position{
+			X: newChunkPos.X + renderDistance,
+			Y: newChunkPos.Y + renderDistance,
+			Z: newChunkPos.Z + renderDistance,
 		},
 	}
-	new.forEach(func(pos chunkPos) bool {
+	new.forEach(func(pos chunk.Position) bool {
 		if !old.contains(pos) || c.firstLoad {
-			c.worldMod.LoadChunk(chunk.Position{
-				X: pos.x,
-				Y: pos.y,
-				Z: pos.z,
-			})
+			c.worldMod.LoadChunk(pos)
 		}
 		return false
 	})
-	old.forEach(func(pos chunkPos) bool {
+	old.forEach(func(pos chunk.Position) bool {
 		if !new.contains(pos) && !c.firstLoad {
-			c.worldMod.UnloadChunk(chunk.Position{
-				X: pos.x,
-				Y: pos.y,
-				Z: pos.z,
-			})
+			c.worldMod.UnloadChunk(pos)
 		}
 		return false
 	})
@@ -264,11 +216,11 @@ func pointOutsidePlane(p, a, b, c mgl.Vec3) bool {
 	return d > 0 || approxZero(d)
 }
 
-func (c *core) isWithinFrustum(cam *camera, pos chunkPos, chunkSize uint32) bool {
+func (c *core) isWithinFrustum(cam *camera, pos chunk.Position, chunkSize uint32) bool {
 	corner := mgl.Vec3{
-		float64(chunkSize) * float64(pos.x),
-		float64(chunkSize) * float64(pos.y),
-		float64(chunkSize) * float64(pos.z),
+		float64(chunkSize) * float64(pos.X),
+		float64(chunkSize) * float64(pos.Y),
+		float64(chunkSize) * float64(pos.Z),
 	}
 	near := c.settingsMod.GetNear()
 	far := c.settingsMod.GetFar()
@@ -338,19 +290,18 @@ func (c *core) getFrustumCulledChunks() map[chunk.Position]struct{} {
 	if !c.dirAssigned || !c.posAssigned {
 		panic("position and direction required for frustum culling calculations")
 	}
-	voxelPos := toVoxelPos(c.position)
-	newChunkPos := c.playerToChunkPosition(voxelPos)
+	newChunkPos := chunk.VoxelCoordToChunkCoord(toVoxelPos(c.position), c.settingsMod.GetChunkSize())
 	renderDistance := int32(c.settingsMod.GetRenderDistance())
 	rng := chunkRange{
-		Min: chunkPos{
-			x: newChunkPos.x - renderDistance,
-			y: newChunkPos.y - renderDistance,
-			z: newChunkPos.z - renderDistance,
+		Min: chunk.Position{
+			X: newChunkPos.X - renderDistance,
+			Y: newChunkPos.Y - renderDistance,
+			Z: newChunkPos.Z - renderDistance,
 		},
-		Max: chunkPos{
-			x: newChunkPos.x + renderDistance,
-			y: newChunkPos.y + renderDistance,
-			z: newChunkPos.z + renderDistance,
+		Max: chunk.Position{
+			X: newChunkPos.X + renderDistance,
+			Y: newChunkPos.Y + renderDistance,
+			Z: newChunkPos.Z + renderDistance,
 		},
 	}
 	viewChunks := map[chunk.Position]struct{}{}
@@ -367,14 +318,9 @@ func (c *core) getFrustumCulledChunks() map[chunk.Position]struct{} {
 		c.position.Z,
 	})
 
-	rng.forEach(func(pos chunkPos) bool {
+	rng.forEach(func(pos chunk.Position) bool {
 		if c.isWithinFrustum(cam, pos, c.settingsMod.GetChunkSize()) {
-			key := chunk.Position{
-				X: pos.x,
-				Y: pos.y,
-				Z: pos.z,
-			}
-			viewChunks[key] = struct{}{}
+			viewChunks[pos] = struct{}{}
 		}
 		return false
 	})

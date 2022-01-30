@@ -210,3 +210,33 @@ func (c Chunk) Lighting(vpos VoxelCoordinate, face LightFace) uint32 {
 	lbits := uint32(c.flatData[off+4])
 	return (lbits & mask) >> face
 }
+
+func VoxelCoordToChunkCoord(pos VoxelCoordinate, chunkSize uint32) Position {
+	if chunkSize == 0 {
+		panic("chunk size 0 is invalid")
+	}
+	x, y, z := pos.X, pos.Y, pos.Z
+	size := int32(chunkSize)
+	if pos.X < 0 {
+		x++
+	}
+	if pos.Y < 0 {
+		y++
+	}
+	if pos.Z < 0 {
+		z++
+	}
+	x /= size
+	y /= size
+	z /= size
+	if pos.X < 0 {
+		x--
+	}
+	if pos.Y < 0 {
+		y--
+	}
+	if pos.Z < 0 {
+		z--
+	}
+	return Position{X: x, Y: y, Z: z}
+}
