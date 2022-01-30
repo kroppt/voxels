@@ -7,19 +7,29 @@ import (
 	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/kroppt/voxels/util"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type core struct {
-	window *sdl.Window
+	window         *sdl.Window
+	settingsRepo   settings.Interface
+	loadedChunks   map[chunk.Position]chunk.Chunk
+	viewableChunks map[chunk.Position]struct{}
 }
 
 // ErrRenderDriver indicates that SDL failed to enable the OpenGL render driver.
 const ErrRenderDriver log.ConstErr = "failed to set opengl render driver hint"
 
-func (c *core) createWindow(title string, width, height uint32) error {
+func (c *core) createWindow(title string) error {
 	runtime.LockOSThread()
+
+	width, height := c.settingsRepo.GetResolution()
+	if width == 0 || height == 0 {
+		width = 1280
+		height = 720
+	}
 
 	if !sdl.SetHint(sdl.HINT_RENDER_DRIVER, "opengl") {
 		return ErrRenderDriver
@@ -86,8 +96,28 @@ func (c *core) destroyWindow() error {
 	return err
 }
 
-func (c *core) updateView(viewableChunk map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+func (c *core) updateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4) {
+	c.viewableChunks = viewableChunks
 
+	// TODO UBO upload to tell shader about new view matrix
+}
+
+func (c *core) loadChunk(chunk chunk.Chunk) {
+	if _, ok := c.loadedChunks[chunk.Position()]; !ok {
+		panic("attempting to load over an already-loaded chunk")
+	}
+	c.loadedChunks[chunk.Position()] = chunk
+
+	// TODO actually the load chunk data in opengl
+}
+
+func (c *core) unloadChunk(key chunk.Position) {
+	if _, ok := c.loadedChunks[key]; !ok {
+		panic("attempting to unload a chunk that is not loaded")
+	}
+	delete(c.loadedChunks, key)
+
+	// TODO free the opengl buffer object
 }
 
 func (c *core) render() {

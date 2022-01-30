@@ -24,9 +24,9 @@ func main() {
 	log.SetColorized(false)
 	util.SetMetricsEnabled(true)
 
-	graphicsMod := graphics.New()
 	fileMod := file.New()
 	settingsRepo := settings.New()
+	graphicsMod := graphics.New(settingsRepo)
 	chunkSize := uint32(1)
 	testGen := &world.FnGenerator{
 		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
@@ -52,12 +52,8 @@ func main() {
 		settingsRepo.SetFromReader(readCloser)
 		readCloser.Close()
 	}
-	width, height := settingsRepo.GetResolution()
-	if width == 0 || height == 0 {
-		width = 1280
-		height = 720
-	}
-	err := graphicsMod.CreateWindow("newvoxels", width, height)
+
+	err := graphicsMod.CreateWindow("newvoxels")
 	if err != nil {
 		log.Fatal(err)
 	}

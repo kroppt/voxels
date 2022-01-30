@@ -7,7 +7,7 @@ import (
 )
 
 type Interface interface {
-	CreateWindow(title string, width, height uint32) error
+	CreateWindow(title string) error
 	ShowWindow()
 	PollEvent() (sdl.Event, bool)
 	LoadChunk(chunk.Chunk)
@@ -18,8 +18,8 @@ type Interface interface {
 }
 
 // CreateWindow creates an SDL window.
-func (m *Module) CreateWindow(title string, width, height uint32) error {
-	return m.c.createWindow(title, width, height)
+func (m *Module) CreateWindow(title string) error {
+	return m.c.createWindow(title)
 }
 
 // ShowWindow makes the current window visible.
@@ -34,10 +34,12 @@ func (m *Module) PollEvent() (sdl.Event, bool) {
 
 // LoadChunk loads a chunk.
 func (m *Module) LoadChunk(chunk chunk.Chunk) {
+	m.c.loadChunk(chunk)
 }
 
 // UnloadChunk unloads a chunk.
-func (m *Module) UnloadChunk(chunk.Position) {
+func (m *Module) UnloadChunk(pos chunk.Position) {
+	m.c.unloadChunk(pos)
 }
 
 // UpdateView updates what chunks the graphics module should
@@ -56,7 +58,7 @@ func (m *Module) Render() {
 }
 
 type FnModule struct {
-	FnCreateWindow  func(string, uint32, uint32)
+	FnCreateWindow  func(string)
 	FnShowWindow    func()
 	FnPollEvent     func() (sdl.Event, bool)
 	FnLoadChunk     func(chunk.Chunk)
@@ -66,9 +68,9 @@ type FnModule struct {
 	FnRender        func()
 }
 
-func (fn FnModule) CreateWindow(title string, width, height uint32) error {
+func (fn FnModule) CreateWindow(title string) error {
 	if fn.FnCreateWindow != nil {
-		fn.FnCreateWindow(title, width, height)
+		fn.FnCreateWindow(title)
 	}
 	return nil
 }
