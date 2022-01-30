@@ -56,7 +56,7 @@ func main() {
 	}
 	worldMod := world.New(graphicsMod, testGen)
 	playerMod := player.New(worldMod, settingsRepo, graphicsMod, chunkSize)
-	cameraMod := camera.New(playerMod, player.PositionEvent{0.5, 0.5, 3})
+	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 0.5, Z: 3})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
 	tickRateNano := int64(100 * 1e6)
 	tickMod := tick.New(cameraMod, tick.FnTime{}, tickRateNano)
