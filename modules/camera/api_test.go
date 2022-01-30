@@ -84,7 +84,7 @@ func TestMovementEventPlayerMod(t *testing.T) {
 	}
 	for _, tC := range testCases {
 		tC := tC
-		t.Run(fmt.Sprintf("updates chunk module position when moving %v", tC.direction.String()), func(t *testing.T) {
+		t.Run(fmt.Sprintf("updates player module position when moving %v", tC.direction.String()), func(t *testing.T) {
 			t.Parallel()
 
 			var actualEvent player.PositionEvent
@@ -111,7 +111,7 @@ func TestMovementEventPlayerMod(t *testing.T) {
 		})
 	}
 
-	t.Run("updates chunk module position when moving multiple times", func(t *testing.T) {
+	t.Run("updates player module position when moving multiple times", func(t *testing.T) {
 		t.Parallel()
 
 		var actualEvent player.PositionEvent
