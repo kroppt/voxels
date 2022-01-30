@@ -6,37 +6,52 @@ import (
 )
 
 type core struct {
-	playerMod     player.Interface
-	pos           mgl.Vec3
-	rot           mgl.Quat
-	moveForwards  bool
-	moveLeft      bool
-	moveBackwards bool
-	moveRight     bool
-	moveUp        bool
-	moveDown      bool
+	playerMod player.Interface
+	pos       mgl.Vec3
+	rot       mgl.Quat
+	// 0=foward,1=backward,2=left,3=right,4=down,5=up
+	keyPressed   [6]bool
+	moveNextTick [6]bool
 }
 
 func (c *core) tick() {
 	moved := false
-	if c.moveForwards {
+	if c.moveNextTick[0] {
+		if !c.keyPressed[0] {
+			c.moveNextTick[0] = false
+		}
 		moved = true
 		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{0.0, 0.0, -1.0}))
-	} else if c.moveBackwards {
+	} else if c.moveNextTick[1] {
+		if !c.keyPressed[1] {
+			c.moveNextTick[1] = false
+		}
 		moved = true
 		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{0.0, 0.0, 1.0}))
 	}
-	if c.moveRight {
+	if c.moveNextTick[3] {
+		if !c.keyPressed[3] {
+			c.moveNextTick[3] = false
+		}
 		moved = true
 		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{1.0, 0.0, 0.0}))
-	} else if c.moveLeft {
+	} else if c.moveNextTick[2] {
+		if !c.keyPressed[2] {
+			c.moveNextTick[2] = false
+		}
 		moved = true
 		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{-1.0, 0.0, 0.0}))
 	}
-	if c.moveUp {
+	if c.moveNextTick[5] {
+		if !c.keyPressed[5] {
+			c.moveNextTick[5] = false
+		}
 		moved = true
 		c.pos = c.pos.Add(mgl.Vec3{0.0, 1.0, 0.0})
-	} else if c.moveDown {
+	} else if c.moveNextTick[4] {
+		if !c.keyPressed[4] {
+			c.moveNextTick[4] = false
+		}
 		moved = true
 		c.pos = c.pos.Add(mgl.Vec3{0.0, -1.0, 0.0})
 	}
@@ -49,38 +64,35 @@ func (c *core) tick() {
 	}
 }
 
+func (c *core) handleKeyPressFlags(idx int, pressed bool) {
+	diff := 1
+	if idx%2 == 1 {
+		diff = -1
+	}
+	c.keyPressed[idx] = pressed
+	if c.keyPressed[idx] {
+		c.moveNextTick[idx] = true
+		c.moveNextTick[idx+diff] = false
+	}
+	if c.keyPressed[idx] && c.keyPressed[idx+diff] {
+		c.keyPressed[idx+diff] = false
+	}
+}
+
 func (c *core) handleMovementEvent(evt MovementEvent) {
 	switch evt.Direction {
 	case MoveForwards:
-		c.moveForwards = evt.Pressed
-		if c.moveForwards && c.moveBackwards {
-			c.moveBackwards = false
-		}
-	case MoveRight:
-		c.moveRight = evt.Pressed
-		if c.moveRight && c.moveLeft {
-			c.moveLeft = false
-		}
+		c.handleKeyPressFlags(0, evt.Pressed)
 	case MoveBackwards:
-		c.moveBackwards = evt.Pressed
-		if c.moveBackwards && c.moveForwards {
-			c.moveForwards = false
-		}
+		c.handleKeyPressFlags(1, evt.Pressed)
 	case MoveLeft:
-		c.moveLeft = evt.Pressed
-		if c.moveLeft && c.moveRight {
-			c.moveRight = false
-		}
-	case MoveUp:
-		c.moveUp = evt.Pressed
-		if c.moveUp && c.moveDown {
-			c.moveDown = false
-		}
+		c.handleKeyPressFlags(2, evt.Pressed)
+	case MoveRight:
+		c.handleKeyPressFlags(3, evt.Pressed)
 	case MoveDown:
-		c.moveDown = evt.Pressed
-		if c.moveDown && c.moveUp {
-			c.moveUp = false
-		}
+		c.handleKeyPressFlags(4, evt.Pressed)
+	case MoveUp:
+		c.handleKeyPressFlags(5, evt.Pressed)
 	}
 }
 

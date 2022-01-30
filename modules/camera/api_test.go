@@ -68,24 +68,30 @@ func TestCameraMovementAfterInitialOffset(t *testing.T) {
 
 func TestOnlyHandlingMovementEventDoesNotMovePlayer(t *testing.T) {
 	t.Parallel()
-	expected := false
-	actual := false
-	playerMod := &player.FnModule{}
-	cameraMod := camera.New(playerMod, player.PositionEvent{})
-	playerMod.FnUpdatePlayerPosition = func(posEvent player.PositionEvent) {
-		actual = true
-	}
+	for _, direction := range getAllDirections() {
+		direction := direction
+		t.Run("move "+direction.String(), func(t *testing.T) {
+			t.Parallel()
+			expected := false
+			actual := false
+			playerMod := &player.FnModule{}
+			cameraMod := camera.New(playerMod, player.PositionEvent{})
+			playerMod.FnUpdatePlayerPosition = func(posEvent player.PositionEvent) {
+				actual = true
+			}
 
-	cameraMod.HandleMovementEvent(camera.MovementEvent{
-		Direction: camera.MoveForwards,
-		Pressed:   true,
-	})
-	if actual != expected {
-		t.Fatal("expected player's position to not be updated, but it was")
+			cameraMod.HandleMovementEvent(camera.MovementEvent{
+				Direction: direction,
+				Pressed:   true,
+			})
+			if actual != expected {
+				t.Fatal("expected player's position to not be updated, but it was")
+			}
+		})
 	}
 }
 
-func TestCameraTickOnlyUpdatesPlayerPositionIfMoved(t *testing.T) {
+func TestCameraTickWithoutMovementEventDoesNotMovePlayer(t *testing.T) {
 	t.Parallel()
 	expected := false
 	actual := false
@@ -100,30 +106,110 @@ func TestCameraTickOnlyUpdatesPlayerPositionIfMoved(t *testing.T) {
 	}
 }
 
-func TestCameraDoesNotMoveIfTickOccursWhileNoMovementKeyIsPressed(t *testing.T) {
+func TestCameraMovementOrderOfOperations(t *testing.T) {
 	t.Parallel()
+	expected := player.PositionEvent{X: 0, Y: 0, Z: 1}
+	var actual player.PositionEvent
 	playerMod := &player.FnModule{}
 	cameraMod := camera.New(playerMod, player.PositionEvent{})
-	expected := false
-	actual := false
 	playerMod.FnUpdatePlayerPosition = func(posEvent player.PositionEvent) {
-		actual = true
+		actual = posEvent
 	}
 	cameraMod.HandleMovementEvent(camera.MovementEvent{
 		Direction: camera.MoveForwards,
+		Pressed:   true,
+	})
+	cameraMod.HandleMovementEvent(camera.MovementEvent{
+		Direction: camera.MoveBackwards,
 		Pressed:   true,
 	})
 	cameraMod.HandleMovementEvent(camera.MovementEvent{
 		Direction: camera.MoveForwards,
 		Pressed:   false,
 	})
+	// Press W -> Press S -> Release W (all within same tick)
+	// Should result in moving backwards on the next tick
 	cameraMod.Tick()
 	if actual != expected {
-		t.Fatal("expected player's position to not be updated, but it was")
+		t.Fatalf("expected player's position be %v but it was %v", expected, actual)
 	}
 }
 
-func TestCameraMovesIfTickOccursWhileNoMovementKeyIsPressed(t *testing.T) {
+func getAllDirections() [6]camera.MoveDirection {
+	return [6]camera.MoveDirection{
+		camera.MoveForwards,
+		camera.MoveBackwards,
+		camera.MoveRight,
+		camera.MoveLeft,
+		camera.MoveDown,
+		camera.MoveUp,
+	}
+}
+func TestCameraShouldOnlyMoveOnceAfterKeyRelease(t *testing.T) {
+	t.Parallel()
+	for _, direction := range getAllDirections() {
+		direction := direction
+		t.Run("move "+direction.String(), func(t *testing.T) {
+			t.Parallel()
+			expected := 4
+			actual := 0
+			playerMod := &player.FnModule{}
+			cameraMod := camera.New(playerMod, player.PositionEvent{})
+			playerMod.FnUpdatePlayerPosition = func(posEvent player.PositionEvent) {
+				actual++
+			}
+			cameraMod.HandleMovementEvent(camera.MovementEvent{
+				Direction: direction,
+				Pressed:   true,
+			})
+			cameraMod.Tick()
+			cameraMod.Tick()
+			cameraMod.Tick()
+			cameraMod.HandleMovementEvent(camera.MovementEvent{
+				Direction: direction,
+				Pressed:   false,
+			})
+			cameraMod.Tick()
+			cameraMod.Tick()
+			cameraMod.Tick()
+
+			if actual != expected {
+				t.Fatalf("expected player to move %v times but moved %v times", expected, actual)
+			}
+		})
+	}
+}
+
+func TestCameraMovesIfTickOccursAndMovementKeyWasPressed(t *testing.T) {
+	t.Parallel()
+	for _, direction := range getAllDirections() {
+		direction := direction
+		t.Run("move "+direction.String(), func(t *testing.T) {
+			t.Parallel()
+			playerMod := &player.FnModule{}
+			cameraMod := camera.New(playerMod, player.PositionEvent{})
+			expected := true
+			actual := false
+			playerMod.FnUpdatePlayerPosition = func(posEvent player.PositionEvent) {
+				actual = true
+			}
+			cameraMod.HandleMovementEvent(camera.MovementEvent{
+				Direction: direction,
+				Pressed:   true,
+			})
+			cameraMod.HandleMovementEvent(camera.MovementEvent{
+				Direction: direction,
+				Pressed:   false,
+			})
+			cameraMod.Tick()
+			if actual != expected {
+				t.Fatal("expected player's position to not be updated, but it was")
+			}
+		})
+	}
+}
+
+func TestCameraMovesIfTickOccursWhileMovementKeyIsPressedStraightDirections(t *testing.T) {
 	t.Parallel()
 	testCases := []struct {
 		direction camera.MoveDirection
