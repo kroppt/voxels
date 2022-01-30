@@ -534,6 +534,7 @@ func withinError(x, y float64, diff float64) bool {
 	if x+diff > y && x-diff < y {
 		return true
 	}
+	fmt.Printf("x = %v, diff = %v, x+diff = %v, x-diff = %v, y = %v\n", x, diff, x+diff, x-diff, y)
 	return false
 }
 
@@ -819,4 +820,66 @@ func TestCameraNilPlayer(t *testing.T) {
 	}()
 
 	camera.New(nil, player.PositionEvent{})
+}
+
+func TestCameraOpsFarAway(t *testing.T) {
+	t.Parallel()
+	expectedPos := player.PositionEvent{X: 50 * 1e6, Y: 50 * 1e6, Z: 50 * 1e6}
+	expectedDir := player.DirectionEvent{Rotation: mgl.QuatIdent()}
+	var actualPos player.PositionEvent
+	var actualDir player.DirectionEvent
+	playerMod := player.FnModule{
+		FnUpdatePlayerDirection: func(dirEvent player.DirectionEvent) {
+			actualDir = dirEvent
+		},
+		FnUpdatePlayerPosition: func(posEvent player.PositionEvent) {
+			actualPos = posEvent
+		},
+	}
+	cameraMod := camera.New(&playerMod, expectedPos)
+	cameraMod.HandleLookEvent(camera.LookEvent{
+		Right: math.Pi / 4,
+		Down:  math.Pi / 6,
+	})
+	cameraMod.HandleMovementEvent(camera.MovementEvent{
+		Direction: camera.MoveForwards,
+		Pressed:   true,
+	})
+	cameraMod.HandleMovementEvent(camera.MovementEvent{
+		Direction: camera.MoveForwards,
+		Pressed:   false,
+	})
+	cameraMod.Tick()
+	cameraMod.HandleLookEvent(camera.LookEvent{
+		Right: math.Pi,
+		Down:  math.Pi,
+	})
+	cameraMod.HandleLookEvent(camera.LookEvent{
+		Right: math.Pi,
+		Down:  math.Pi,
+	})
+	cameraMod.HandleMovementEvent(camera.MovementEvent{
+		Direction: camera.MoveBackwards,
+		Pressed:   true,
+	})
+	cameraMod.HandleMovementEvent(camera.MovementEvent{
+		Direction: camera.MoveBackwards,
+		Pressed:   false,
+	})
+	cameraMod.Tick()
+	cameraMod.HandleLookEvent(camera.LookEvent{
+		Right: -math.Pi / 4,
+		Down:  -math.Pi / 6,
+	})
+
+	if !withinErrorVec3(mgl.Vec3{actualPos.X, actualPos.Y, actualPos.Z},
+		mgl.Vec3{expectedPos.X, expectedPos.Y, expectedPos.Z}, errMargin) {
+		t.Fatalf("expected pos to be within %v of %v but got %v", errMargin, expectedPos, actualPos)
+	}
+	if !withinErrorVec3(actualDir.Rotation.V, expectedDir.Rotation.V, errMargin) {
+		t.Fatalf("expected xyz component of quat to be within %v of %v but got %v", errMargin, expectedDir.Rotation.V, actualDir.Rotation.W)
+	}
+	if !withinError(actualDir.Rotation.W, expectedDir.Rotation.W, errMargin) {
+		t.Fatalf("expected w component of quat to be within %v of %v but was %v", errMargin, expectedDir.Rotation.W, actualDir.Rotation.W)
+	}
 }
