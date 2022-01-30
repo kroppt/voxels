@@ -20,6 +20,7 @@ type core struct {
 	position     PositionEvent
 	dirAssigned  bool
 	direction    DirectionEvent
+	firstLoad    bool
 }
 
 func (c *core) playerToChunkPosition(pos voxelPos) chunkPos {
@@ -148,7 +149,7 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 		},
 	}
 	new.forEach(func(pos chunkPos) bool {
-		if !old.contains(pos) {
+		if !old.contains(pos) || c.firstLoad {
 			c.worldMod.LoadChunk(chunk.Position{
 				X: pos.x,
 				Y: pos.y,
@@ -158,7 +159,7 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 		return false
 	})
 	old.forEach(func(pos chunkPos) bool {
-		if !new.contains(pos) {
+		if !new.contains(pos) && !c.firstLoad {
 			c.worldMod.UnloadChunk(chunk.Position{
 				X: pos.x,
 				Y: pos.y,
@@ -167,6 +168,9 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 		}
 		return false
 	})
+	if c.firstLoad {
+		c.firstLoad = false
+	}
 	c.lastChunkPos = newChunkPos
 }
 

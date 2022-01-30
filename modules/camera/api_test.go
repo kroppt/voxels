@@ -12,7 +12,7 @@ import (
 
 func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
-		mod := camera.New(nil, player.PositionEvent{})
+		mod := camera.New(&player.FnModule{}, player.PositionEvent{})
 		if mod == nil {
 			t.Fatal("expected non-nil return")
 		}
@@ -405,4 +405,31 @@ func TestModuleHandleLookEvent(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCameraInitialDirection(t *testing.T) {
+	t.Parallel()
+	expected := player.DirectionEvent{Rotation: mgl.QuatIdent()}
+	var actual player.DirectionEvent
+	playerMod := player.FnModule{
+		FnUpdatePlayerDirection: func(dirEvent player.DirectionEvent) {
+			actual = dirEvent
+		},
+	}
+	camera.New(&playerMod, player.PositionEvent{X: 0, Y: 0, Z: 0})
+
+	if actual != expected {
+		t.Fatalf("expected quat %v but got %v", expected, actual)
+	}
+}
+
+func TestCameraNilPlayer(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+
+	camera.New(nil, player.PositionEvent{})
 }

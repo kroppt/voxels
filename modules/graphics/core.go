@@ -103,7 +103,7 @@ func (c *core) updateView(viewableChunks map[chunk.Position]struct{}, viewMat mg
 }
 
 func (c *core) loadChunk(chunk chunk.Chunk) {
-	if _, ok := c.loadedChunks[chunk.Position()]; !ok {
+	if _, ok := c.loadedChunks[chunk.Position()]; ok {
 		panic("attempting to load over an already-loaded chunk")
 	}
 	c.loadedChunks[chunk.Position()] = chunk

@@ -26,6 +26,13 @@ func main() {
 
 	fileMod := file.New()
 	settingsRepo := settings.New()
+	if readCloser, err := fileMod.GetReadCloser("settings.conf"); err != nil {
+		log.Warn(err)
+	} else {
+		settingsRepo.SetFromReader(readCloser)
+		readCloser.Close()
+	}
+
 	graphicsMod := graphics.New(settingsRepo)
 	chunkSize := uint32(1)
 	testGen := &world.FnGenerator{
@@ -45,13 +52,6 @@ func main() {
 	playerMod := player.New(worldMod, settingsRepo, graphicsMod, chunkSize)
 	cameraMod := camera.New(playerMod, player.PositionEvent{})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
-
-	if readCloser, err := fileMod.GetReadCloser("settings.conf"); err != nil {
-		log.Warn(err)
-	} else {
-		settingsRepo.SetFromReader(readCloser)
-		readCloser.Close()
-	}
 
 	err := graphicsMod.CreateWindow("newvoxels")
 	if err != nil {

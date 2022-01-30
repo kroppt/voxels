@@ -454,3 +454,28 @@ func TestViewMatrixCalculationOnPosTrigger(t *testing.T) {
 		t.Fatalf("expected graphics to receive view matrix:\n%v but got:\n%v", expected, actual)
 	}
 }
+
+func TestChunksLoadedOnFirstPositionUpdate(t *testing.T) {
+	t.Parallel()
+	expectedLoadCall := true
+	actualLoadCall := false
+	expectedUnloadCall := false
+	actualUnloadCall := false
+	worldMod := world.FnModule{
+		FnLoadChunk: func(p chunk.Position) {
+			actualLoadCall = true
+		},
+		FnUnloadChunk: func(p chunk.Position) {
+			actualUnloadCall = true
+		},
+	}
+	playerMod := player.New(worldMod, settings.FnRepository{}, nil, 1)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{1, 1, 1})
+
+	if expectedLoadCall != actualLoadCall {
+		t.Fatal("expected load chunk to be called, but it wasn't")
+	}
+	if expectedUnloadCall != actualUnloadCall {
+		t.Fatal("expected unload chunk to never be called, but it was")
+	}
+}

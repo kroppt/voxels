@@ -12,9 +12,11 @@ type Module struct {
 
 // New creates a camera.
 func New(playerMod player.Interface, initialPos player.PositionEvent) *Module {
-	if playerMod != nil {
-		playerMod.UpdatePlayerPosition(initialPos)
+	if playerMod == nil {
+		panic("playerMod cannot be nil in camera")
 	}
+	playerMod.UpdatePlayerPosition(initialPos)
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: mgl.QuatIdent()})
 	return &Module{
 		core{
 			playerMod: playerMod,

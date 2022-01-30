@@ -21,6 +21,7 @@ func New(worldMod world.Interface, settingsMod settings.Interface, graphicsMod g
 		settingsMod: settingsMod,
 		graphicsMod: graphicsMod,
 		chunkSize:   chunkSize,
+		firstLoad:   true,
 	}
 	return &Module{
 		core,
