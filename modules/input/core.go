@@ -64,7 +64,20 @@ func (m *core) routeEvent(e sdl.Event) {
 				Pressed:   pressed,
 			}
 			m.cameraMod.HandleMovementEvent(left)
+		case sdl.SCANCODE_SPACE:
+			up := camera.MovementEvent{
+				Direction: camera.MoveUp,
+				Pressed:   pressed,
+			}
+			m.cameraMod.HandleMovementEvent(up)
+		case sdl.SCANCODE_LSHIFT:
+			down := camera.MovementEvent{
+				Direction: camera.MoveDown,
+				Pressed:   pressed,
+			}
+			m.cameraMod.HandleMovementEvent(down)
 		}
+
 	case *sdl.MouseMotionEvent:
 		xRad, yRad := m.pixelsToRadians(evt.XRel, evt.YRel)
 		lookEvt := camera.LookEvent{

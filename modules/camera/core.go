@@ -13,24 +13,32 @@ type core struct {
 	moveLeft      bool
 	moveBackwards bool
 	moveRight     bool
+	moveUp        bool
+	moveDown      bool
 }
 
 func (c *core) tick() {
 	moved := false
-	forward := c.rot.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
 	if c.moveForwards {
 		moved = true
-		c.pos = c.pos.Add(forward)
+		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{0.0, 0.0, -1.0}))
 	} else if c.moveBackwards {
 		moved = true
-		c.pos = c.pos.Add(mgl.Vec3{0, 0, 1})
+		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{0.0, 0.0, 1.0}))
 	}
 	if c.moveRight {
 		moved = true
-		c.pos = c.pos.Add(mgl.Vec3{1, 0, 0})
+		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{1.0, 0.0, 0.0}))
 	} else if c.moveLeft {
 		moved = true
-		c.pos = c.pos.Add(mgl.Vec3{-1, 0, 0})
+		c.pos = c.pos.Add(c.rot.Rotate(mgl.Vec3{-1.0, 0.0, 0.0}))
+	}
+	if c.moveUp {
+		moved = true
+		c.pos = c.pos.Add(mgl.Vec3{0.0, 1.0, 0.0})
+	} else if c.moveDown {
+		moved = true
+		c.pos = c.pos.Add(mgl.Vec3{0.0, -1.0, 0.0})
 	}
 	if moved {
 		c.playerMod.UpdatePlayerPosition(player.PositionEvent{
@@ -62,6 +70,16 @@ func (c *core) handleMovementEvent(evt MovementEvent) {
 		c.moveLeft = evt.Pressed
 		if c.moveLeft && c.moveRight {
 			c.moveRight = false
+		}
+	case MoveUp:
+		c.moveUp = evt.Pressed
+		if c.moveUp && c.moveDown {
+			c.moveDown = false
+		}
+	case MoveDown:
+		c.moveDown = evt.Pressed
+		if c.moveDown && c.moveUp {
+			c.moveUp = false
 		}
 	}
 }

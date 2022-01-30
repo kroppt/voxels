@@ -19,6 +19,10 @@ func (d MoveDirection) String() string {
 		return "backwards"
 	case MoveLeft:
 		return "left"
+	case MoveDown:
+		return "down"
+	case MoveUp:
+		return "up"
 	}
 	return "invalid"
 }
@@ -32,6 +36,10 @@ const (
 	MoveBackwards MoveDirection = 3
 	// MoveLeft represents strafing left.
 	MoveLeft MoveDirection = 4
+	// MoveUp represents moving up.
+	MoveUp MoveDirection = 5
+	// MoveDown represents moving down.
+	MoveDown MoveDirection = 6
 )
 
 // MovementEvent contains movement event information.

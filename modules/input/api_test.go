@@ -167,6 +167,38 @@ func TestModuleRouteEvents(t *testing.T) {
 			direction: camera.MoveRight,
 			pressed:   false,
 		},
+		{
+			message:   "up",
+			evtType:   sdl.KEYUP,
+			scancode:  sdl.SCANCODE_SPACE,
+			sym:       sdl.K_SPACE,
+			direction: camera.MoveUp,
+			pressed:   false,
+		},
+		{
+			message:   "up",
+			evtType:   sdl.KEYDOWN,
+			scancode:  sdl.SCANCODE_SPACE,
+			sym:       sdl.K_SPACE,
+			direction: camera.MoveUp,
+			pressed:   true,
+		},
+		{
+			message:   "down",
+			evtType:   sdl.KEYUP,
+			scancode:  sdl.SCANCODE_LSHIFT,
+			sym:       sdl.K_LSHIFT,
+			direction: camera.MoveDown,
+			pressed:   false,
+		},
+		{
+			message:   "down",
+			evtType:   sdl.KEYDOWN,
+			scancode:  sdl.SCANCODE_LSHIFT,
+			sym:       sdl.K_LSHIFT,
+			direction: camera.MoveDown,
+			pressed:   true,
+		},
 	}
 
 	for _, tC := range testCases {

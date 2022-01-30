@@ -156,6 +156,18 @@ func TestCameraMovesIfTickOccursWhileNoMovementKeyIsPressed(t *testing.T) {
 			z:         0,
 		},
 		{
+			direction: camera.MoveUp,
+			x:         0,
+			y:         1,
+			z:         0,
+		},
+		{
+			direction: camera.MoveDown,
+			x:         0,
+			y:         -1,
+			z:         0,
+		},
+		{
 			direction: 0,
 			x:         0,
 			y:         0,
@@ -320,6 +332,108 @@ func TestPlayerMovesInDirectionOfCamera(t *testing.T) {
 			cameraMod.HandleLookEvent(tC.lookEvt)
 			cameraMod.HandleMovementEvent(camera.MovementEvent{
 				Direction: camera.MoveForwards,
+				Pressed:   true,
+			})
+			cameraMod.Tick()
+			if !withinErrorVec3(actual, tC.expected, errMargin) {
+				t.Fatalf("expected new player position to be within %v of %v but was %v", errMargin, tC.expected, actual)
+			}
+		})
+	}
+}
+
+func TestPlayerStrafesAppropriatelyAfterLookingSomewhere(t *testing.T) {
+	testCases := []struct {
+		direction camera.MoveDirection
+		lookEvt   camera.LookEvent
+		expected  mgl.Vec3
+	}{
+		{
+			direction: camera.MoveRight,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 2.0,
+				Down:  0,
+			},
+			expected: mgl.Vec3{0, 0, 1},
+		},
+		{
+			direction: camera.MoveLeft,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 2.0,
+				Down:  0,
+			},
+			expected: mgl.Vec3{0, 0, -1},
+		},
+		{
+			direction: camera.MoveForwards,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 2.0,
+				Down:  0,
+			},
+			expected: mgl.Vec3{1, 0, 0},
+		},
+		{
+			direction: camera.MoveBackwards,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 2.0,
+				Down:  0,
+			},
+			expected: mgl.Vec3{-1, 0, 0},
+		},
+		{
+			direction: camera.MoveUp,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 2.0,
+				Down:  0,
+			},
+			expected: mgl.Vec3{0, 1, 0},
+		},
+		{
+			direction: camera.MoveDown,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 2.0,
+				Down:  0,
+			},
+			expected: mgl.Vec3{0, -1, 0},
+		},
+		{
+			direction: camera.MoveUp,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 4.0,
+				Down:  math.Pi / 4.0,
+			},
+			expected: mgl.Vec3{0, 1, 0},
+		},
+		{
+			direction: camera.MoveDown,
+			lookEvt: camera.LookEvent{
+				Right: math.Pi / 4.0,
+				Down:  math.Pi / 4.0,
+			},
+			expected: mgl.Vec3{0, -1, 0},
+		},
+	}
+	for _, tC := range testCases {
+		tC := tC
+		t.Run("move "+tC.direction.String()+" after looking right", func(t *testing.T) {
+			t.Parallel()
+			playerMod := &player.FnModule{}
+			cameraMod := camera.New(playerMod, player.PositionEvent{
+				X: 0,
+				Y: 0,
+				Z: 0,
+			})
+			var actual mgl.Vec3
+			playerMod.FnUpdatePlayerPosition = func(posEvent player.PositionEvent) {
+				actual = mgl.Vec3{
+					posEvent.X,
+					posEvent.Y,
+					posEvent.Z,
+				}
+			}
+			cameraMod.HandleLookEvent(tC.lookEvt)
+			cameraMod.HandleMovementEvent(camera.MovementEvent{
+				Direction: tC.direction,
 				Pressed:   true,
 			})
 			cameraMod.Tick()

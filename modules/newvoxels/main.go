@@ -10,6 +10,7 @@ import (
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
+	"github.com/kroppt/voxels/modules/tick"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/kroppt/voxels/util"
@@ -55,12 +56,17 @@ func main() {
 	}
 	worldMod := world.New(graphicsMod, testGen)
 	playerMod := player.New(worldMod, settingsRepo, graphicsMod, chunkSize)
-	cameraMod := camera.New(playerMod, player.PositionEvent{})
+	cameraMod := camera.New(playerMod, player.PositionEvent{0.5, 0.5, 3})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
+	tickRateNano := int64(100 * 1e6)
+	tickMod := tick.New(cameraMod, tick.FnTime{}, tickRateNano)
 	graphicsMod.ShowWindow()
 
 	keepRunning := true
 	for keepRunning {
+		if tickMod.IsNextTickReady() {
+			tickMod.AdvanceTick()
+		}
 		graphicsMod.Render()
 		keepRunning = inputMod.RouteEvents()
 	}
