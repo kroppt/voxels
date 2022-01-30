@@ -187,7 +187,7 @@ func (c *core) getUpdatedViewMatrix() mgl.Mat4 {
 		panic("attempted to calc view matrix with unassigned direction or position")
 	}
 	view := mgl.Ident4()
-	cur := c.direction.Rotation.Mat4()
+	cur := c.direction.Rotation.Inverse().Mat4()
 	view = view.Mul4(cur)
 	pos := mgl.Translate3D(-c.position.X, -c.position.Y, -c.position.Z)
 	view = view.Mul4(pos)
