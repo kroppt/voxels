@@ -12,7 +12,7 @@ type Module struct {
 }
 
 // New creates a player module.
-func New(worldMod world.Interface, settingsMod settings.Interface, graphicsMod graphics.Interface, chunkSize uint32) *Module {
+func New(worldMod world.Interface, settingsMod settings.Interface, graphicsMod graphics.Interface) *Module {
 	if settingsMod == nil {
 		panic("settings is required to be non-nil")
 	}
@@ -20,7 +20,6 @@ func New(worldMod world.Interface, settingsMod settings.Interface, graphicsMod g
 		worldMod:    worldMod,
 		settingsMod: settingsMod,
 		graphicsMod: graphicsMod,
-		chunkSize:   chunkSize,
 		firstLoad:   true,
 	}
 	return &Module{

@@ -40,10 +40,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	chunkSize := uint32(1)
 	testGen := &world.FnGenerator{
 		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
-			newChunk := chunk.New(key, chunkSize)
+			newChunk := chunk.New(key, settingsRepo.GetChunkSize())
 			if key == (chunk.Position{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{
 					X: 0,
@@ -54,8 +53,8 @@ func main() {
 			return newChunk
 		},
 	}
-	worldMod := world.New(graphicsMod, testGen)
-	playerMod := player.New(worldMod, settingsRepo, graphicsMod, chunkSize)
+	worldMod := world.New(graphicsMod, testGen, settingsRepo)
+	playerMod := player.New(worldMod, settingsRepo, graphicsMod)
 	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 0.5, Z: 3})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
 	tickRateNano := int64(100 * 1e6)

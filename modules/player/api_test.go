@@ -19,7 +19,7 @@ func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
 		t.Parallel()
 
-		mod := player.New(world.FnModule{}, settings.FnRepository{}, graphics.FnModule{}, 1)
+		mod := player.New(world.FnModule{}, settings.FnRepository{}, graphics.FnModule{})
 
 		if mod == nil {
 			t.Fatal("expected non-nil return")
@@ -34,7 +34,7 @@ func TestModuleNew(t *testing.T) {
 			}
 		}()
 
-		player.New(world.FnModule{}, nil, graphics.FnModule{}, 1)
+		player.New(world.FnModule{}, nil, graphics.FnModule{})
 	})
 
 	t.Run("nothing is loded by default", func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestModuleNew(t *testing.T) {
 			},
 		}
 
-		player.New(worldMod, settingsMod, graphics.FnModule{}, 1)
+		player.New(worldMod, settingsMod, graphics.FnModule{})
 
 		if loaded != expected {
 			t.Fatal("expected no chunk to be loaded, but one was")
@@ -84,9 +84,12 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			FnGetRenderDistance: func() uint32 {
 				return 2
 			},
+			FnGetChunkSize: func() uint32 {
+				return chunkSize
+			},
 		}
 		worldMod := &world.FnModule{}
-		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{}, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{})
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -143,8 +146,11 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			FnGetRenderDistance: func() uint32 {
 				return 2
 			},
+			FnGetChunkSize: func() uint32 {
+				return chunkSize
+			},
 		}
-		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{}, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{})
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -193,8 +199,11 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			FnGetRenderDistance: func() uint32 {
 				return 2
 			},
+			FnGetChunkSize: func() uint32 {
+				return chunkSize
+			},
 		}
-		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{}, chunkSize)
+		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{})
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -227,7 +236,7 @@ func TestNoCullingWithoutPos(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
 
 	if calledUpdateView != expected {
@@ -245,7 +254,7 @@ func TestNoCullingWithoutDirection(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{})
 
 	if calledUpdateView != expected {
@@ -263,7 +272,7 @@ func TestCullingWithPosAndDir(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
 
@@ -291,13 +300,27 @@ func TestFrustumCulling(t *testing.T) {
 			actualViewedChunks = viewChunks
 		},
 	}
-	settingsMod := settings.New()
-	settingsMod.SetFOV(33.398488467987)
-	settingsMod.SetNear(0.1)
-	settingsMod.SetFar(10)
-	settingsMod.SetRenderDistance(1)
-	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	settingsMod := settings.FnRepository{
+		FnGetFOV: func() float64 {
+			return 33.398488467987
+		},
+		FnGetFar: func() float64 {
+			return 10
+		},
+		FnGetNear: func() float64 {
+			return 0.1
+		},
+		FnGetResolution: func() (uint32, uint32) {
+			return 1, 1
+		},
+		FnGetRenderDistance: func() uint32 {
+			return 1
+		},
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
 		Rotation: mgl.QuatIdent(),
@@ -328,13 +351,27 @@ func TestFrustumCullingWideAngle(t *testing.T) {
 			actualViewedChunks = viewChunks
 		},
 	}
-	settingsMod := settings.New()
-	settingsMod.SetFOV(89.5)
-	settingsMod.SetNear(0.1)
-	settingsMod.SetFar(10)
-	settingsMod.SetRenderDistance(1)
-	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	settingsMod := settings.FnRepository{
+		FnGetFOV: func() float64 {
+			return 89.5
+		},
+		FnGetFar: func() float64 {
+			return 10
+		},
+		FnGetNear: func() float64 {
+			return 0.1
+		},
+		FnGetResolution: func() (uint32, uint32) {
+			return 1, 1
+		},
+		FnGetRenderDistance: func() uint32 {
+			return 1
+		},
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
 		Rotation: mgl.QuatIdent(),
@@ -360,13 +397,27 @@ func TestFrustumCullingLargeChunks(t *testing.T) {
 			actualViewedChunks = viewChunks
 		},
 	}
-	settingsMod := settings.New()
-	settingsMod.SetFOV(70)
-	settingsMod.SetNear(0.1)
-	settingsMod.SetFar(10)
-	settingsMod.SetRenderDistance(1)
-	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 3)
+	settingsMod := settings.FnRepository{
+		FnGetFOV: func() float64 {
+			return 70
+		},
+		FnGetFar: func() float64 {
+			return 10
+		},
+		FnGetNear: func() float64 {
+			return 0.1
+		},
+		FnGetResolution: func() (uint32, uint32) {
+			return 1, 1
+		},
+		FnGetRenderDistance: func() uint32 {
+			return 1
+		},
+		FnGetChunkSize: func() uint32 {
+			return 3
+		},
+	}
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{0.5, 0.5, 0.5})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
 		Rotation: mgl.QuatIdent(),
@@ -389,13 +440,27 @@ func TestFrustumCullingDueToPositionChange(t *testing.T) {
 			actualViewedChunks = viewChunks
 		},
 	}
-	settingsMod := settings.New()
-	settingsMod.SetFOV(33.398488467987)
-	settingsMod.SetNear(0.1)
-	settingsMod.SetFar(10)
-	settingsMod.SetRenderDistance(1)
-	settingsMod.SetResolution(1, 1)
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	settingsMod := settings.FnRepository{
+		FnGetFOV: func() float64 {
+			return 33.398488467987
+		},
+		FnGetFar: func() float64 {
+			return 10
+		},
+		FnGetNear: func() float64 {
+			return 0.1
+		},
+		FnGetResolution: func() (uint32, uint32) {
+			return 1, 1
+		},
+		FnGetRenderDistance: func() uint32 {
+			return 1
+		},
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	// setting direction first without position set should not trigger a view update
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
 		Rotation: mgl.QuatIdent(),
@@ -424,7 +489,7 @@ func TestViewMatrixCalculationOnDirTrigger(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{X: pos.X(), Y: pos.Y(), Z: pos.Z()})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: rot})
 
@@ -447,7 +512,7 @@ func TestViewMatrixCalculationOnPosTrigger(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: rot})
 	playerMod.UpdatePlayerPosition(player.PositionEvent{X: pos.X(), Y: pos.Y(), Z: pos.Z()})
 
@@ -487,7 +552,7 @@ func TestProjectionMatrixOnUpdateView(t *testing.T) {
 			return 1280, 720
 		},
 	}
-	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod, 1)
+	playerMod := player.New(world.FnModule{}, settingsMod, graphicsMod)
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: mgl.QuatIdent()})
 	playerMod.UpdatePlayerPosition(player.PositionEvent{X: 0, Y: 0, Z: 0})
 
@@ -510,7 +575,7 @@ func TestChunksLoadedOnFirstPositionUpdate(t *testing.T) {
 			actualUnloadCall = true
 		},
 	}
-	playerMod := player.New(worldMod, settings.FnRepository{}, nil, 1)
+	playerMod := player.New(worldMod, settings.FnRepository{}, nil)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{1, 1, 1})
 
 	if expectedLoadCall != actualLoadCall {

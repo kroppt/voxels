@@ -14,7 +14,6 @@ type core struct {
 	worldMod     world.Interface
 	settingsMod  settings.Interface
 	graphicsMod  graphics.Interface
-	chunkSize    uint32
 	lastChunkPos chunkPos
 	posAssigned  bool
 	position     PositionEvent
@@ -25,7 +24,7 @@ type core struct {
 
 func (c *core) playerToChunkPosition(pos voxelPos) chunkPos {
 	x, y, z := pos.x, pos.y, pos.z
-	chunkSize := int32(c.chunkSize)
+	chunkSize := int32(c.settingsMod.GetChunkSize())
 	if pos.x < 0 {
 		x++
 	}
@@ -369,7 +368,7 @@ func (c *core) getFrustumCulledChunks() map[chunk.Position]struct{} {
 	})
 
 	rng.forEach(func(pos chunkPos) bool {
-		if c.isWithinFrustum(cam, pos, c.chunkSize) {
+		if c.isWithinFrustum(cam, pos, c.settingsMod.GetChunkSize()) {
 			key := chunk.Position{
 				X: pos.x,
 				Y: pos.y,
