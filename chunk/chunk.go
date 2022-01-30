@@ -103,19 +103,7 @@ func (c Chunk) GetFlatData() []float32 {
 }
 
 func (c Chunk) isOutOfBounds(vpos VoxelCoordinate) bool {
-	chMinX := c.pos.X * int32(c.size)
-	chMaxX := chMinX + int32(c.size)
-	chMinY := c.pos.Y * int32(c.size)
-	chMaxY := chMinY + int32(c.size)
-	chMinZ := c.pos.Z * int32(c.size)
-	chMaxZ := chMinZ + int32(c.size)
-	if vpos.X < chMinX || vpos.Y < chMinY || vpos.Z < chMinZ {
-		return true
-	}
-	if vpos.X >= chMaxX || vpos.Y >= chMaxY || vpos.Z >= chMaxZ {
-		return true
-	}
-	return false
+	return VoxelCoordToChunkCoord(vpos, c.size) != c.pos
 }
 
 func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) {
