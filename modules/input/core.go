@@ -71,7 +71,9 @@ func (m *core) routeEvent(e sdl.Event) {
 			Right: xRad,
 			Down:  yRad,
 		}
-		m.cameraMod.HandleLookEvent(lookEvt)
+		if evt.State == sdl.BUTTON_LEFT {
+			m.cameraMod.HandleLookEvent(lookEvt)
+		}
 	}
 
 }

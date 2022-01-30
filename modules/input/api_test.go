@@ -265,7 +265,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				Timestamp: 0,
 				WindowID:  0,
 				Which:     0,
-				State:     0,
+				State:     sdl.BUTTON_LEFT,
 				X:         0,
 				Y:         0,
 				XRel:      tC.xRel,
@@ -321,6 +321,48 @@ func TestModuleRouteEvents(t *testing.T) {
 		})
 	}
 
+}
+
+func TestMouseMotionOnlyPassedToCameraIfM1Held(t *testing.T) {
+	motionEvent := sdl.MouseMotionEvent{
+		Type:      sdl.MOUSEMOTION,
+		Timestamp: 0,
+		WindowID:  0,
+		Which:     0,
+		State:     0,
+		X:         0,
+		Y:         0,
+		XRel:      1,
+		YRel:      1,
+	}
+
+	quitEvent := sdl.QuitEvent{
+		Type:      sdl.QUIT,
+		Timestamp: 0,
+	}
+
+	first := true
+	graphicsMod := graphics.FnModule{
+		FnPollEvent: func() (sdl.Event, bool) {
+			if first {
+				first = false
+				return &motionEvent, true
+			}
+			return &quitEvent, true
+		},
+	}
+	expected := false
+	actual := false
+	cameraMod := &camera.FnModule{
+		FnHandleLookEvent: func(evt camera.LookEvent) {
+			actual = true
+		},
+	}
+	mod := input.New(graphicsMod, cameraMod, settings.FnRepository{})
+	mod.RouteEvents()
+	if actual != expected {
+		t.Fatal("expected no handle look event, but there was one")
+	}
 }
 
 func withinError(x, y float64, diff float64) bool {
