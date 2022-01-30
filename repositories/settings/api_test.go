@@ -167,6 +167,7 @@ func TestRepositoryFromReader(t *testing.T) {
 			"renderDistance=9",
 			"far=100.0",
 			"near=0.1",
+			"chunkSize=5",
 		}, "\n"))
 		settings := settings.New()
 
@@ -182,6 +183,7 @@ func TestRepositoryFromReader(t *testing.T) {
 		expectRenderDistance := 9
 		expectNear := 0.1
 		expectFar := 100.0
+		expectChunkSize := 5
 
 		fov := settings.GetFOV()
 		if fov != expectFOV {
@@ -205,6 +207,10 @@ func TestRepositoryFromReader(t *testing.T) {
 		far := settings.GetFar()
 		if far != expectFar {
 			t.Fatalf("expected far %v but got %v", expectFar, far)
+		}
+		chunkSize := settings.GetChunkSize()
+		if chunkSize != uint32(expectChunkSize) {
+			t.Fatalf("expected chunk size %v but got %v", expectChunkSize, chunkSize)
 		}
 	})
 }

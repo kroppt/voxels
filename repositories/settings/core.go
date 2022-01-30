@@ -16,6 +16,7 @@ type core struct {
 	width          uint32
 	height         uint32
 	renderDistance uint32
+	chunkSize      uint32
 }
 
 func (c *core) setFOV(degY float64) {
@@ -40,6 +41,14 @@ func (c *core) setFar(far float64) {
 
 func (c *core) getFar() float64 {
 	return c.far
+}
+
+func (c *core) setChunkSize(chunkSize uint32) {
+	c.chunkSize = chunkSize
+}
+
+func (c *core) getChunkSize() uint32 {
+	return c.chunkSize
 }
 
 func (c *core) setResolution(width, height uint32) {
@@ -136,6 +145,15 @@ func (c *core) setFromReader(reader io.Reader) error {
 				}
 			}
 			c.setFar(far)
+		case "chunkSize":
+			chunkSize, err := strconv.Atoi(value)
+			if err != nil || chunkSize == 0 {
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
+			}
+			c.setChunkSize(uint32(chunkSize))
 		default:
 			log.Warnf("invalid settings entry: %v=%v", key, value)
 		}
