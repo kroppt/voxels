@@ -69,25 +69,22 @@ func New(chPos Position, chSize uint32) Chunk {
 
 	flatData := make([]float32, vertSize*chSize*chSize*chSize)
 	size := int32(chSize)
-	for x := chPos.X * size; x < chPos.X*size+size; x++ {
-		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
-			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
-				i := x - chPos.X*size
-				j := y - chPos.Y*size
-				k := z - chPos.Z*size
-				off := (i + j*size*size + k*size) * 5
-				flatData[off] = float32(x)
-				flatData[off+1] = float32(y)
-				flatData[off+2] = float32(z)
-			}
-		}
-	}
-
-	return Chunk{
+	chunk := Chunk{
 		pos:      chPos,
 		size:     chSize,
 		flatData: flatData,
 	}
+	for x := chPos.X * size; x < chPos.X*size+size; x++ {
+		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
+			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
+				off := chunk.voxelPosToDataOffset(VoxelCoordinate{x, y, z})
+				chunk.flatData[off] = float32(x)
+				chunk.flatData[off+1] = float32(y)
+				chunk.flatData[off+2] = float32(z)
+			}
+		}
+	}
+	return chunk
 }
 
 func (c Chunk) Position() Position {
