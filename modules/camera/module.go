@@ -20,7 +20,12 @@ func New(playerMod player.Interface, initialPos player.PositionEvent) *Module {
 	return &Module{
 		core{
 			playerMod: playerMod,
-			rot:       mgl.QuatIdent(),
+			pos: mgl.Vec3{
+				initialPos.X,
+				initialPos.Y,
+				initialPos.Z,
+			},
+			rot: mgl.QuatIdent(),
 		},
 	}
 }

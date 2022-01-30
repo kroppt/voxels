@@ -41,6 +41,31 @@ func TestModuleNewInitialPos(t *testing.T) {
 	}
 }
 
+func TestCameraMovementAfterInitialOffset(t *testing.T) {
+	t.Parallel()
+	expected := player.PositionEvent{
+		X: 0.5,
+		Y: 0.5,
+		Z: 1.5,
+	}
+	var actual player.PositionEvent
+	playerMod := player.FnModule{
+		FnUpdatePlayerPosition: func(posEvent player.PositionEvent) {
+			actual = posEvent
+		},
+	}
+	cameraMod := camera.New(&playerMod, player.PositionEvent{X: 0.5, Y: 0.5, Z: 0.5})
+	cameraMod.HandleMovementEvent(camera.MovementEvent{
+		Direction: camera.MoveBackwards,
+		Pressed:   true,
+	})
+	cameraMod.Tick()
+
+	if actual != expected {
+		t.Fatalf("expected player to receive position event of %v but was %v", expected, actual)
+	}
+}
+
 func TestOnlyHandlingMovementEventDoesNotMovePlayer(t *testing.T) {
 	t.Parallel()
 	expected := false
