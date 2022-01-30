@@ -116,18 +116,11 @@ func (c *core) destroyWindow() error {
 func (c *core) updateView(viewableChunks map[chunk.Position]struct{}, view mgl.Mat4, proj mgl.Mat4) {
 	c.viewableChunks = viewableChunks
 
-	viewmat32 := [16]float32{}
-	projmat32 := [16]float32{}
-	for i := range viewmat32 {
-		viewmat32[i] = float32(view[i])
-		projmat32[i] = float32(proj[i])
-	}
-
-	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(viewmat32)), gl.Ptr(&viewmat32[0]))
+	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
 	if err != nil {
 		panic(fmt.Sprintf("failed to upload camera view to ubo: %v", err))
 	}
-	err = c.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(viewmat32)), uint32(unsafe.Sizeof(projmat32)), gl.Ptr(&projmat32[0]))
+	err = c.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(view)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
 	if err != nil {
 		panic(fmt.Sprintf("failed to upload camera proj to ubo: %v", err))
 	}

@@ -105,8 +105,8 @@ const geoFrameShader = `
 
 	layout (std140, binding = 0) uniform Matrices
 	{
-		mat4 view;
-		mat4 projection;
+		dmat4 view;
+		dmat4 projection;
 	} cam;
 
 	in Vertex {
@@ -119,7 +119,7 @@ const geoFrameShader = `
 	} OUT;
 
 	void createVertex(vec4 p) {
-		gl_Position = cam.projection * cam.view * p;
+		gl_Position = vec4(cam.projection * cam.view * p);
 		OUT.col = vec4(0.8, 0.8, 0.8, 1.0);
 		EmitVertex();
 	}
