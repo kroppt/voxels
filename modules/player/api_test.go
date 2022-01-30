@@ -436,10 +436,10 @@ func TestViewMatrixCalculationOnDirTrigger(t *testing.T) {
 func TestViewMatrixCalculationOnPosTrigger(t *testing.T) {
 	t.Parallel()
 	pos := mgl.Vec3{0.5, -1, 2}
-	rot := mgl.QuatIdent()
+	rot := mgl.QuatIdent().Mul(mgl.QuatRotate(mgl.DegToRad(45), mgl.Vec3{1, 1, 1}))
 	posNeg := pos.Mul(-1)
 	posMat := mgl.Translate3D(posNeg.X(), posNeg.Y(), posNeg.Z())
-	expected := mgl.Ident4().Mul4(rot.Mat4()).Mul4(posMat)
+	expected := mgl.Ident4().Mul4(rot.Inverse().Mat4()).Mul4(posMat)
 	var actual mgl.Mat4
 	graphicsMod := &graphics.FnModule{
 		FnUpdateView: func(viewChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {

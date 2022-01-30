@@ -41,10 +41,10 @@ func (c *core) handleLookEvent(evt LookEvent) {
 
 	c.rot = quatX.Mul(c.rot)
 
-	downAxis := c.rot.Rotate(mgl.Vec3{-1, 0, 0})
+	earAxis := c.rot.Rotate(mgl.Vec3{-1, 0, 0})
 
 	radY := evt.Down
-	quatY := mgl.QuatRotate(radY, downAxis)
+	quatY := mgl.QuatRotate(radY, earAxis)
 
 	c.rot = quatY.Mul(c.rot)
 
