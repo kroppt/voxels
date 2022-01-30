@@ -6,6 +6,8 @@ type Interface interface {
 	LoadChunk(chunk.Position)
 	UnloadChunk(chunk.Position)
 	CountLoadedChunks() int
+	SetBlockType(chunk.VoxelCoordinate, chunk.BlockType)
+	GetBlockType(chunk.VoxelCoordinate) chunk.BlockType
 }
 
 func (m *Module) LoadChunk(pos chunk.Position) {
@@ -20,10 +22,20 @@ func (m *Module) CountLoadedChunks() int {
 	return m.c.countLoadedChunks()
 }
 
+func (m *Module) SetBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
+	m.c.setBlockType(pos, btype)
+}
+
+func (m *Module) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
+	return m.c.getBlockType(pos)
+}
+
 type FnModule struct {
 	FnLoadChunk         func(chunk.Position)
 	FnUnloadChunk       func(chunk.Position)
 	FnCountLoadedChunks func() int
+	FnSetBlockType      func(chunk.VoxelCoordinate, chunk.BlockType)
+	FnGetBlockType      func(chunk.VoxelCoordinate) chunk.BlockType
 }
 
 func (fn FnModule) LoadChunk(pos chunk.Position) {
@@ -43,4 +55,17 @@ func (fn FnModule) CountLoadedChunks() int {
 		return fn.FnCountLoadedChunks()
 	}
 	return 0
+}
+
+func (fn FnModule) SetBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
+	if fn.FnSetBlockType != nil {
+		fn.FnSetBlockType(pos, btype)
+	}
+}
+
+func (fn FnModule) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
+	if fn.FnGetBlockType != nil {
+		return fn.FnGetBlockType(pos)
+	}
+	return chunk.BlockTypeAir
 }

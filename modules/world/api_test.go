@@ -6,6 +6,7 @@ import (
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/world"
+	"github.com/kroppt/voxels/repositories/settings"
 )
 
 func TestWorldLoadedChunkCount(t *testing.T) {
@@ -38,25 +39,6 @@ func TestWorldLoadedChunkCount(t *testing.T) {
 			expectedCount: 0,
 		},
 		{
-			desc: "world should not load the same chunk twice",
-			loadChunks: []chunk.Position{
-				{X: 1, Y: 2, Z: 3},
-				{X: 1, Y: 2, Z: 3},
-			},
-			expectedCount: 1,
-		},
-		{
-			desc: "world should not unload the same chunk twice",
-			loadChunks: []chunk.Position{
-				{X: 1, Y: 2, Z: 3},
-			},
-			unloadChunks: []chunk.Position{
-				{X: 1, Y: 2, Z: 3},
-				{X: 1, Y: 2, Z: 3},
-			},
-			expectedCount: 0,
-		},
-		{
 			desc: "world should load two different chunks",
 			loadChunks: []chunk.Position{
 				{X: 1, Y: 2, Z: 3},
@@ -65,11 +47,17 @@ func TestWorldLoadedChunkCount(t *testing.T) {
 			expectedCount: 2,
 		},
 		{
-			desc: "world cannot unload a chunk if it has none",
+			desc: "world should load 3 chunks and unload two of them",
+			loadChunks: []chunk.Position{
+				{X: 1, Y: 2, Z: 3},
+				{X: 4, Y: 5, Z: 6},
+				{X: 7, Y: 8, Z: 9},
+			},
 			unloadChunks: []chunk.Position{
 				{X: 1, Y: 2, Z: 3},
+				{X: 4, Y: 5, Z: 6},
 			},
-			expectedCount: 0,
+			expectedCount: 1,
 		},
 	}
 	for _, tC := range testCases {
@@ -77,7 +65,7 @@ func TestWorldLoadedChunkCount(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
 			graphicsMod := graphics.FnModule{}
-			worldMod := world.New(graphicsMod, &world.FnGenerator{})
+			worldMod := world.New(graphicsMod, &world.FnGenerator{}, settings.FnRepository{})
 			for _, loadChunk := range tC.loadChunks {
 				worldMod.LoadChunk(loadChunk)
 			}
@@ -101,7 +89,7 @@ func TestWorldLoadChunkPassesToGraphics(t *testing.T) {
 		},
 	}
 
-	worldMod := world.New(graphicsMod, &world.FnGenerator{})
+	worldMod := world.New(graphicsMod, &world.FnGenerator{}, settings.FnRepository{})
 	worldMod.LoadChunk(chunk.Position{X: 1, Y: 2, Z: 3})
 	expected := chunk.Position{X: 1, Y: 2, Z: 3}
 	if actual != expected {
@@ -117,7 +105,8 @@ func TestWorldUnloadChunkPassesToGraphics(t *testing.T) {
 			actual = pos
 		},
 	}
-	worldMod := world.New(graphicsMod, nil)
+	worldMod := world.New(graphicsMod, &world.FnGenerator{}, &settings.Repository{})
+	worldMod.LoadChunk(chunk.Position{X: 1, Y: 2, Z: 3})
 	worldMod.UnloadChunk(chunk.Position{X: 1, Y: 2, Z: 3})
 	expected := chunk.Position{X: 1, Y: 2, Z: 3}
 	if actual != expected {
@@ -127,9 +116,14 @@ func TestWorldUnloadChunkPassesToGraphics(t *testing.T) {
 
 func TestWorldGeneration(t *testing.T) {
 	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
 	testGen := &world.FnGenerator{
 		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
-			newChunk := chunk.New(key, 1)
+			newChunk := chunk.New(key, settingsRepo.GetChunkSize())
 			if key == (chunk.Position{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{
 					X: 0,
@@ -147,11 +141,124 @@ func TestWorldGeneration(t *testing.T) {
 			actual = ch.BlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 		},
 	}
-	worldMod := world.New(graphicsMod, testGen)
+	worldMod := world.New(graphicsMod, testGen, settingsRepo)
 	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
 
 	if actual != expected {
 		t.Fatalf("expected to retrieve block type %v but got %v", expected, actual)
 	}
 
+}
+
+func TestNewWorldNilSettingsRepo(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	world.New(&graphics.FnModule{}, &world.FnGenerator{}, nil)
+}
+
+func TestNewWorldNilGenerator(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	world.New(&graphics.FnModule{}, nil, &settings.FnRepository{})
+}
+
+func TestNewWorldNilGraphicsMod(t *testing.T) {
+	t.Parallel()
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	world.New(nil, &world.FnGenerator{}, &settings.FnRepository{})
+}
+
+func TestCannotLoadAlreadyLoadedChunk(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo)
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+}
+
+func TestCannotUnloadNonLoadedChunk(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo)
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	worldMod.UnloadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+}
+
+func TestCannotSetBlockInUnloadedChunk(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo)
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeAir)
+}
+
+func TestCannotGetBlockInUnloadedChunk(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo)
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatal("expected panic, but didn't")
+		}
+	}()
+	worldMod.GetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
+}
+
+func TestValidSetAndGetBlockInWorld(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	expectedBlockType := chunk.BlockTypeDirt
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo)
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, expectedBlockType)
+	actualBlockType := worldMod.GetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
+
+	if actualBlockType != expectedBlockType {
+		t.Fatalf("expected to receive block type %v but got %v", expectedBlockType, actualBlockType)
+	}
 }
