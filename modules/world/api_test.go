@@ -289,3 +289,22 @@ func TestWorldSavesAfterUnloading(t *testing.T) {
 		t.Fatalf("expected to receive block type %v but got %v", expectedBlockType, actualBlockType)
 	}
 }
+
+func TestWorldUnloadAllChunks(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo, &cache.FnModule{})
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+	worldMod.LoadChunk(chunk.Position{X: 1, Y: 0, Z: 0})
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 2, Z: 2})
+	expectedChunkCount := 0
+	worldMod.UnloadAllChunks()
+	actualChunkCount := worldMod.CountLoadedChunks()
+	if actualChunkCount != expectedChunkCount {
+		t.Fatalf("expected chunk count to be %v but was %v", expectedChunkCount, actualChunkCount)
+	}
+}

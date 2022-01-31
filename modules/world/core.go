@@ -36,6 +36,12 @@ func (c *core) unloadChunk(pos chunk.Position) {
 	c.graphicsMod.UnloadChunk(pos)
 }
 
+func (c *core) unloadAllChunks() {
+	for key := range c.chunksLoaded {
+		c.unloadChunk(key)
+	}
+}
+
 func (c *core) countLoadedChunks() int {
 	return len(c.chunksLoaded)
 }

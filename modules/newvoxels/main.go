@@ -77,5 +77,6 @@ func main() {
 		graphicsMod.Render()
 		keepRunning = inputMod.RouteEvents()
 	}
+	worldMod.UnloadAllChunks()
 	util.LogMetrics()
 }

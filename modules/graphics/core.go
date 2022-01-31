@@ -105,10 +105,6 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	c.ubo.Destroy()
-	for _, obj := range c.loadedChunks {
-		obj.Destroy()
-	}
-	c.loadedChunks = nil
 	sdl.Quit()
 	return err
 }
