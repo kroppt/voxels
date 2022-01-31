@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"errors"
 	"os"
 
 	"github.com/kroppt/voxels/repositories/settings"
@@ -15,18 +16,27 @@ func New(fs afero.Fs, settingsRepo settings.Interface) *Module {
 	if settingsRepo == nil {
 		panic("cache received nil settings repo")
 	}
-	dataFile, err := fs.OpenFile("world.data", os.O_CREATE|os.O_RDWR, 0755)
-	if err != nil {
-		panic("failed to create file")
+	err := fs.Mkdir("data", 0755)
+	if err != nil && !errors.Is(err, os.ErrExist) {
+		panic("failed to create data directory")
 	}
-	metaFile, err := fs.OpenFile("meta.data", os.O_CREATE|os.O_RDWR, 0755)
+	voxelFile, err := fs.OpenFile("data/voxel.data", os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
-		panic("failed to create file")
+		panic("failed to create voxel file")
+	}
+	chunkFile, err := fs.OpenFile("data/chunk.data", os.O_CREATE|os.O_RDWR, 0755)
+	if err != nil {
+		panic("failed to create chunk file")
+	}
+	regionFile, err := fs.OpenFile("data/region.data", os.O_CREATE|os.O_RDWR, 0755)
+	if err != nil {
+		panic("failed to create region file")
 	}
 	return &Module{
 		c: core{
-			dataFile:     dataFile,
-			metaFile:     metaFile,
+			voxelFile:    voxelFile,
+			chunkFile:    chunkFile,
+			regionFile:   regionFile,
 			settingsRepo: settingsRepo,
 		},
 	}
