@@ -11,6 +11,7 @@ import (
 )
 
 func TestModuleNew(t *testing.T) {
+	t.Parallel()
 	t.Run("return is non-nil", func(t *testing.T) {
 		mod := camera.New(&player.FnModule{}, player.PositionEvent{})
 		if mod == nil {
@@ -20,6 +21,7 @@ func TestModuleNew(t *testing.T) {
 }
 
 func TestModuleNewInitialPos(t *testing.T) {
+	t.Parallel()
 	expected := player.PositionEvent{
 		X: 1,
 		Y: 2,
@@ -327,6 +329,7 @@ func TestCameraMovesIfTickOccursWhileMovementKeyIsPressedStraightDirections(t *t
 }
 
 func TestPlayerMovesInDirectionOfCamera(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		desc     string
 		lookEvt  camera.LookEvent
@@ -429,6 +432,7 @@ func TestPlayerMovesInDirectionOfCamera(t *testing.T) {
 }
 
 func TestPlayerStrafesAppropriatelyAfterLookingSomewhere(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		direction camera.MoveDirection
 		lookEvt   camera.LookEvent

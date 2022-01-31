@@ -61,6 +61,7 @@ func TestModuleNew(t *testing.T) {
 }
 
 func TestModuleUpdatePlayerPosition(t *testing.T) {
+	t.Parallel()
 	t.Run("when player position is moved, the right chunks are loaded and unloaded", func(t *testing.T) {
 		t.Parallel()
 		const chunkSize = 10

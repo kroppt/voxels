@@ -414,6 +414,7 @@ func TestVoxelCoordToChunkCoord(t *testing.T) {
 }
 
 func TestLoadChunkFromFlatDataDetectsError(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		badData   []float32
 		chunkSize uint32

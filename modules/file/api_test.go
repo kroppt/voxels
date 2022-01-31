@@ -21,6 +21,7 @@ func stringSliceEqual(a, b []string) bool {
 }
 
 func TestModuleNew(t *testing.T) {
+	t.Parallel()
 	t.Run("return is non-nil", func(t *testing.T) {
 		mod := file.New()
 		if mod == nil {

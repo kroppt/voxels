@@ -16,6 +16,7 @@ const radPerPixel90Fov1080p = 0.001851849734970231519857518794828047514079623189
 const radPerPixel60Fov720p = 0.00160374937279330816829202322728175610492195086447145154086328041257942052266469076005433338466058794268480374657841493528031900554291374010332983185292802664704121007621386567449140497010184846281883017096154046972947380855904302476309350952412298983907694
 
 func TestModuleNew(t *testing.T) {
+	t.Parallel()
 	t.Run("return is non-nil", func(t *testing.T) {
 		mod := input.New(nil, nil, nil)
 		if mod == nil {
@@ -356,6 +357,7 @@ func TestModuleRouteEvents(t *testing.T) {
 }
 
 func TestMouseMotionOnlyPassedToCameraIfM1Held(t *testing.T) {
+	t.Parallel()
 	motionEvent := sdl.MouseMotionEvent{
 		Type:      sdl.MOUSEMOTION,
 		Timestamp: 0,
