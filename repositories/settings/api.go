@@ -14,6 +14,7 @@ type Interface interface {
 	SetFar(far float64)
 	GetFar() float64
 	GetChunkSize() uint32
+	GetRegionSize() uint32
 	SetResolution(width, height uint32)
 	GetResolution() (uint32, uint32)
 	SetRenderDistance(renderDistance uint32)
@@ -85,6 +86,11 @@ func (r *Repository) GetChunkSize() uint32 {
 	return r.c.chunkSize
 }
 
+// GetRegionSize returns the size of regions in the world.
+func (r *Repository) GetRegionSize() uint32 {
+	return r.c.regionSize
+}
+
 // SetResolution sets the width and height of the window in pixels.
 func (r *Repository) SetResolution(width, height uint32) {
 	r.c.setResolution(width, height)
@@ -123,6 +129,7 @@ type FnRepository struct {
 	FnGetRenderDistance func() uint32
 	FnSetFromReader     func(reader io.Reader) error
 	FnGetChunkSize      func() uint32
+	FnGetRegionSize     func() uint32
 }
 
 func (fn FnRepository) SetFOV(degY float64) {
@@ -200,6 +207,13 @@ func (fn FnRepository) SetFromReader(reader io.Reader) error {
 func (fn FnRepository) GetChunkSize() uint32 {
 	if fn.FnGetChunkSize != nil {
 		return fn.FnGetChunkSize()
+	}
+	return 1
+}
+
+func (fn FnRepository) GetRegionSize() uint32 {
+	if fn.FnGetRegionSize != nil {
+		return fn.FnGetRegionSize()
 	}
 	return 1
 }
