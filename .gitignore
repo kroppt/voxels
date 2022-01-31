@@ -1,6 +1,9 @@
 voxels
-world.data
-meta.data
+voxel.data
+chunk.data
+region.data
+
+.vscode/
 
 # Binaries for programs and plugins
 *.exe
