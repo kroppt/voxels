@@ -5,6 +5,7 @@ import (
 
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/modules/cache"
 	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/file"
 	"github.com/kroppt/voxels/modules/graphics"
@@ -14,6 +15,7 @@ import (
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/kroppt/voxels/util"
+	"github.com/spf13/afero"
 )
 
 func main() {
@@ -42,7 +44,7 @@ func main() {
 
 	testGen := &world.FnGenerator{
 		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
-			newChunk := chunk.New(key, settingsRepo.GetChunkSize())
+			newChunk := chunk.NewEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.Position{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{
 					X: 0,
@@ -53,7 +55,13 @@ func main() {
 			return newChunk
 		},
 	}
-	worldMod := world.New(graphicsMod, testGen, settingsRepo)
+	worldFile, err := afero.NewOsFs().OpenFile("world.data", os.O_CREATE|os.O_RDWR, 0755)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer worldFile.Close()
+	cacheMod := cache.New(worldFile, settingsRepo)
+	worldMod := world.New(graphicsMod, testGen, settingsRepo, cacheMod)
 	playerMod := player.New(worldMod, settingsRepo, graphicsMod)
 	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 0.5, Z: 3})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)

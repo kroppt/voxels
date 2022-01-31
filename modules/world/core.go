@@ -2,6 +2,7 @@ package world
 
 import (
 	"github.com/kroppt/voxels/chunk"
+	"github.com/kroppt/voxels/modules/cache"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -10,6 +11,7 @@ type core struct {
 	graphicsMod  graphics.Interface
 	generator    Generator
 	settingsRepo settings.Interface
+	cacheMod     cache.Interface
 	chunksLoaded map[chunk.Position]chunk.Chunk
 }
 
@@ -17,15 +19,19 @@ func (c *core) loadChunk(pos chunk.Position) {
 	if _, ok := c.chunksLoaded[pos]; ok {
 		panic("tried to load already-loaded chunk")
 	}
-	generatedChunk := c.generator.GenerateChunk(pos)
-	c.chunksLoaded[pos] = generatedChunk
-	c.graphicsMod.LoadChunk(generatedChunk)
+	ch, ok := c.cacheMod.Load(pos)
+	if !ok {
+		ch = c.generator.GenerateChunk(pos)
+	}
+	c.chunksLoaded[pos] = ch
+	c.graphicsMod.LoadChunk(ch)
 }
 
 func (c *core) unloadChunk(pos chunk.Position) {
 	if _, ok := c.chunksLoaded[pos]; !ok {
 		panic("tried to unload a chunk that is not loaded")
 	}
+	c.cacheMod.Save(c.chunksLoaded[pos])
 	delete(c.chunksLoaded, pos)
 	c.graphicsMod.UnloadChunk(pos)
 }

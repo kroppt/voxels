@@ -24,8 +24,10 @@ const (
 	BlockTypeAir BlockType = iota
 	BlockTypeDirt
 )
+const LargestVbits = uint32(BlockTypeDirt)<<6 | uint32(AdjacentAll)
 
-const vertSize = 5
+const VertSize = 5
+const BytesPerElement = 4
 const adjacencyMask = 0x0000003F
 const btypeMask uint32 = 0xFFFFFFC0
 
@@ -59,15 +61,15 @@ const (
 	LightTop              = bitsPerMask * 3 // The voxel's top face lighting bits.
 	LightLeft             = bitsPerMask * 4 // The voxel's left face lighting bits.
 	LightRight            = bitsPerMask * 5 // The voxel's right face lighting bits.
-	lightAll              = 0x00FFFFFF
+	LightAll    uint32    = 0x00FFFFFF
 )
 
-func New(chPos Position, chSize uint32) Chunk {
+func NewEmpty(chPos Position, chSize uint32) Chunk {
 	if chSize == 0 {
 		panic("chunk size cannot be 0")
 	}
 
-	flatData := make([]float32, vertSize*chSize*chSize*chSize)
+	flatData := make([]float32, VertSize*chSize*chSize*chSize)
 	size := int32(chSize)
 	chunk := Chunk{
 		pos:      chPos,
@@ -85,6 +87,41 @@ func New(chPos Position, chSize uint32) Chunk {
 		}
 	}
 	return chunk
+}
+
+func NewFromData(data []float32, chSize uint32, chPos Position) Chunk {
+	if len(data) != int(VertSize*chSize*chSize*chSize) {
+		panic("new chunk data has wrong size")
+	}
+	size := int32(chSize)
+	ch := Chunk{
+		pos:  chPos,
+		size: chSize,
+	}
+	for x := chPos.X * size; x < chPos.X*size+size; x++ {
+		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
+			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
+				off := ch.voxelPosToDataOffset(VoxelCoordinate{x, y, z})
+				if data[off] != float32(x) {
+					panic("invalid X coordinate in chunk data")
+				}
+				if data[off+1] != float32(y) {
+					panic("invalid Y coordinate in chunk data")
+				}
+				if data[off+2] != float32(z) {
+					panic("invalid Z coordinate in chunk data")
+				}
+				if data[off+3] > float32(LargestVbits) {
+					panic("invalid vbits in chunk data")
+				}
+				if data[off+4] > float32(LightAll) {
+					panic("invalid lighting bits in chunk data")
+				}
+			}
+		}
+	}
+	ch.flatData = data
+	return ch
 }
 
 func (c Chunk) Position() Position {
@@ -111,7 +148,7 @@ func (c Chunk) voxelPosToDataOffset(vpos VoxelCoordinate) int32 {
 	i := vpos.X - c.pos.X*size
 	j := vpos.Y - c.pos.Y*size
 	k := vpos.Z - c.pos.Z*size
-	return (i + j*size*size + k*size) * vertSize
+	return (i + j*size + k*size*size) * VertSize
 }
 
 func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) {
@@ -152,7 +189,7 @@ func (c Chunk) SetLighting(vpos VoxelCoordinate, face LightFace, intensity uint3
 	}
 	off := c.voxelPosToDataOffset(vpos)
 	lbits := uint32(c.flatData[off+4])
-	c.flatData[off+4] = float32(lbits&(^uint32(lightAll)) | (intensity << uint32(face)))
+	c.flatData[off+4] = float32(lbits&(^uint32(LightAll)) | (intensity << uint32(face)))
 }
 
 func (c Chunk) Lighting(vpos VoxelCoordinate, face LightFace) uint32 {

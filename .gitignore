@@ -1,6 +1,7 @@
 voxels
 world_meta
 world_data
+world.data
 
 # Binaries for programs and plugins
 *.exe

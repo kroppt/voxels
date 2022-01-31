@@ -17,7 +17,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		chunk.New(chunk.Position{}, 0)
+		chunk.NewEmpty(chunk.Position{}, 0)
 	})
 	t.Run("cannot set block type out of chunk bounds", func(t *testing.T) {
 		t.Parallel()
@@ -26,7 +26,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.SetBlockType(chunk.VoxelCoordinate{2, 2, 2}, chunk.BlockTypeAir)
 	})
 	t.Run("cannot set block type out of chunk bounds complex coords", func(t *testing.T) {
@@ -36,7 +36,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{-1, -1, -1}, 2)
+		c := chunk.NewEmpty(chunk.Position{-1, -1, -1}, 2)
 		c.SetBlockType(chunk.VoxelCoordinate{-1, -1, 1}, chunk.BlockTypeAir)
 	})
 	t.Run("cannot get block type out of chunk bounds", func(t *testing.T) {
@@ -46,7 +46,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.BlockType(chunk.VoxelCoordinate{2, 2, 2})
 	})
 	t.Run("cannot set lighting out of chunk bounds", func(t *testing.T) {
@@ -56,7 +56,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.SetLighting(chunk.VoxelCoordinate{2, 2, 2}, chunk.LightLeft, 5)
 	})
 	t.Run("cannot get lighting out of chunk bounds", func(t *testing.T) {
@@ -66,7 +66,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.Lighting(chunk.VoxelCoordinate{2, 2, 2}, chunk.LightFront)
 	})
 	t.Run("cannot set adjacency out of chunk bounds", func(t *testing.T) {
@@ -76,7 +76,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.SetAdjacency(chunk.VoxelCoordinate{2, 2, 2}, chunk.AdjacentBack)
 	})
 	t.Run("cannot get adjacency out of chunk bounds", func(t *testing.T) {
@@ -86,7 +86,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.Adjacency(chunk.VoxelCoordinate{2, 2, 2})
 	})
 	t.Run("cannot set invalid adjacency", func(t *testing.T) {
@@ -96,7 +96,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.SetAdjacency(chunk.VoxelCoordinate{0, 0, 0}, 0b1000000)
 	})
 	t.Run("cannot set invalid light intensity", func(t *testing.T) {
@@ -106,7 +106,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.SetLighting(chunk.VoxelCoordinate{0, 0, 0}, chunk.LightBack, 16)
 	})
 	t.Run("cannot specifcy invalid light face when setting", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.SetLighting(chunk.VoxelCoordinate{0, 0, 0}, 21, 5)
 	})
 	t.Run("cannot specifcy invalid light face when getting", func(t *testing.T) {
@@ -126,7 +126,7 @@ func TestInvalidChunk(t *testing.T) {
 				t.Fatal("expected panic, but didn't")
 			}
 		}()
-		c := chunk.New(chunk.Position{0, 0, 0}, 2)
+		c := chunk.NewEmpty(chunk.Position{0, 0, 0}, 2)
 		c.Lighting(chunk.VoxelCoordinate{0, 0, 0}, 21)
 	})
 }
@@ -136,7 +136,7 @@ func TestChunk(t *testing.T) {
 	t.Run("test get chunk position", func(t *testing.T) {
 		t.Parallel()
 		expected := chunk.Position{1, 2, 3}
-		chunk := chunk.New(expected, 10)
+		chunk := chunk.NewEmpty(expected, 10)
 		actual := chunk.Position()
 		if actual != expected {
 			t.Fatalf("expected to get chunk position %v but got %v", expected, actual)
@@ -145,7 +145,7 @@ func TestChunk(t *testing.T) {
 	t.Run("test get chunk size", func(t *testing.T) {
 		t.Parallel()
 		expected := uint32(10)
-		chunk := chunk.New(chunk.Position{1, 2, 3}, expected)
+		chunk := chunk.NewEmpty(chunk.Position{1, 2, 3}, expected)
 		actual := chunk.Size()
 		if actual != expected {
 			t.Fatalf("expected to get chunk size %v but got %v", expected, actual)
@@ -155,7 +155,7 @@ func TestChunk(t *testing.T) {
 		t.Parallel()
 		expected := chunk.BlockTypeAir
 		voxelCoordinate := chunk.VoxelCoordinate{4, 4, 4}
-		chunk := chunk.New(chunk.Position{0, 0, 0}, 6)
+		chunk := chunk.NewEmpty(chunk.Position{0, 0, 0}, 6)
 		actual := chunk.BlockType(voxelCoordinate)
 		if actual != expected {
 			t.Fatalf("expected to get back block type of %v but got %v", expected, actual)
@@ -165,7 +165,7 @@ func TestChunk(t *testing.T) {
 		t.Parallel()
 		expected := chunk.BlockTypeDirt
 		voxelCoordinate := chunk.VoxelCoordinate{5, 5, 5}
-		chunk := chunk.New(chunk.Position{0, 0, 0}, 10)
+		chunk := chunk.NewEmpty(chunk.Position{0, 0, 0}, 10)
 		chunk.SetBlockType(voxelCoordinate, expected)
 		actual := chunk.BlockType(voxelCoordinate)
 		if actual != expected {
@@ -176,7 +176,7 @@ func TestChunk(t *testing.T) {
 		t.Parallel()
 		expected := chunk.BlockTypeDirt
 		voxelCoordinate := chunk.VoxelCoordinate{12, 12, 12}
-		chunk := chunk.New(chunk.Position{1, 1, 1}, 10)
+		chunk := chunk.NewEmpty(chunk.Position{1, 1, 1}, 10)
 		chunk.SetBlockType(voxelCoordinate, expected)
 		actual := chunk.BlockType(voxelCoordinate)
 		if actual != expected {
@@ -187,7 +187,7 @@ func TestChunk(t *testing.T) {
 		t.Parallel()
 		expected := chunk.BlockTypeDirt
 		voxelCoordinate := chunk.VoxelCoordinate{-2, -3, -4}
-		chunk := chunk.New(chunk.Position{-1, -1, -1}, 10)
+		chunk := chunk.NewEmpty(chunk.Position{-1, -1, -1}, 10)
 		chunk.SetBlockType(voxelCoordinate, expected)
 		actual := chunk.BlockType(voxelCoordinate)
 		if actual != expected {
@@ -198,21 +198,17 @@ func TestChunk(t *testing.T) {
 		t.Parallel()
 		chPos := chunk.Position{0, 0, 0}
 		size := int32(2)
-		expectedFlatData := make([]float32, 5*size*size*size)
-		for x := chPos.X * size; x < chPos.X*size+size; x++ {
-			for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
-				for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
-					i := x - chPos.X*size
-					j := y - chPos.Y*size
-					k := z - chPos.Z*size
-					off := (i + j*size*size + k*size) * 5
-					expectedFlatData[off] = float32(x)
-					expectedFlatData[off+1] = float32(y)
-					expectedFlatData[off+2] = float32(z)
-				}
-			}
+		expectedFlatData := []float32{
+			0, 0, 0, 0, 0,
+			1, 0, 0, 0, 0,
+			0, 1, 0, 0, 0,
+			1, 1, 0, 0, 0,
+			0, 0, 1, 0, 0,
+			1, 0, 1, 0, 0,
+			0, 1, 1, 0, 0,
+			1, 1, 1, 0, 0,
 		}
-		ch := chunk.New(chPos, uint32(size))
+		ch := chunk.NewEmpty(chPos, uint32(size))
 		actualFlatData := ch.GetFlatData()
 		if !reflect.DeepEqual(expectedFlatData, actualFlatData) {
 			t.Fatalf("expected flat data to be %v but got %v", expectedFlatData, actualFlatData)
@@ -288,7 +284,7 @@ func TestChunkVoxelAdjacencies(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
 			voxelCoordinate := chunk.VoxelCoordinate{5, 5, 5}
-			chunk := chunk.New(chunk.Position{0, 0, 0}, 10)
+			chunk := chunk.NewEmpty(chunk.Position{0, 0, 0}, 10)
 			chunk.SetAdjacency(voxelCoordinate, tC.adjMask)
 			actual := chunk.Adjacency(voxelCoordinate)
 			if actual != tC.expect {
@@ -341,7 +337,7 @@ func TestChunkVoxelLight(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
 			voxelCoordinate := chunk.VoxelCoordinate{5, 5, 5}
-			chunk := chunk.New(chunk.Position{0, 0, 0}, 10)
+			chunk := chunk.NewEmpty(chunk.Position{0, 0, 0}, 10)
 			chunk.SetLighting(voxelCoordinate, tC.face, tC.expect)
 			actual := chunk.Lighting(voxelCoordinate, tC.face)
 			if actual != tC.expect {
@@ -414,5 +410,126 @@ func TestVoxelCoordToChunkCoord(t *testing.T) {
 				t.Fatalf("expected chunk coord to be %v but was %v", tC.expectChunkCoord, actualChunkCoord)
 			}
 		})
+	}
+}
+
+func TestLoadChunkFromFlatDataDetectsError(t *testing.T) {
+	testCases := []struct {
+		badData   []float32
+		chunkSize uint32
+		chPos     chunk.Position
+	}{
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{1},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{1, 2},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{1, 2, 3},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{1, 2, 3, 4},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{1, 2, 3, 4, 5},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{1, 2, 3, 4, 5, 6},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{0, 0, 0, float32(chunk.LargestVbits + 1), float32(chunk.LightAll)},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{0, 0, 0, float32(chunk.LargestVbits), float32(chunk.LightAll + 1)},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{1, 0, 0, float32(chunk.LargestVbits), float32(chunk.LightAll)},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{0, -1, 0, float32(chunk.LargestVbits), float32(chunk.LightAll)},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{0, 0, 0},
+			badData:   []float32{0, 0, 2, float32(chunk.LargestVbits), float32(chunk.LightAll)},
+			chunkSize: 1,
+		},
+		{
+			chPos:     chunk.Position{1, 0, 0},
+			badData:   []float32{0, 0, 0, float32(chunk.LargestVbits), float32(chunk.LightAll)},
+			chunkSize: 1,
+		},
+		{
+			chPos: chunk.Position{0, 0, 0},
+			badData: []float32{ // order swap
+				0, 0, 0, float32(chunk.LargestVbits), float32(chunk.LightAll),
+				1, 0, 0, float32(chunk.LargestVbits), float32(chunk.LightAll),
+				0, 0, 1, float32(chunk.LargestVbits), float32(chunk.LightAll),
+				1, 0, 1, float32(chunk.LargestVbits), float32(chunk.LightAll),
+				0, 1, 0, float32(chunk.LargestVbits), float32(chunk.LightAll),
+				1, 1, 0, float32(chunk.LargestVbits), float32(chunk.LightAll),
+				0, 1, 1, float32(chunk.LargestVbits), float32(chunk.LightAll),
+				1, 1, 1, float32(chunk.LargestVbits), float32(chunk.LightAll)},
+			chunkSize: 2,
+		},
+	}
+	for _, tC := range testCases {
+		tC := tC
+		t.Run("", func(t *testing.T) {
+			t.Parallel()
+			defer func() {
+				if err := recover(); err == nil {
+					t.Fatalf("did not panic for bad data: %v", tC.badData)
+				}
+			}()
+			chunk.NewFromData(tC.badData, tC.chunkSize, tC.chPos)
+		})
+	}
+}
+
+func TestValidChunkDataScenario(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewEmpty(chunk.Position{1, 1, 1}, 3)
+	ch.SetBlockType(chunk.VoxelCoordinate{3, 3, 3}, chunk.BlockTypeDirt)
+	ch.SetAdjacency(chunk.VoxelCoordinate{3, 4, 3}, chunk.AdjacentBack)
+	ch.SetLighting(chunk.VoxelCoordinate{4, 4, 4}, chunk.LightTop, 6)
+	data := ch.GetFlatData()
+	chFromData := chunk.NewFromData(data, ch.Size(), chunk.Position{1, 1, 1})
+	actualBlockType := chFromData.BlockType(chunk.VoxelCoordinate{3, 3, 3})
+	actualAdjacency := chFromData.Adjacency(chunk.VoxelCoordinate{3, 4, 3})
+	actualLighting := chFromData.Lighting(chunk.VoxelCoordinate{4, 4, 4}, chunk.LightTop)
+	if actualBlockType != chunk.BlockTypeDirt {
+		t.Fatal("recovered wrong block type")
+	}
+	if actualAdjacency != chunk.AdjacentBack {
+		t.Fatal("recovered wrong adjacency")
+	}
+	if actualLighting != 6 {
+		t.Fatal("recovered wrong lighting")
 	}
 }
