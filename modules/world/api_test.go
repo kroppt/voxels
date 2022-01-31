@@ -302,8 +302,12 @@ func TestWorldUnloadAllChunksOnQuit(t *testing.T) {
 	}
 	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo, cacheMod)
 	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
 	worldMod.LoadChunk(chunk.Position{X: 1, Y: 0, Z: 0})
+	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0}, chunk.BlockTypeDirt)
 	worldMod.LoadChunk(chunk.Position{X: 0, Y: 2, Z: 2})
+	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 2, Z: 2}, chunk.BlockTypeDirt)
+
 	worldMod.Quit()
 	if actualSaved != expectSaved {
 		t.Fatalf("expected chunk count to be %v but was %v", expectSaved, actualSaved)
@@ -324,4 +328,35 @@ func TestWorldClosesCacheOnQuit(t *testing.T) {
 	if acutal != expected {
 		t.Fatal("expected quit to call close on cache, but did not")
 	}
+}
+
+func TestWorldDoesNotSaveChunkIfUnmodified(t *testing.T) {
+	expectSaved := 2
+	actualSaved := 0
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	cacheMod := &cache.FnModule{
+		FnSave: func(c chunk.Chunk) {
+			actualSaved++
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo, cacheMod)
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 2, Z: 3})
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
+	worldMod.UnloadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+	worldMod.LoadChunk(chunk.Position{X: 2, Y: 4, Z: 0})
+	worldMod.LoadChunk(chunk.Position{X: 1, Y: 0, Z: 5})
+	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
+	worldMod.LoadChunk(chunk.Position{X: 8, Y: 5, Z: 5})
+	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 8, Y: 5, Z: 5}, chunk.BlockTypeDirt)
+	worldMod.Quit()
+
+	if actualSaved != expectSaved {
+		t.Fatalf("expected %v chunks to be saved but %v were saved", expectSaved, actualSaved)
+	}
+
 }
