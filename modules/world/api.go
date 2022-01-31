@@ -5,7 +5,7 @@ import "github.com/kroppt/voxels/chunk"
 type Interface interface {
 	LoadChunk(chunk.Position)
 	UnloadChunk(chunk.Position)
-	UnloadAllChunks()
+	Quit()
 	CountLoadedChunks() int
 	SetBlockType(chunk.VoxelCoordinate, chunk.BlockType)
 	GetBlockType(chunk.VoxelCoordinate) chunk.BlockType
@@ -19,8 +19,8 @@ func (m *Module) UnloadChunk(pos chunk.Position) {
 	m.c.unloadChunk(pos)
 }
 
-func (m *Module) UnloadAllChunks() {
-	m.c.unloadAllChunks()
+func (m *Module) Quit() {
+	m.c.quit()
 }
 
 func (m *Module) CountLoadedChunks() int {
@@ -38,7 +38,7 @@ func (m *Module) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 type FnModule struct {
 	FnLoadChunk         func(chunk.Position)
 	FnUnloadChunk       func(chunk.Position)
-	FnUnloadAllChunks   func()
+	FnQuit              func()
 	FnCountLoadedChunks func() int
 	FnSetBlockType      func(chunk.VoxelCoordinate, chunk.BlockType)
 	FnGetBlockType      func(chunk.VoxelCoordinate) chunk.BlockType
@@ -56,9 +56,9 @@ func (fn FnModule) UnloadChunk(pos chunk.Position) {
 	}
 }
 
-func (fn FnModule) UnloadAllChunks() {
-	if fn.FnUnloadAllChunks != nil {
-		fn.FnUnloadAllChunks()
+func (fn FnModule) Quit() {
+	if fn.FnQuit != nil {
+		fn.FnQuit()
 	}
 }
 

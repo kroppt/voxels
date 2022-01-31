@@ -273,11 +273,7 @@ func TestWorldSavesAfterUnloading(t *testing.T) {
 		},
 	}
 	expectedBlockType := chunk.BlockTypeDirt
-	dataFile, err := afero.NewMemMapFs().Create("temp")
-	if err != nil {
-		t.Fatal(err)
-	}
-	cacheMod := cache.New(dataFile, settingsRepo)
+	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
 	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo, cacheMod)
 	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
 	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, expectedBlockType)
@@ -290,21 +286,42 @@ func TestWorldSavesAfterUnloading(t *testing.T) {
 	}
 }
 
-func TestWorldUnloadAllChunks(t *testing.T) {
+func TestWorldUnloadAllChunksOnQuit(t *testing.T) {
 	t.Parallel()
 	settingsRepo := settings.FnRepository{
 		FnGetChunkSize: func() uint32 {
 			return 1
 		},
 	}
-	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo, &cache.FnModule{})
+	expectSaved := 3
+	actualSaved := 0
+	cacheMod := &cache.FnModule{
+		FnSave: func(chunk.Chunk) {
+			actualSaved++
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo, cacheMod)
 	worldMod.LoadChunk(chunk.Position{X: 0, Y: 0, Z: 0})
 	worldMod.LoadChunk(chunk.Position{X: 1, Y: 0, Z: 0})
 	worldMod.LoadChunk(chunk.Position{X: 0, Y: 2, Z: 2})
-	expectedChunkCount := 0
-	worldMod.UnloadAllChunks()
-	actualChunkCount := worldMod.CountLoadedChunks()
-	if actualChunkCount != expectedChunkCount {
-		t.Fatalf("expected chunk count to be %v but was %v", expectedChunkCount, actualChunkCount)
+	worldMod.Quit()
+	if actualSaved != expectSaved {
+		t.Fatalf("expected chunk count to be %v but was %v", expectSaved, actualSaved)
+	}
+}
+
+func TestWorldClosesCacheOnQuit(t *testing.T) {
+	t.Parallel()
+	expected := true
+	acutal := false
+	cacheMod := &cache.FnModule{
+		FnClose: func() {
+			acutal = true
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, &settings.FnRepository{}, cacheMod)
+	worldMod.Quit()
+	if acutal != expected {
+		t.Fatal("expected quit to call close on cache, but did not")
 	}
 }

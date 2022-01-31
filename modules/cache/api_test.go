@@ -12,11 +12,7 @@ import (
 
 func TestNewCacheNotNil(t *testing.T) {
 	t.Parallel()
-	f, err := afero.NewMemMapFs().Create("temp")
-	if err != nil {
-		t.Fatal("afero could not create temp file for cache")
-	}
-	cacheMod := cache.New(f, settings.FnRepository{})
+	cacheMod := cache.New(afero.NewMemMapFs(), settings.FnRepository{})
 	if cacheMod == nil {
 		t.Fatal("expected new cache to not be nil, but it was")
 	}
@@ -24,16 +20,12 @@ func TestNewCacheNotNil(t *testing.T) {
 
 func TestCacheSettingsRepoNonNil(t *testing.T) {
 	t.Parallel()
-	f, err := afero.NewMemMapFs().Create("temp")
-	if err != nil {
-		t.Fatal("afero could not create temp file for cache")
-	}
 	defer func() {
 		if err := recover(); err == nil {
 			t.Fatal("expected panic, but didn't")
 		}
 	}()
-	cacheMod := cache.New(f, nil)
+	cacheMod := cache.New(afero.NewMemMapFs(), nil)
 	if cacheMod == nil {
 		t.Fatal("expected new cache to not be nil, but it was")
 	}
@@ -41,16 +33,12 @@ func TestCacheSettingsRepoNonNil(t *testing.T) {
 
 func TestCacheReadAndWriteSimpleChunk(t *testing.T) {
 	t.Parallel()
-	f, err := afero.NewMemMapFs().Create("temp")
-	if err != nil {
-		t.Fatal(err)
-	}
 	settingsRepo := settings.FnRepository{
 		FnGetChunkSize: func() uint32 {
 			return 1
 		},
 	}
-	cacheMod := cache.New(f, settingsRepo)
+	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
 	chPos := chunk.Position{X: 1, Y: 2, Z: 3}
 	vPos := chunk.VoxelCoordinate{X: 1, Y: 2, Z: 3}
 	testChunk := chunk.NewEmpty(chPos, settingsRepo.GetChunkSize())
@@ -70,16 +58,12 @@ func TestCacheReadAndWriteSimpleChunk(t *testing.T) {
 
 func TestCacheReadAndWriteComplexChunk(t *testing.T) {
 	t.Parallel()
-	f, err := afero.NewMemMapFs().Create("temp")
-	if err != nil {
-		t.Fatal(err)
-	}
 	settingsRepo := settings.FnRepository{
 		FnGetChunkSize: func() uint32 {
 			return 10
 		},
 	}
-	cacheMod := cache.New(f, settingsRepo)
+	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
 	chPos := chunk.Position{X: -1, Y: -1, Z: -1}
 	testChunk := chunk.NewEmpty(chPos, settingsRepo.GetChunkSize())
 	testChunk.SetAdjacency(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.AdjacentAll)
@@ -103,16 +87,12 @@ func TestCacheReadAndWriteComplexChunk(t *testing.T) {
 
 func TestCacheReadAndWriteTwoChunks(t *testing.T) {
 	t.Parallel()
-	f, err := afero.NewMemMapFs().Create("temp")
-	if err != nil {
-		t.Fatal(err)
-	}
 	settingsRepo := settings.FnRepository{
 		FnGetChunkSize: func() uint32 {
 			return 10
 		},
 	}
-	cacheMod := cache.New(f, settingsRepo)
+	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
 	chPos1 := chunk.Position{X: -1, Y: -1, Z: -1}
 	testChunk1 := chunk.NewEmpty(chPos1, settingsRepo.GetChunkSize())
 	testChunk1.SetAdjacency(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.AdjacentAll)
@@ -146,16 +126,12 @@ func TestCacheReadAndWriteTwoChunks(t *testing.T) {
 
 func TestCacheReadWriteAndOverwriteThreeChunks(t *testing.T) {
 	t.Parallel()
-	f, err := afero.NewMemMapFs().Create("temp")
-	if err != nil {
-		t.Fatal(err)
-	}
 	settingsRepo := settings.FnRepository{
 		FnGetChunkSize: func() uint32 {
 			return 10
 		},
 	}
-	cacheMod := cache.New(f, settingsRepo)
+	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
 	chPos1 := chunk.Position{X: -1, Y: -1, Z: -1}
 	testChunk1 := chunk.NewEmpty(chPos1, settingsRepo.GetChunkSize())
 	testChunk1.SetAdjacency(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.AdjacentAll)

@@ -131,3 +131,10 @@ func (c *core) load(pos chunk.Position) (chunk.Chunk, bool) {
 		curr += int64(byteSize)
 	}
 }
+
+func (c *core) close() {
+	err := c.file.Close()
+	if err != nil {
+		panic(err)
+	}
+}

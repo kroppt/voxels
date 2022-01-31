@@ -55,12 +55,7 @@ func main() {
 			return newChunk
 		},
 	}
-	worldFile, err := afero.NewOsFs().OpenFile("world.data", os.O_CREATE|os.O_RDWR, 0755)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer worldFile.Close()
-	cacheMod := cache.New(worldFile, settingsRepo)
+	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
 	worldMod := world.New(graphicsMod, testGen, settingsRepo, cacheMod)
 	playerMod := player.New(worldMod, settingsRepo, graphicsMod)
 	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 0.5, Z: 3})
@@ -77,6 +72,6 @@ func main() {
 		graphicsMod.Render()
 		keepRunning = inputMod.RouteEvents()
 	}
-	worldMod.UnloadAllChunks()
+	worldMod.Quit()
 	util.LogMetrics()
 }
