@@ -13,127 +13,141 @@ import (
 )
 
 type core struct {
-	file         afero.File
+	dataFile     afero.File
+	metaFile     afero.File
 	settingsRepo settings.Interface
 }
 
 func (c *core) save(ch chunk.Chunk) {
-	curr := int64(0)
-	for {
-		chunkSize := c.settingsRepo.GetChunkSize()
-		numElems := chunk.VertSize * chunkSize * chunkSize * chunkSize
-		byteSize := chunk.BytesPerElement * numElems
-		bs := make([]byte, byteSize)
-		n, err := c.file.ReadAt(bs, curr)
-		if n == 0 && errors.Is(err, io.EOF) {
-			break
-		}
-		if uint32(n) != byteSize {
-			log.Printf("expected %v bytes to be read, but only %v were read", byteSize, n)
-			return
-		}
-		if !errors.Is(err, io.EOF) && err != nil {
-			log.Print(err)
-			return
-		}
-		buf := bytes.NewBuffer(bs)
-		flatData := make([]float32, numElems)
-		err = binary.Read(buf, binary.LittleEndian, flatData)
+	metaIdx, ok := c.getMetaIdx(ch.Position())
+	if !ok {
+		info, err := c.metaFile.Stat()
 		if err != nil {
 			log.Print(err)
-			return
 		}
-		firstVox := chunk.VoxelCoordinate{
-			X: int32(flatData[0]),
-			Y: int32(flatData[1]),
-			Z: int32(flatData[2]),
+		metaOff := info.Size()
+		info, err = c.dataFile.Stat()
+		if err != nil {
+			log.Print(err)
 		}
-		key := chunk.VoxelCoordToChunkCoord(firstVox, chunkSize)
-		if key == ch.Position() {
-			// overwrite existing chunk in file with update info
-			var buf bytes.Buffer
-			err := binary.Write(&buf, binary.LittleEndian, ch.GetFlatData())
-			if err != nil {
-				log.Print(err)
-				return
-			}
-			n, err := c.file.WriteAt(buf.Bytes(), curr)
-			expectSize := buf.Len()
-			if n != expectSize {
-				log.Printf("expected to write %v bytes, but only wrote %v bytes", expectSize, n)
-				return
-			}
-			if err != nil {
-				log.Print(err)
-				return
-			}
-			return
-		}
-		curr += int64(byteSize)
+		metaIdx := info.Size()
+		c.writeMetaDataAt(ch.Position(), int32(metaIdx), metaOff)
+		c.writeChunkAt(ch, metaIdx)
+		return
 	}
-	// one wasn't overwritten, append new chunk to end
+	c.writeChunkAt(ch, int64(metaIdx))
+}
 
+func (c *core) load(pos chunk.Position) (chunk.Chunk, bool) {
+	metaIdx, ok := c.getMetaIdx(pos)
+	if !ok {
+		return chunk.Chunk{}, false
+	}
+
+	chunkSize := c.settingsRepo.GetChunkSize()
+	numElems := chunk.VertSize * chunkSize * chunkSize * chunkSize
+	byteSize := chunk.BytesPerElement * numElems
+	bs := make([]byte, byteSize)
+	n, err := c.dataFile.ReadAt(bs, int64(metaIdx))
+	if uint32(n) != byteSize {
+		log.Printf("(load) expected %v bytes to be read, but only %v were read", byteSize, n)
+		return chunk.Chunk{}, false
+	}
+	if !errors.Is(err, io.EOF) && err != nil {
+		log.Print(err)
+		return chunk.Chunk{}, false
+	}
+	buf := bytes.NewBuffer(bs)
+	flatData := make([]float32, numElems)
+	err = binary.Read(buf, binary.LittleEndian, flatData)
+	if err != nil {
+		log.Print(err)
+		return chunk.Chunk{}, false
+	}
+	return chunk.NewFromData(flatData, chunkSize, pos), true
+}
+
+func (c *core) writeChunkAt(ch chunk.Chunk, off int64) {
 	var buf bytes.Buffer
 	err := binary.Write(&buf, binary.LittleEndian, ch.GetFlatData())
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	n, err := c.file.WriteAt(buf.Bytes(), curr)
+	n, err := c.dataFile.WriteAt(buf.Bytes(), off)
 	expectSize := buf.Len()
 	if n != expectSize {
-		log.Printf("expected to write %v bytes, but only wrote %v bytes", expectSize, n)
+		log.Printf("(write) expected to write %v bytes, but only wrote %v bytes", expectSize, n)
 		return
 	}
 	if err != nil {
 		log.Print(err)
 		return
 	}
-	return
 }
 
-func (c *core) load(pos chunk.Position) (chunk.Chunk, bool) {
+func (c *core) writeMetaDataAt(pos chunk.Position, metaIdx int32, off int64) {
+	var buf bytes.Buffer
+	err := binary.Write(&buf, binary.LittleEndian, []int32{pos.X, pos.Y, pos.Z, metaIdx})
+	if err != nil {
+		log.Print(err)
+		return
+	}
+	n, err := c.metaFile.WriteAt(buf.Bytes(), off)
+	expectSize := buf.Len()
+	if n != expectSize {
+		log.Printf("(write meta) expected to write %v bytes, but only wrote %v bytes", expectSize, n)
+		return
+	}
+	if err != nil {
+		log.Print(err)
+		return
+	}
+}
+
+func (c *core) getMetaIdx(pos chunk.Position) (int32, bool) {
 	curr := int64(0)
 	for {
-		chunkSize := c.settingsRepo.GetChunkSize()
-		numElems := chunk.VertSize * chunkSize * chunkSize * chunkSize
-		byteSize := chunk.BytesPerElement * numElems
+		numElems := 4
+		byteSize := 4 * numElems
 		bs := make([]byte, byteSize)
-		n, err := c.file.ReadAt(bs, curr)
+		n, err := c.metaFile.ReadAt(bs, curr)
 		if n == 0 && errors.Is(err, io.EOF) {
-			log.Printf("did not find chunk %v in file", pos)
-			return chunk.Chunk{}, false
+			return -1, false
 		}
-		if uint32(n) != byteSize {
-			log.Printf("expected %v bytes to be read, but only %v were read", byteSize, n)
-			return chunk.Chunk{}, false
+		if n != byteSize {
+			log.Printf("(get meta) expected %v bytes to be read, but only %v were read", byteSize, n)
+			return -1, false
 		}
 		if !errors.Is(err, io.EOF) && err != nil {
 			log.Print(err)
-			return chunk.Chunk{}, false
+			return -1, false
 		}
 		buf := bytes.NewBuffer(bs)
-		flatData := make([]float32, numElems)
-		err = binary.Read(buf, binary.LittleEndian, flatData)
+		metaDataEntry := make([]int32, numElems)
+		err = binary.Read(buf, binary.LittleEndian, metaDataEntry)
 		if err != nil {
 			log.Print(err)
-			return chunk.Chunk{}, false
+			return -1, false
 		}
-		firstVox := chunk.VoxelCoordinate{
-			X: int32(flatData[0]),
-			Y: int32(flatData[1]),
-			Z: int32(flatData[2]),
+		key := chunk.Position{
+			X: metaDataEntry[0],
+			Y: metaDataEntry[1],
+			Z: metaDataEntry[2],
 		}
-		key := chunk.VoxelCoordToChunkCoord(firstVox, chunkSize)
 		if key == pos {
-			return chunk.NewFromData(flatData, chunkSize, key), true
+			return metaDataEntry[3], true
 		}
 		curr += int64(byteSize)
 	}
 }
 
 func (c *core) close() {
-	err := c.file.Close()
+	err := c.dataFile.Close()
+	if err != nil {
+		panic(err)
+	}
+	err = c.metaFile.Close()
 	if err != nil {
 		panic(err)
 	}

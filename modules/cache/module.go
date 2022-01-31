@@ -15,13 +15,18 @@ func New(fs afero.Fs, settingsRepo settings.Interface) *Module {
 	if settingsRepo == nil {
 		panic("cache received nil settings repo")
 	}
-	f, err := fs.OpenFile("world.data", os.O_CREATE|os.O_RDWR, 0755)
+	dataFile, err := fs.OpenFile("world.data", os.O_CREATE|os.O_RDWR, 0755)
+	if err != nil {
+		panic("failed to create file")
+	}
+	metaFile, err := fs.OpenFile("meta.data", os.O_CREATE|os.O_RDWR, 0755)
 	if err != nil {
 		panic("failed to create file")
 	}
 	return &Module{
 		c: core{
-			file:         f,
+			dataFile:     dataFile,
+			metaFile:     metaFile,
 			settingsRepo: settingsRepo,
 		},
 	}
