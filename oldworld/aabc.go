@@ -1,4 +1,4 @@
-package world
+package oldworld
 
 // AABC represents an Axis Aligned Bounding Cube, where the
 // position represents the corner minimum coordinates.

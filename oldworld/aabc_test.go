@@ -1,124 +1,124 @@
-package world_test
+package oldworld_test
 
 import (
 	"testing"
 
-	"github.com/kroppt/voxels/world"
+	oldworld "github.com/kroppt/voxels/oldworld"
 )
 
 func TestWithinAABCCases(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		aabc   *world.AABC
-		target world.VoxelPos
+		aabc   *oldworld.AABC
+		target oldworld.VoxelPos
 		expect bool
 	}{
 		{
 			desc: "WithinAABC works for standard point",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{1, 1, 1},
+			target: oldworld.VoxelPos{1, 1, 1},
 			expect: true,
 		},
 		{
 			desc: "WithinAABC excludes point on maximum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{4, 4, 4},
+			target: oldworld.VoxelPos{4, 4, 4},
 			expect: false,
 		},
 		{
 			desc: "WithinAABC excludes point on X maximum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{4, 1, 1},
+			target: oldworld.VoxelPos{4, 1, 1},
 			expect: false,
 		},
 		{
 			desc: "WithinAABC excludes point on Y maximum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{1, 4, 1},
+			target: oldworld.VoxelPos{1, 4, 1},
 			expect: false,
 		},
 		{
 			desc: "WithinAABC excludes point on Z maximum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{1, 1, 4},
+			target: oldworld.VoxelPos{1, 1, 4},
 			expect: false,
 		},
 		{
 			desc: "WithinAABC includes point on minimum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{0, 0, 0},
+			target: oldworld.VoxelPos{0, 0, 0},
 			expect: true,
 		},
 		{
 			desc: "WithinAABC includes point on X minimum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{0, 1, 1},
+			target: oldworld.VoxelPos{0, 1, 1},
 			expect: true,
 		},
 		{
 			desc: "WithinAABC includes point on Y minimum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{1, 0, 1},
+			target: oldworld.VoxelPos{1, 0, 1},
 			expect: true,
 		},
 		{
 			desc: "WithinAABC includes point on Z minimum edge",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{1, 1, 0},
+			target: oldworld.VoxelPos{1, 1, 0},
 			expect: true,
 		},
 		{
 			desc: "WithinAABC excludes far off point",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{-1, -2, -3},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-1, -2, -3},
 				Size:   2,
 			},
-			target: world.VoxelPos{-10, 10, 50},
+			target: oldworld.VoxelPos{-10, 10, 50},
 			expect: false,
 		},
 		{
 			desc: "WithinAABC excludes point slightly outside",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{-1, -2, -3},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-1, -2, -3},
 				Size:   2,
 			},
-			target: world.VoxelPos{-1, -2, -4},
+			target: oldworld.VoxelPos{-1, -2, -4},
 			expect: false,
 		},
 		{
 			desc: "WithinAABC includes point on minimum edge w/ negative center",
-			aabc: &world.AABC{
-				Origin: world.VoxelPos{-5, -6, -7},
+			aabc: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-5, -6, -7},
 				Size:   4,
 			},
-			target: world.VoxelPos{-5, -6, -7},
+			target: oldworld.VoxelPos{-5, -6, -7},
 			expect: true,
 		},
 	}
@@ -126,7 +126,7 @@ func TestWithinAABCCases(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			result := world.WithinAABC(tC.aabc, tC.target)
+			result := oldworld.WithinAABC(tC.aabc, tC.target)
 			if result != tC.expect {
 				t.Fatalf("got %v but expected %v", result, tC.expect)
 			}
@@ -140,12 +140,12 @@ func TestExpandAABCInsidePanic(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		curr := &world.AABC{
-			Origin: world.VoxelPos{0, 0, 0},
+		curr := &oldworld.AABC{
+			Origin: oldworld.VoxelPos{0, 0, 0},
 			Size:   4,
 		}
-		target := world.VoxelPos{1, 1, 1}
-		world.ExpandAABC(curr, target)
+		target := oldworld.VoxelPos{1, 1, 1}
+		oldworld.ExpandAABC(curr, target)
 		t.Fatal("expected panic but did not")
 	})
 }
@@ -158,55 +158,55 @@ func TestExpandAABCOutsideDoesntPanic(t *testing.T) {
 				t.Fatal("expected no panic, but did anyway")
 			}
 		}()
-		curr := &world.AABC{
-			Origin: world.VoxelPos{0, 0, 0},
+		curr := &oldworld.AABC{
+			Origin: oldworld.VoxelPos{0, 0, 0},
 			Size:   4,
 		}
-		target := world.VoxelPos{5, 6, 7}
-		world.ExpandAABC(curr, target)
+		target := oldworld.VoxelPos{5, 6, 7}
+		oldworld.ExpandAABC(curr, target)
 	})
 }
 
 func TestExpandAABCCases(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		curr   *world.AABC
-		target world.VoxelPos
-		expect *world.AABC
+		curr   *oldworld.AABC
+		target oldworld.VoxelPos
+		expect *oldworld.AABC
 	}{
 		{
 			desc: "ExpandAABC is bigger than current",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{5, 5, 5},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			target: oldworld.VoxelPos{5, 5, 5},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   8,
 			},
 		},
 		{
 			desc: "ExpandAABC maximum is exclusive",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   4,
 			},
-			target: world.VoxelPos{4, 4, 4},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			target: oldworld.VoxelPos{4, 4, 4},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   8,
 			},
 		},
 		{
 			desc: "ExpandAABC minimum is inclusive",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   8,
 			},
-			target: world.VoxelPos{-8, -8, -8},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{-8, -8, -8},
+			target: oldworld.VoxelPos{-8, -8, -8},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-8, -8, -8},
 				Size:   16,
 			},
 		},
@@ -215,7 +215,7 @@ func TestExpandAABCCases(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			result := world.ExpandAABC(tC.curr, tC.target)
+			result := oldworld.ExpandAABC(tC.curr, tC.target)
 			if *result != *tC.expect {
 				t.Fatalf("got AABC %v but expected %v", *result, *tC.expect)
 			}
@@ -226,17 +226,17 @@ func TestExpandAABCCases(t *testing.T) {
 func TestExpandAABCDoublesSize(t *testing.T) {
 	t.Run("ExpandAABC increases size twice", func(t *testing.T) {
 		t.Parallel()
-		curr := &world.AABC{
-			Origin: world.VoxelPos{0, 0, 0},
+		curr := &oldworld.AABC{
+			Origin: oldworld.VoxelPos{0, 0, 0},
 			Size:   4,
 		}
-		target := world.VoxelPos{9, 9, 9}
-		expect := &world.AABC{
-			Origin: world.VoxelPos{0, 0, 0},
+		target := oldworld.VoxelPos{9, 9, 9}
+		expect := &oldworld.AABC{
+			Origin: oldworld.VoxelPos{0, 0, 0},
 			Size:   16,
 		}
-		step1 := world.ExpandAABC(curr, target)
-		result := world.ExpandAABC(step1, target)
+		step1 := oldworld.ExpandAABC(curr, target)
+		result := oldworld.ExpandAABC(step1, target)
 		if *result != *expect {
 			t.Fatalf("got AABC %v but expected %v", *result, *expect)
 		}
@@ -249,12 +249,12 @@ func TestGetChildAABCOutsidePanic(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		aabc := &world.AABC{
-			Origin: world.VoxelPos{0, 0, 0},
+		aabc := &oldworld.AABC{
+			Origin: oldworld.VoxelPos{0, 0, 0},
 			Size:   4,
 		}
-		target := world.VoxelPos{-1, -1, -1}
-		world.GetChildAABC(aabc, target)
+		target := oldworld.VoxelPos{-1, -1, -1}
+		oldworld.GetChildAABC(aabc, target)
 		t.Fatal("expected panic but did not")
 	})
 }
@@ -265,12 +265,12 @@ func TestGetChildAABCReturnsOctant(t *testing.T) {
 		defer func() {
 			recover()
 		}()
-		aabc := &world.AABC{
-			Origin: world.VoxelPos{0, 0, 0},
+		aabc := &oldworld.AABC{
+			Origin: oldworld.VoxelPos{0, 0, 0},
 			Size:   4,
 		}
-		target := world.VoxelPos{-1, -1, -1}
-		result := world.GetChildAABC(aabc, target)
+		target := oldworld.VoxelPos{-1, -1, -1}
+		result := oldworld.GetChildAABC(aabc, target)
 		volume := result.Size * result.Size * result.Size
 		expect := 8
 		if volume != expect {
@@ -282,103 +282,103 @@ func TestGetChildAABCReturnsOctant(t *testing.T) {
 func TestGetChildAABCCases(t *testing.T) {
 	testCases := []struct {
 		desc   string
-		curr   *world.AABC
-		target world.VoxelPos
-		expect *world.AABC
+		curr   *oldworld.AABC
+		target oldworld.VoxelPos
+		expect *oldworld.AABC
 	}{
 		{
 			desc: "GetChildAABC +x +y +z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{0, 0, 0},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{0, 0, 0},
+			target: oldworld.VoxelPos{0, 0, 0},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, 0},
 				Size:   2,
 			},
 		},
 		{
 			desc: "GetChildAABC +x +y -z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{0, 0, -1},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{0, 0, -2},
+			target: oldworld.VoxelPos{0, 0, -1},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, 0, -2},
 				Size:   2,
 			},
 		},
 		{
 			desc: "GetChildAABC +x -y +z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{0, -1, 0},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{0, -2, 0},
+			target: oldworld.VoxelPos{0, -1, 0},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, -2, 0},
 				Size:   2,
 			},
 		},
 		{
 			desc: "GetChildAABC +x -y -z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{0, -1, -1},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{0, -2, -2},
+			target: oldworld.VoxelPos{0, -1, -1},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{0, -2, -2},
 				Size:   2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x +y +z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{-1, 0, 0},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{-2, 0, 0},
+			target: oldworld.VoxelPos{-1, 0, 0},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, 0, 0},
 				Size:   2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x +y -z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{-1, 0, -1},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{-2, 0, -2},
+			target: oldworld.VoxelPos{-1, 0, -1},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, 0, -2},
 				Size:   2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x -y +z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{-1, -1, 0},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, 0},
+			target: oldworld.VoxelPos{-1, -1, 0},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, 0},
 				Size:   2,
 			},
 		},
 		{
 			desc: "GetChildAABC -x -y -z",
-			curr: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			curr: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   4,
 			},
-			target: world.VoxelPos{-1, -1, -1},
-			expect: &world.AABC{
-				Origin: world.VoxelPos{-2, -2, -2},
+			target: oldworld.VoxelPos{-1, -1, -1},
+			expect: &oldworld.AABC{
+				Origin: oldworld.VoxelPos{-2, -2, -2},
 				Size:   2,
 			},
 		},
@@ -387,7 +387,7 @@ func TestGetChildAABCCases(t *testing.T) {
 		tC := tC
 		t.Run(tC.desc, func(t *testing.T) {
 			t.Parallel()
-			result := world.GetChildAABC(tC.curr, tC.target)
+			result := oldworld.GetChildAABC(tC.curr, tC.target)
 			if *result != *tC.expect {
 				t.Fatalf("got AABC %v but expected %v", *result, *tC.expect)
 			}

@@ -1,11 +1,11 @@
-package world_test
+package oldworld_test
 
 import (
 	"fmt"
 	"os"
 	"testing"
 
-	"github.com/kroppt/voxels/world"
+	oldworld "github.com/kroppt/voxels/oldworld"
 )
 
 func compareFlatData(d1, d2 []float32) bool {
@@ -21,7 +21,7 @@ func compareFlatData(d1, d2 []float32) bool {
 }
 
 func TestCacheInMemory(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data", 2)
+	cache, err := oldworld.NewCache("test_meta", "test_data", 2)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -30,13 +30,13 @@ func TestCacheInMemory(t *testing.T) {
 		os.Remove("test_data")
 		os.Remove("test_meta")
 	})
-	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+	ch := oldworld.NewChunk(oldworld.ChunkSize, oldworld.ChunkPos{
 		X: 0,
 		Y: 0,
 		Z: 0,
-	}, world.FlatWorldGenerator{})
+	}, oldworld.FlatWorldGenerator{})
 	cache.Save(ch)
-	ch2, loaded := cache.Load(world.ChunkPos{
+	ch2, loaded := cache.Load(oldworld.ChunkPos{
 		X: 0,
 		Y: 0,
 		Z: 0,
@@ -51,7 +51,7 @@ func TestCacheInMemory(t *testing.T) {
 }
 
 func TestCacheInFile(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data", 1)
+	cache, err := oldworld.NewCache("test_meta", "test_data", 1)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -60,13 +60,13 @@ func TestCacheInFile(t *testing.T) {
 		os.Remove("test_data")
 		os.Remove("test_meta")
 	})
-	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+	ch := oldworld.NewChunk(oldworld.ChunkSize, oldworld.ChunkPos{
 		X: 0,
 		Y: 0,
 		Z: 0,
-	}, world.FlatWorldGenerator{})
+	}, oldworld.FlatWorldGenerator{})
 	cache.Save(ch)
-	ch2, loaded := cache.Load(world.ChunkPos{
+	ch2, loaded := cache.Load(oldworld.ChunkPos{
 		X: 0,
 		Y: 0,
 		Z: 0,
@@ -81,7 +81,7 @@ func TestCacheInFile(t *testing.T) {
 }
 
 func TestCacheGetNumChunksMeta(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data", 2)
+	cache, err := oldworld.NewCache("test_meta", "test_data", 2)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -90,17 +90,17 @@ func TestCacheGetNumChunksMeta(t *testing.T) {
 		os.Remove("test_data")
 		os.Remove("test_meta")
 	})
-	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+	ch := oldworld.NewChunk(oldworld.ChunkSize, oldworld.ChunkPos{
 		X: 0,
 		Y: 0,
 		Z: 0,
-	}, world.FlatWorldGenerator{})
+	}, oldworld.FlatWorldGenerator{})
 	cache.Save(ch)
-	ch2 := world.NewChunk(world.ChunkSize, world.ChunkPos{
+	ch2 := oldworld.NewChunk(oldworld.ChunkSize, oldworld.ChunkPos{
 		X: 1,
 		Y: 0,
 		Z: 2,
-	}, world.FlatWorldGenerator{})
+	}, oldworld.FlatWorldGenerator{})
 	cache.Save(ch2)
 	chunksInFile, success := cache.GetNumChunksInFile()
 	if !success {
@@ -112,7 +112,7 @@ func TestCacheGetNumChunksMeta(t *testing.T) {
 }
 
 func TestCache2Chunks(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data", 2)
+	cache, err := oldworld.NewCache("test_meta", "test_data", 2)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -121,24 +121,24 @@ func TestCache2Chunks(t *testing.T) {
 		os.Remove("test_data")
 		os.Remove("test_meta")
 	})
-	ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+	ch := oldworld.NewChunk(oldworld.ChunkSize, oldworld.ChunkPos{
 		X: 0,
 		Y: 0,
 		Z: 0,
-	}, world.FlatWorldGenerator{})
+	}, oldworld.FlatWorldGenerator{})
 	cache.Save(ch)
-	ch2 := world.NewChunk(world.ChunkSize, world.ChunkPos{
+	ch2 := oldworld.NewChunk(oldworld.ChunkSize, oldworld.ChunkPos{
 		X: 1,
 		Y: 0,
 		Z: 2,
-	}, world.FlatWorldGenerator{})
+	}, oldworld.FlatWorldGenerator{})
 	cache.Save(ch2)
-	chLoaded, loaded := cache.Load(world.ChunkPos{
+	chLoaded, loaded := cache.Load(oldworld.ChunkPos{
 		X: 0,
 		Y: 0,
 		Z: 0,
 	})
-	ch2Loaded, loaded2 := cache.Load(world.ChunkPos{
+	ch2Loaded, loaded2 := cache.Load(oldworld.ChunkPos{
 		X: 1,
 		Y: 0,
 		Z: 2,
@@ -159,7 +159,7 @@ func TestCache2Chunks(t *testing.T) {
 }
 
 func TestCacheManyChunks(t *testing.T) {
-	cache, err := world.NewCache("test_meta", "test_data", 5)
+	cache, err := oldworld.NewCache("test_meta", "test_data", 5)
 	if err != nil {
 		panic(fmt.Sprintf("failed to init cache: %v", err))
 	}
@@ -170,11 +170,11 @@ func TestCacheManyChunks(t *testing.T) {
 	})
 	nChunks := 15
 	for i := 0; i < nChunks; i++ {
-		ch := world.NewChunk(world.ChunkSize, world.ChunkPos{
+		ch := oldworld.NewChunk(oldworld.ChunkSize, oldworld.ChunkPos{
 			X: i,
 			Y: i,
 			Z: i,
-		}, world.FlatWorldGenerator{})
+		}, oldworld.FlatWorldGenerator{})
 		cache.Save(ch)
 	}
 	resultingNumChunks, success := cache.GetNumChunksInFile()

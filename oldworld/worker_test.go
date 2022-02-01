@@ -1,14 +1,14 @@
-package world_test
+package oldworld_test
 
 import (
 	"sync"
 	"testing"
 
-	"github.com/kroppt/voxels/world"
+	oldworld "github.com/kroppt/voxels/oldworld"
 )
 
 func TestNewWorker(t *testing.T) {
-	worker := world.NewWorker(10)
+	worker := oldworld.NewWorker(10)
 	worker.Quit()
 	if worker == nil {
 		t.Fatal("got nil worker")
@@ -16,7 +16,7 @@ func TestNewWorker(t *testing.T) {
 }
 
 func TestAddJob(t *testing.T) {
-	worker := world.NewWorker(2)
+	worker := oldworld.NewWorker(2)
 	ch := make(chan int)
 	worker.AddJob(func() {
 		ch <- 4
@@ -34,13 +34,13 @@ func TestAddJobAfterQuit(t *testing.T) {
 			t.Fatal("addjob to quit worker did not panic")
 		}
 	}()
-	worker := world.NewWorker(0)
+	worker := oldworld.NewWorker(0)
 	worker.Quit()
 	worker.AddJob(func() {})
 }
 
 func TestWorkerFinishesJobsInOrder(t *testing.T) {
-	worker := world.NewWorker(11)
+	worker := oldworld.NewWorker(11)
 	var wg sync.WaitGroup
 	wg.Add(3)
 	x := 0
