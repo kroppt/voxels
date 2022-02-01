@@ -5,15 +5,15 @@ import (
 	"github.com/go-gl/gl/v2.1/gl"
 	"github.com/kroppt/voxels/game"
 	"github.com/kroppt/voxels/log"
+	"github.com/kroppt/voxels/oldworld"
 	"github.com/kroppt/voxels/physics"
 	"github.com/kroppt/voxels/util"
-	"github.com/kroppt/voxels/world"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Application struct {
 	win     *sdl.Window
-	world   *world.World
+	world   *oldworld.World
 	running bool
 	m1held  bool
 	game    *game.Game
@@ -22,7 +22,7 @@ type Application struct {
 func New(win *sdl.Window) (*Application, error) {
 	return &Application{
 		win:   win,
-		world: world.New(),
+		world: oldworld.New(),
 		game:  game.New(game.OsTimeNow),
 	}, nil
 }
@@ -74,9 +74,9 @@ func (app *Application) handleMouseWheelEvent(evt *sdl.MouseWheelEvent) {
 		sw.StopRecordAverage("remove voxel")
 	} else {
 		sw := util.Start()
-		app.world.SetVoxel(&world.Voxel{
+		app.world.SetVoxel(&oldworld.Voxel{
 			Pos:   block.Pos,
-			Btype: world.Light,
+			Btype: oldworld.Light,
 		})
 		sw.StopRecordAverage("set voxel")
 	}
