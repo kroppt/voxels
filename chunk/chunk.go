@@ -23,6 +23,11 @@ type BlockType uint32
 const (
 	BlockTypeAir BlockType = iota
 	BlockTypeDirt
+	BlockTypeGrass
+	BlockTypeLabeled
+	BlockTypeCorrupted
+	BlockTypeStone
+	BlockTypeLight
 )
 const LargestVbits = uint32(BlockTypeDirt)<<6 | uint32(AdjacentAll)
 

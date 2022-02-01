@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 
-	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/cache"
 	"github.com/kroppt/voxels/modules/camera"
@@ -35,30 +34,16 @@ func main() {
 		settingsRepo.SetFromReader(readCloser)
 		readCloser.Close()
 	}
-
 	graphicsMod := graphics.New(settingsRepo)
 	err := graphicsMod.CreateWindow("newvoxels")
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.Position) chunk.Chunk {
-			newChunk := chunk.NewEmpty(key, settingsRepo.GetChunkSize())
-			if key == (chunk.Position{X: 0, Y: 0, Z: 0}) {
-				newChunk.SetBlockType(chunk.VoxelCoordinate{
-					X: 0,
-					Y: 0,
-					Z: 0,
-				}, chunk.BlockTypeDirt)
-			}
-			return newChunk
-		},
-	}
+	generator := world.NewAlexWorldGenerator(settingsRepo)
 	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
-	worldMod := world.New(graphicsMod, testGen, settingsRepo, cacheMod)
+	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod)
 	playerMod := player.New(worldMod, settingsRepo, graphicsMod)
-	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 0.5, Z: 3})
+	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 16.5, Z: 0.5})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo)
 	tickRateNano := int64(100 * 1e6)
 	tickMod := tick.New(cameraMod, tick.FnTime{}, tickRateNano)

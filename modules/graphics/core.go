@@ -17,6 +17,7 @@ import (
 
 type core struct {
 	ubo            *gfx.BufferObject
+	textureMap     *gfx.CubeMap
 	window         *sdl.Window
 	settingsRepo   settings.Interface
 	loadedChunks   map[chunk.Position]*ChunkObject
@@ -88,9 +89,31 @@ func (c *core) createWindow(title string) error {
 	// use binding = 0
 	ubo.BindBufferBase(gl.UNIFORM_BUFFER, 0)
 
+	c.textureMap = loadSpriteSheet("sprite_sheet.png")
+
 	c.window = window
 	c.ubo = ubo
 	return nil
+}
+
+func loadSpriteSheet(fileName string) *gfx.CubeMap {
+	// TODO get data without texture
+	sprites, err := gfx.NewTextureFromFile(fileName)
+	if err != nil {
+		panic("failed to load sprite sheet")
+	}
+	sprytes := sprites.GetData()
+	// TODO make fancy file format with meta data
+	w := int32(16)
+	h := sprites.GetHeight()
+	layers := h / w
+	texAtlas, err := gfx.NewCubeMap(w, layers, sprytes, gl.RGBA, 4, 4)
+	if err != nil {
+		panic("failed to create 3d texture")
+	}
+	texAtlas.SetParameter(gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST)
+	texAtlas.SetParameter(gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+	return &texAtlas
 }
 
 func (c *core) showWindow() {
@@ -105,6 +128,7 @@ func (c *core) pollEvent() (sdl.Event, bool) {
 func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	c.ubo.Destroy()
+	c.textureMap.Destroy()
 	sdl.Quit()
 	return err
 }
@@ -154,12 +178,11 @@ func (c *core) render() {
 
 	sw := util.Start()
 
-	gl.LineWidth(2)
-	gl.Disable(gl.DEPTH_TEST)
+	c.textureMap.Bind()
 	for _, chunkObj := range c.loadedChunks {
 		chunkObj.Render()
 	}
-	gl.Enable(gl.DEPTH_TEST)
+	c.textureMap.Unbind()
 
 	sw.StopRecordAverage("Total World Render")
 	c.window.GLSwap()
