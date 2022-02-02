@@ -12,9 +12,16 @@ type Interface interface {
 	PollEvent() (sdl.Event, bool)
 	LoadChunk(chunk.Chunk)
 	UnloadChunk(chunk.ChunkCoordinate)
-	UpdateView(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, chunk.VoxelCoordinate, bool)
+	UpdateView(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, SelectedVoxel, bool)
 	DestroyWindow() error
 	Render()
+}
+
+type SelectedVoxel struct {
+	X     float32
+	Y     float32
+	Z     float32
+	Vbits float32
 }
 
 // CreateWindow creates an SDL window.
@@ -44,7 +51,7 @@ func (m *Module) UnloadChunk(pos chunk.ChunkCoordinate) {
 
 // UpdateView updates what chunks the graphics module should
 // try to render.
-func (m *Module) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+func (m *Module) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel SelectedVoxel, selected bool) {
 	m.c.updateView(viewableChunks, viewMat, selectedVoxel, selected)
 }
 
@@ -63,7 +70,7 @@ type FnModule struct {
 	FnPollEvent     func() (sdl.Event, bool)
 	FnLoadChunk     func(chunk.Chunk)
 	FnUnloadChunk   func(chunk.ChunkCoordinate)
-	FnUpdateView    func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, chunk.VoxelCoordinate, bool)
+	FnUpdateView    func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, SelectedVoxel, bool)
 	FnDestroyWindow func() error
 	FnRender        func()
 }
@@ -100,7 +107,7 @@ func (fn FnModule) UnloadChunk(pos chunk.ChunkCoordinate) {
 	}
 }
 
-func (fn FnModule) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+func (fn FnModule) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel SelectedVoxel, selected bool) {
 	if fn.FnUpdateView != nil {
 		fn.FnUpdateView(viewableChunks, viewMat, selectedVoxel, selected)
 	}

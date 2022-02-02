@@ -75,25 +75,34 @@ func (c *core) getUpdatedViewMatrix() mgl.Mat4 {
 
 func (c *core) updateView(viewState ViewState) {
 	c.viewState = viewState
-	viewableChunks := c.getFrustumCulledChunks()
+	viewableChunks := c.getViewableChunks()
 	eye := viewState.Pos
-	dir := viewState.Dir.Inverse().Rotate(mgl.Vec3{0.0, 0.0, -1.0})
+	dir := viewState.Dir.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
 	var found bool
 	var lowestDist float64
 	var closestVox chunk.VoxelCoordinate
-	for chPos, ch := range c.chunksLoaded {
+	var vbits uint32
+	for _, ch := range c.chunksLoaded {
 		// chunks out of viewing frustum cannot be intersected
-		if _, ok := viewableChunks[chPos]; !ok {
-			continue
-		}
+		// TODO optimization here
+		// if _, ok := viewableChunks[chPos]; !ok {
+		// 	continue
+		// }
 		vc, dist, ok := ch.root.FindClosestIntersect(eye, dir)
 		if ok && (dist < lowestDist || !found) {
 			lowestDist = dist
 			closestVox = vc
+			vbits = ch.ch.Vbits(vc)
 			found = true
 		}
 	}
-	c.graphicsMod.UpdateView(viewableChunks, c.getUpdatedViewMatrix(), closestVox, found)
+	sv := graphics.SelectedVoxel{
+		X:     float32(closestVox.X),
+		Y:     float32(closestVox.Y),
+		Z:     float32(closestVox.Z),
+		Vbits: float32(vbits),
+	}
+	c.graphicsMod.UpdateView(viewableChunks, c.getUpdatedViewMatrix(), sv, found)
 }
 
 func (c *core) quit() {
@@ -122,7 +131,6 @@ func (c *core) getBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 	if _, ok := c.chunksLoaded[key]; !ok {
 		panic("tried to get block from non-loaded chunk")
 	}
-	// TODO update octree
 	return c.chunksLoaded[key].ch.BlockType(pos)
 }
 
@@ -297,7 +305,7 @@ func (rng chunkRange) forEach(fn func(pos chunk.ChunkCoordinate) bool) {
 	}
 }
 
-func (c *core) getFrustumCulledChunks() map[chunk.ChunkCoordinate]struct{} {
+func (c *core) getViewableChunks() map[chunk.ChunkCoordinate]struct{} {
 	newChunkPos := chunk.VoxelCoordToChunkCoord(toVoxelPos(c.viewState.Pos), c.settingsRepo.GetChunkSize())
 	renderDistance := int32(c.settingsRepo.GetRenderDistance())
 	rng := chunkRange{

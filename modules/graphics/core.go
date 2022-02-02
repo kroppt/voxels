@@ -19,9 +19,12 @@ type core struct {
 	ubo            *gfx.BufferObject
 	textureMap     *gfx.CubeMap
 	crosshair      *CrosshairObject
+	selectedVoxel  SelectedVoxel
+	selected       bool
+	selectionFrame *glObject
 	window         *sdl.Window
 	settingsRepo   settings.Interface
-	loadedChunks   map[chunk.ChunkCoordinate]*ChunkObject
+	loadedChunks   map[chunk.ChunkCoordinate]*glObject
 	viewableChunks map[chunk.ChunkCoordinate]struct{}
 }
 
@@ -97,6 +100,11 @@ func (c *core) createWindow(title string) error {
 		return fmt.Errorf("failed to make crosshair: %v", err)
 	}
 
+	c.selectionFrame, err = newFrameObject()
+	if err != nil {
+		return fmt.Errorf("failed to make selection frame: %v", err)
+	}
+
 	c.window = window
 	c.ubo = ubo
 	return nil
@@ -136,6 +144,7 @@ func (c *core) destroyWindow() error {
 	c.ubo.Destroy()
 	c.textureMap.Destroy()
 	c.crosshair.Destroy()
+	c.selectionFrame.destroy()
 	sdl.Quit()
 	return err
 }
@@ -149,8 +158,15 @@ func (c *core) getUpdatedProjMatrix() mgl.Mat4 {
 	return mgl.Perspective(fovRad, aspect, near, far)
 }
 
-func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4, selectedVoxel SelectedVoxel, selected bool) {
 	c.viewableChunks = viewableChunks
+
+	if selected && c.selected && selectedVoxel != c.selectedVoxel {
+		c.selectionFrame.setData([]float32{selectedVoxel.X, selectedVoxel.Y, selectedVoxel.Z, selectedVoxel.Vbits, 0})
+		c.selectedVoxel = selectedVoxel
+	}
+	c.selected = selected
+
 	proj := c.getUpdatedProjMatrix()
 	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
 	if err != nil {
@@ -167,11 +183,11 @@ func (c *core) loadChunk(chunk chunk.Chunk) {
 		panic("attempting to load over an already-loaded chunk")
 	}
 
-	chunkObj, err := NewChunkObject()
+	chunkObj, err := newChunkObject()
 	if err != nil {
 		panic(err)
 	}
-	chunkObj.SetData(chunk.GetFlatData())
+	chunkObj.setData(chunk.GetFlatData())
 
 	c.loadedChunks[chunk.Position()] = chunkObj
 }
@@ -180,7 +196,7 @@ func (c *core) unloadChunk(key chunk.ChunkCoordinate) {
 	if _, ok := c.loadedChunks[key]; !ok {
 		panic("attempting to unload a chunk that is not loaded")
 	}
-	c.loadedChunks[key].Destroy()
+	c.loadedChunks[key].destroy()
 	delete(c.loadedChunks, key)
 }
 
@@ -196,11 +212,15 @@ func (c *core) render() {
 
 	c.textureMap.Bind()
 	for _, chunkObj := range c.loadedChunks {
-		chunkObj.Render()
+		chunkObj.render()
 	}
 	c.textureMap.Unbind()
 
 	gl.Disable(gl.DEPTH_TEST)
+	if c.selected {
+		gl.LineWidth(2.0)
+		c.selectionFrame.render()
+	}
 	gl.LineWidth(float32(c.settingsRepo.GetCrosshairThickness()))
 	c.crosshair.Render()
 	gl.Enable(gl.DEPTH_TEST)

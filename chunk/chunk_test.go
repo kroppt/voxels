@@ -556,3 +556,14 @@ func TestForEachVoxelInChunk(t *testing.T) {
 		}
 	})
 }
+
+func TestGetVbitsForVoxel(t *testing.T) {
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{1, 1, 1}, 3)
+	ch.SetBlockType(chunk.VoxelCoordinate{3, 3, 3}, chunk.BlockTypeCorrupted)
+	ch.SetAdjacency(chunk.VoxelCoordinate{3, 3, 3}, chunk.AdjacentBack|chunk.AdjacentBottom|chunk.AdjacentY)
+	expectedVbits := uint32(chunk.BlockTypeCorrupted<<6) | uint32(chunk.AdjacentBack|chunk.AdjacentBottom|chunk.AdjacentY)
+	actualVbits := ch.Vbits(chunk.VoxelCoordinate{3, 3, 3})
+	if actualVbits != expectedVbits {
+		t.Fatalf("expected vbits %v but got %v", expectedVbits, actualVbits)
+	}
+}

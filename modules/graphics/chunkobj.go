@@ -5,15 +5,15 @@ import (
 	"github.com/kroppt/gfx"
 )
 
-type ChunkObject struct {
+type glObject struct {
 	program gfx.Program
 	vao     gfx.VAO
 }
 
-// NewChunkObject returns a newly created ChunkObject with the given vertices.
-func NewChunkObject() (*ChunkObject, error) {
+// newChunkObject returns a renderable chunk.
+func newChunkObject() (*glObject, error) {
 	// swap these lines for frame outlines or solid blocks
-	prog, err := GetProgram(vertColShader, fragColShader, geoColShader)
+	prog, err := getProgram(vertColShader, fragColShader, geoColShader)
 	// prog, err := GetProgram(vertColShader, fragFrameShader, geoFrameShader)
 
 	if err != nil {
@@ -21,36 +21,51 @@ func NewChunkObject() (*ChunkObject, error) {
 	}
 	vao := gfx.NewVAO(gl.POINTS, []int32{4, 1})
 
-	return &ChunkObject{
+	return &glObject{
 		program: prog,
 		vao:     *vao,
 	}, nil
 }
 
-// SetData uploads data to OpenGL.
-func (co *ChunkObject) SetData(data []float32) {
+// newFrameObject returns a renderable frame.
+func newFrameObject() (*glObject, error) {
+	prog, err := getProgram(vertColShader, fragFrameShader, geoFrameShader)
+
+	if err != nil {
+		return nil, err
+	}
+	vao := gfx.NewVAO(gl.POINTS, []int32{4, 1})
+
+	return &glObject{
+		program: prog,
+		vao:     *vao,
+	}, nil
+}
+
+// setData uploads data to OpenGL.
+func (co *glObject) setData(data []float32) {
 	err := co.vao.Load(data, gl.STATIC_DRAW)
 	if err != nil {
 		panic("failed to set data")
 	}
 }
 
-// Render generates an image of the object with OpenGL.
-func (co *ChunkObject) Render() {
+// render generates an image of the object with OpenGL.
+func (co *glObject) render() {
 	co.program.Bind()
 	co.vao.Draw()
 	co.program.Unbind()
 }
 
-// Destroy frees external resources.
-func (co *ChunkObject) Destroy() {
+// destroy frees external resources.
+func (co *glObject) destroy() {
 	// o.program.Destroy() // TODO store and delete in world
 	co.vao.Destroy()
 }
 
 var progMap map[string]gfx.Program
 
-func GetProgram(vshadstr, fshadstr, gshadstr string) (gfx.Program, error) {
+func getProgram(vshadstr, fshadstr, gshadstr string) (gfx.Program, error) {
 	if progMap == nil {
 		progMap = make(map[string]gfx.Program)
 	}

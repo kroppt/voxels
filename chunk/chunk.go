@@ -40,12 +40,12 @@ const btypeMask uint32 = 0xFFFFFFC0
 type AdjacentMask uint32
 
 const (
-	AdjacentFront  AdjacentMask = 0b00000001 // The voxel has a backward adjacency.
-	AdjacentBack   AdjacentMask = 0b00000010 // The voxel has a forward adjacency.
-	AdjacentBottom AdjacentMask = 0b00000100 // The voxel has a bottom adjacency.
-	AdjacentTop    AdjacentMask = 0b00001000 // The voxel has a top adjacency.
-	AdjacentLeft   AdjacentMask = 0b00010000 // The voxel has a right adjacency.
-	AdjacentRight  AdjacentMask = 0b00100000 // The voxel has a left adjacency.
+	AdjacentFront  AdjacentMask = 0b00000001 // There is a voxel in front of it (-Z).
+	AdjacentBack   AdjacentMask = 0b00000010 // There is a voxel behind it (+Z).
+	AdjacentBottom AdjacentMask = 0b00000100 // There is a voxel below it (-Y).
+	AdjacentTop    AdjacentMask = 0b00001000 // There is a voxel above it (+Y).
+	AdjacentLeft   AdjacentMask = 0b00010000 // There is a voxel left of it (-X).
+	AdjacentRight  AdjacentMask = 0b00100000 // There is a voxel right of it (+X).
 
 	AdjacentX    = AdjacentRight | AdjacentLeft      // The voxel has adjacencies in the +/-x directions.
 	AdjacentY    = AdjacentTop | AdjacentBottom      // The voxel has adjacencies in the +/-y directions.
@@ -216,6 +216,10 @@ func (c Chunk) Lighting(vpos VoxelCoordinate, face LightFace) uint32 {
 	mask := uint32(0b1111 << int(face))
 	lbits := uint32(c.flatData[off+4])
 	return (lbits & mask) >> face
+}
+
+func (c Chunk) Vbits(vpos VoxelCoordinate) uint32 {
+	return uint32(c.BlockType(vpos))<<6 | uint32(c.Adjacency(vpos))
 }
 
 func VoxelCoordToChunkCoord(pos VoxelCoordinate, chunkSize uint32) ChunkCoordinate {

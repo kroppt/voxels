@@ -368,7 +368,7 @@ func TestWorldCallsGraphicsUpdateView(t *testing.T) {
 	actual := false
 	expected := true
 	graphicsMod := graphics.FnModule{
-		FnUpdateView: func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, chunk.VoxelCoordinate, bool) {
+		FnUpdateView: func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, graphics.SelectedVoxel, bool) {
 			actual = true
 		},
 	}
@@ -392,7 +392,7 @@ func TestWorldSendsViewMatrix(t *testing.T) {
 	expected := mgl.Ident4().Mul4(rot.Inverse().Mat4()).Mul4(posMat)
 	var actual mgl.Mat4
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, _ chunk.VoxelCoordinate, _ bool) {
+		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, _ graphics.SelectedVoxel, _ bool) {
 			actual = viewMat
 		},
 	}
@@ -492,7 +492,7 @@ func TestFrustumCulling(t *testing.T) {
 			t.Parallel()
 			actualViewedChunks := map[chunk.ChunkCoordinate]struct{}{}
 			graphicsMod := &graphics.FnModule{
-				FnUpdateView: func(viewChunks map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, _ chunk.VoxelCoordinate, _ bool) {
+				FnUpdateView: func(viewChunks map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, _ graphics.SelectedVoxel, _ bool) {
 					actualViewedChunks = viewChunks
 				},
 			}
@@ -531,11 +531,11 @@ func TestFrustumCulling(t *testing.T) {
 
 func TestWorldSendsSelectedVoxel(t *testing.T) {
 	t.Parallel()
-	expected := chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3}
-	var actual chunk.VoxelCoordinate
+	expected := graphics.SelectedVoxel{X: 3, Y: 3, Z: 3, Vbits: float32(uint32(chunk.BlockTypeDirt << 6))}
+	var actual graphics.SelectedVoxel
 	actualSelected := false
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, selectedVoxel graphics.SelectedVoxel, selected bool) {
 			actual = selectedVoxel
 			actualSelected = selected
 		},
@@ -573,11 +573,11 @@ func TestWorldSendsSelectedVoxel(t *testing.T) {
 
 func TestWorldSendsSelectedVoxelFromFarAwayChunk(t *testing.T) {
 	t.Parallel()
-	expected := chunk.VoxelCoordinate{X: 3, Y: 3, Z: -1}
-	var actual chunk.VoxelCoordinate
+	expected := graphics.SelectedVoxel{X: 3, Y: 3, Z: -1, Vbits: float32(uint32(chunk.BlockTypeDirt<<6) | uint32(chunk.AdjacentFront))}
+	var actual graphics.SelectedVoxel
 	actualSelected := false
 	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, selectedVoxel graphics.SelectedVoxel, selected bool) {
 			actual = selectedVoxel
 			actualSelected = selected
 		},
@@ -600,7 +600,8 @@ func TestWorldSendsSelectedVoxelFromFarAwayChunk(t *testing.T) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 4, Y: 3, Z: 4}, chunk.BlockTypeDirt)
 			} else if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: -1}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: -1}, chunk.BlockTypeDirt)
-				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: -3}, chunk.BlockTypeDirt)
+				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: -2}, chunk.BlockTypeDirt)
+				newChunk.SetAdjacency(chunk.VoxelCoordinate{X: 3, Y: 3, Z: -1}, chunk.AdjacentFront)
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: -4}, chunk.BlockTypeDirt)
 			}
 			return newChunk
