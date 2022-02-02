@@ -42,6 +42,7 @@ func newFrameObject() (*glObject, error) {
 	}, nil
 }
 
+// newCrosshairObject returns a renderable crosshair (remember to disable depth testing)
 func newCrosshairObject(size, aspect float32) (*glObject, error) {
 	vao := gfx.NewVAO(gl.LINES, []int32{2, 4})
 	vertices := []float32{
