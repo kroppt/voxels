@@ -18,7 +18,7 @@ import (
 type core struct {
 	ubo            *gfx.BufferObject
 	textureMap     *gfx.CubeMap
-	crosshair      *CrosshairObject
+	crosshair      *glObject
 	selectedVoxel  SelectedVoxel
 	selected       bool
 	selectionFrame *glObject
@@ -95,7 +95,7 @@ func (c *core) createWindow(title string) error {
 
 	c.textureMap = loadSpriteSheet("sprite_sheet.png")
 
-	c.crosshair, err = NewCrosshairObject(float32(c.settingsRepo.GetCrosshairLength()), float32(width)/float32(height))
+	c.crosshair, err = newCrosshairObject(float32(c.settingsRepo.GetCrosshairLength()), float32(width)/float32(height))
 	if err != nil {
 		return fmt.Errorf("failed to make crosshair: %v", err)
 	}
@@ -143,7 +143,7 @@ func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	c.ubo.Destroy()
 	c.textureMap.Destroy()
-	c.crosshair.Destroy()
+	c.crosshair.destroy()
 	c.selectionFrame.destroy()
 	sdl.Quit()
 	return err
@@ -222,7 +222,7 @@ func (c *core) render() {
 		c.selectionFrame.render()
 	}
 	gl.LineWidth(float32(c.settingsRepo.GetCrosshairThickness()))
-	c.crosshair.Render()
+	c.crosshair.render()
 	gl.Enable(gl.DEPTH_TEST)
 
 	sw.StopRecordAverage("Total World Render")
