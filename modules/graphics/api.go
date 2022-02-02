@@ -11,8 +11,8 @@ type Interface interface {
 	ShowWindow()
 	PollEvent() (sdl.Event, bool)
 	LoadChunk(chunk.Chunk)
-	UnloadChunk(chunk.Position)
-	UpdateView(map[chunk.Position]struct{}, mgl.Mat4, mgl.Mat4)
+	UnloadChunk(chunk.ChunkCoordinate)
+	UpdateView(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, chunk.VoxelCoordinate, bool)
 	DestroyWindow() error
 	Render()
 }
@@ -38,14 +38,14 @@ func (m *Module) LoadChunk(chunk chunk.Chunk) {
 }
 
 // UnloadChunk unloads a chunk.
-func (m *Module) UnloadChunk(pos chunk.Position) {
+func (m *Module) UnloadChunk(pos chunk.ChunkCoordinate) {
 	m.c.unloadChunk(pos)
 }
 
 // UpdateView updates what chunks the graphics module should
 // try to render.
-func (m *Module) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
-	m.c.updateView(viewableChunks, viewMat, projMat)
+func (m *Module) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+	m.c.updateView(viewableChunks, viewMat, selectedVoxel, selected)
 }
 
 // DestroyWindow destroys an SDL window.
@@ -62,8 +62,8 @@ type FnModule struct {
 	FnShowWindow    func()
 	FnPollEvent     func() (sdl.Event, bool)
 	FnLoadChunk     func(chunk.Chunk)
-	FnUnloadChunk   func(chunk.Position)
-	FnUpdateView    func(map[chunk.Position]struct{}, mgl.Mat4, mgl.Mat4)
+	FnUnloadChunk   func(chunk.ChunkCoordinate)
+	FnUpdateView    func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, chunk.VoxelCoordinate, bool)
 	FnDestroyWindow func() error
 	FnRender        func()
 }
@@ -94,15 +94,15 @@ func (fn FnModule) LoadChunk(chunk chunk.Chunk) {
 	}
 }
 
-func (fn FnModule) UnloadChunk(pos chunk.Position) {
+func (fn FnModule) UnloadChunk(pos chunk.ChunkCoordinate) {
 	if fn.FnUnloadChunk != nil {
 		fn.FnUnloadChunk(pos)
 	}
 }
 
-func (fn FnModule) UpdateView(viewableChunks map[chunk.Position]struct{}, viewMat mgl.Mat4, projMat mgl.Mat4) {
+func (fn FnModule) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
 	if fn.FnUpdateView != nil {
-		fn.FnUpdateView(viewableChunks, viewMat, projMat)
+		fn.FnUpdateView(viewableChunks, viewMat, selectedVoxel, selected)
 	}
 }
 

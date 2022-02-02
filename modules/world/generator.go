@@ -8,18 +8,18 @@ import (
 )
 
 type Generator interface {
-	GenerateChunk(chunk.Position) chunk.Chunk
+	GenerateChunk(chunk.ChunkCoordinate) chunk.Chunk
 }
 
 type FnGenerator struct {
-	FnGenerateChunk func(chunk.Position) chunk.Chunk
+	FnGenerateChunk func(chunk.ChunkCoordinate) chunk.Chunk
 }
 
-func (fn *FnGenerator) GenerateChunk(pos chunk.Position) chunk.Chunk {
+func (fn *FnGenerator) GenerateChunk(pos chunk.ChunkCoordinate) chunk.Chunk {
 	if fn.FnGenerateChunk != nil {
 		return fn.FnGenerateChunk(pos)
 	}
-	return chunk.NewEmpty(pos, 1)
+	return chunk.NewChunkEmpty(pos, 1)
 }
 
 type TestGenerator struct {
@@ -35,9 +35,9 @@ func NewTestGenerator(settingsRepo settings.Interface) *TestGenerator {
 	}
 }
 
-func (gen *TestGenerator) GenerateChunk(key chunk.Position) chunk.Chunk {
-	newChunk := chunk.NewEmpty(key, gen.settingsRepo.GetChunkSize())
-	if key == (chunk.Position{X: 0, Y: 0, Z: 0}) {
+func (gen *TestGenerator) GenerateChunk(key chunk.ChunkCoordinate) chunk.Chunk {
+	newChunk := chunk.NewChunkEmpty(key, gen.settingsRepo.GetChunkSize())
+	if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 		newChunk.SetBlockType(chunk.VoxelCoordinate{
 			X: 0,
 			Y: 0,
@@ -65,9 +65,9 @@ type genVoxel struct {
 	bType   chunk.BlockType
 }
 
-func (gen *FlatWorldGenerator) GenerateChunk(chPos chunk.Position) chunk.Chunk {
+func (gen *FlatWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) chunk.Chunk {
 	size := int32(gen.settingsRepo.GetChunkSize())
-	ch := chunk.NewEmpty(chPos, uint32(size))
+	ch := chunk.NewChunkEmpty(chPos, uint32(size))
 	for x := chPos.X * size; x < chPos.X*size+size; x++ {
 		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
 			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
@@ -135,9 +135,9 @@ func NewAlexWorldGenerator(settingsRepo settings.Interface) *AlexWorldGenerator 
 	}
 }
 
-func (gen *AlexWorldGenerator) GenerateChunk(chPos chunk.Position) chunk.Chunk {
+func (gen *AlexWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) chunk.Chunk {
 	size := int32(gen.settingsRepo.GetChunkSize())
-	ch := chunk.NewEmpty(chPos, uint32(size))
+	ch := chunk.NewChunkEmpty(chPos, uint32(size))
 	for x := chPos.X * size; x < chPos.X*size+size; x++ {
 		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
 			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {

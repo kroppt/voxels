@@ -1,22 +1,36 @@
 package world
 
-import "github.com/kroppt/voxels/chunk"
+import (
+	mgl "github.com/go-gl/mathgl/mgl64"
+
+	"github.com/kroppt/voxels/chunk"
+)
 
 type Interface interface {
-	LoadChunk(chunk.Position)
-	UnloadChunk(chunk.Position)
+	LoadChunk(chunk.ChunkCoordinate)
+	UnloadChunk(chunk.ChunkCoordinate)
+	UpdateView(ViewState)
 	Quit()
 	CountLoadedChunks() int
 	SetBlockType(chunk.VoxelCoordinate, chunk.BlockType)
 	GetBlockType(chunk.VoxelCoordinate) chunk.BlockType
 }
 
-func (m *Module) LoadChunk(pos chunk.Position) {
+type ViewState struct {
+	Pos mgl.Vec3
+	Dir mgl.Quat
+}
+
+func (m *Module) LoadChunk(pos chunk.ChunkCoordinate) {
 	m.c.loadChunk(pos)
 }
 
-func (m *Module) UnloadChunk(pos chunk.Position) {
+func (m *Module) UnloadChunk(pos chunk.ChunkCoordinate) {
 	m.c.unloadChunk(pos)
+}
+
+func (m *Module) UpdateView(viewState ViewState) {
+	m.c.updateView(viewState)
 }
 
 func (m *Module) Quit() {
@@ -36,23 +50,30 @@ func (m *Module) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 }
 
 type FnModule struct {
-	FnLoadChunk         func(chunk.Position)
-	FnUnloadChunk       func(chunk.Position)
+	FnLoadChunk         func(chunk.ChunkCoordinate)
+	FnUnloadChunk       func(chunk.ChunkCoordinate)
+	FnUpdateView        func(ViewState)
 	FnQuit              func()
 	FnCountLoadedChunks func() int
 	FnSetBlockType      func(chunk.VoxelCoordinate, chunk.BlockType)
 	FnGetBlockType      func(chunk.VoxelCoordinate) chunk.BlockType
 }
 
-func (fn FnModule) LoadChunk(pos chunk.Position) {
+func (fn FnModule) LoadChunk(pos chunk.ChunkCoordinate) {
 	if fn.FnLoadChunk != nil {
 		fn.FnLoadChunk(pos)
 	}
 }
 
-func (fn FnModule) UnloadChunk(pos chunk.Position) {
+func (fn FnModule) UnloadChunk(pos chunk.ChunkCoordinate) {
 	if fn.FnUnloadChunk != nil {
 		fn.FnUnloadChunk(pos)
+	}
+}
+
+func (fn FnModule) UpdateView(viewState ViewState) {
+	if fn.FnUpdateView != nil {
+		fn.FnUpdateView(viewState)
 	}
 }
 

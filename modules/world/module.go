@@ -32,7 +32,7 @@ func New(
 			generator:    generator,
 			settingsRepo: settingsRepo,
 			cacheMod:     cacheMod,
-			chunksLoaded: map[chunk.Position]*chunkWrap{},
+			chunksLoaded: map[chunk.ChunkCoordinate]*chunkState{},
 		},
 	}
 }

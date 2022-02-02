@@ -4,7 +4,7 @@ import "github.com/kroppt/voxels/chunk"
 
 type Interface interface {
 	Save(chunk.Chunk)
-	Load(chunk.Position) (chunk.Chunk, bool)
+	Load(chunk.ChunkCoordinate) (chunk.Chunk, bool)
 	Close()
 }
 
@@ -12,7 +12,7 @@ func (m *Module) Save(chunk chunk.Chunk) {
 	m.c.save(chunk)
 }
 
-func (m *Module) Load(key chunk.Position) (chunk.Chunk, bool) {
+func (m *Module) Load(key chunk.ChunkCoordinate) (chunk.Chunk, bool) {
 	return m.c.load(key)
 }
 
@@ -22,7 +22,7 @@ func (m *Module) Close() {
 
 type FnModule struct {
 	FnSave  func(chunk.Chunk)
-	FnLoad  func(chunk.Position) (chunk.Chunk, bool)
+	FnLoad  func(chunk.ChunkCoordinate) (chunk.Chunk, bool)
 	FnClose func()
 }
 
@@ -33,7 +33,7 @@ func (fn *FnModule) Save(chunk chunk.Chunk) {
 
 }
 
-func (fn *FnModule) Load(pos chunk.Position) (chunk.Chunk, bool) {
+func (fn *FnModule) Load(pos chunk.ChunkCoordinate) (chunk.Chunk, bool) {
 	if fn.FnLoad != nil {
 		return fn.FnLoad(pos)
 	}

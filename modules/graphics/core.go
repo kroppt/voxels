@@ -20,8 +20,8 @@ type core struct {
 	textureMap     *gfx.CubeMap
 	window         *sdl.Window
 	settingsRepo   settings.Interface
-	loadedChunks   map[chunk.Position]*ChunkObject
-	viewableChunks map[chunk.Position]struct{}
+	loadedChunks   map[chunk.ChunkCoordinate]*ChunkObject
+	viewableChunks map[chunk.ChunkCoordinate]struct{}
 }
 
 // ErrRenderDriver indicates that SDL failed to enable the OpenGL render driver.
@@ -133,9 +133,18 @@ func (c *core) destroyWindow() error {
 	return err
 }
 
-func (c *core) updateView(viewableChunks map[chunk.Position]struct{}, view mgl.Mat4, proj mgl.Mat4) {
-	c.viewableChunks = viewableChunks
+func (c *core) getUpdatedProjMatrix() mgl.Mat4 {
+	fovRad := mgl.DegToRad(c.settingsRepo.GetFOV())
+	near := c.settingsRepo.GetNear()
+	far := c.settingsRepo.GetFar()
+	width, height := c.settingsRepo.GetResolution()
+	aspect := float64(width) / float64(height)
+	return mgl.Perspective(fovRad, aspect, near, far)
+}
 
+func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+	c.viewableChunks = viewableChunks
+	proj := c.getUpdatedProjMatrix()
 	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
 	if err != nil {
 		panic(fmt.Sprintf("failed to upload camera view to ubo: %v", err))
@@ -160,7 +169,7 @@ func (c *core) loadChunk(chunk chunk.Chunk) {
 	c.loadedChunks[chunk.Position()] = chunkObj
 }
 
-func (c *core) unloadChunk(key chunk.Position) {
+func (c *core) unloadChunk(key chunk.ChunkCoordinate) {
 	if _, ok := c.loadedChunks[key]; !ok {
 		panic("attempting to unload a chunk that is not loaded")
 	}

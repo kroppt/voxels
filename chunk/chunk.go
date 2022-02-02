@@ -1,12 +1,12 @@
 package chunk
 
 type Chunk struct {
-	pos      Position
+	pos      ChunkCoordinate
 	size     uint32
 	flatData []float32
 }
 
-type Position struct {
+type ChunkCoordinate struct {
 	X int32
 	Y int32
 	Z int32
@@ -69,7 +69,7 @@ const (
 	LightAll    uint32    = 0x00FFFFFF
 )
 
-func NewEmpty(chPos Position, chSize uint32) Chunk {
+func NewChunkEmpty(chPos ChunkCoordinate, chSize uint32) Chunk {
 	if chSize == 0 {
 		panic("chunk size cannot be 0")
 	}
@@ -94,7 +94,7 @@ func NewEmpty(chPos Position, chSize uint32) Chunk {
 	return chunk
 }
 
-func NewFromData(data []float32, chSize uint32, chPos Position) Chunk {
+func NewChunkFromData(data []float32, chSize uint32, chPos ChunkCoordinate) Chunk {
 	if len(data) != int(VertSize*chSize*chSize*chSize) {
 		panic("new chunk data has wrong size")
 	}
@@ -129,7 +129,18 @@ func NewFromData(data []float32, chSize uint32, chPos Position) Chunk {
 	return ch
 }
 
-func (c Chunk) Position() Position {
+func (c Chunk) ForEachVoxel(f func(VoxelCoordinate)) {
+	size := int32(c.size)
+	for x := c.pos.X * size; x < c.pos.X*size+size; x++ {
+		for y := c.pos.Y * size; y < c.pos.Y*size+size; y++ {
+			for z := c.pos.Z * size; z < c.pos.Z*size+size; z++ {
+				f(VoxelCoordinate{x, y, z})
+			}
+		}
+	}
+}
+
+func (c Chunk) Position() ChunkCoordinate {
 	return c.pos
 }
 
@@ -207,7 +218,7 @@ func (c Chunk) Lighting(vpos VoxelCoordinate, face LightFace) uint32 {
 	return (lbits & mask) >> face
 }
 
-func VoxelCoordToChunkCoord(pos VoxelCoordinate, chunkSize uint32) Position {
+func VoxelCoordToChunkCoord(pos VoxelCoordinate, chunkSize uint32) ChunkCoordinate {
 	if chunkSize == 0 {
 		panic("chunk size 0 is invalid")
 	}
@@ -234,5 +245,5 @@ func VoxelCoordToChunkCoord(pos VoxelCoordinate, chunkSize uint32) Position {
 	if pos.Z < 0 {
 		z--
 	}
-	return Position{X: x, Y: y, Z: z}
+	return ChunkCoordinate{X: x, Y: y, Z: z}
 }

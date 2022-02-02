@@ -538,7 +538,6 @@ func withinError(x, y float64, diff float64) bool {
 	if x+diff > y && x-diff < y {
 		return true
 	}
-	fmt.Printf("x = %v, diff = %v, x+diff = %v, x-diff = %v, y = %v\n", x, diff, x+diff, x-diff, y)
 	return false
 }
 

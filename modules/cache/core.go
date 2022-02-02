@@ -25,7 +25,7 @@ type regionPosition struct {
 	z int32
 }
 
-func chunkPosToRegionPos(pos chunk.Position, regionSize uint32) regionPosition {
+func chunkPosToRegionPos(pos chunk.ChunkCoordinate, regionSize uint32) regionPosition {
 	if regionSize == 0 {
 		panic("regionSize 0 is invalid")
 	}
@@ -102,7 +102,7 @@ func (c *core) save(ch chunk.Chunk) {
 	}
 }
 
-func (c *core) load(pos chunk.Position) (chunk.Chunk, bool) {
+func (c *core) load(pos chunk.ChunkCoordinate) (chunk.Chunk, bool) {
 	regionPos := chunkPosToRegionPos(pos, c.settingsRepo.GetRegionSize())
 	regionIdx, ok := c.getRegionIdx(regionPos)
 	if !ok {
@@ -135,7 +135,7 @@ func (c *core) load(pos chunk.Position) (chunk.Chunk, bool) {
 			log.Print(err)
 			return chunk.Chunk{}, false
 		}
-		return chunk.NewFromData(flatData, chunkSize, pos), true
+		return chunk.NewChunkFromData(flatData, chunkSize, pos), true
 	}
 
 }
@@ -159,7 +159,7 @@ func (c *core) writeChunkAt(ch chunk.Chunk, off int64) {
 	}
 }
 
-func chunkPosToDataOffset(chunkPos chunk.Position, regionPos regionPosition, size int32) int32 {
+func chunkPosToDataOffset(chunkPos chunk.ChunkCoordinate, regionPos regionPosition, size int32) int32 {
 	i := chunkPos.X - regionPos.x*size
 	j := chunkPos.Y - regionPos.y*size
 	k := chunkPos.Z - regionPos.z*size
@@ -172,7 +172,7 @@ func (c *core) getEmptyRegionData(regionPos regionPosition) []int32 {
 	for x := regionPos.x * size; x < regionPos.x*size+size; x++ {
 		for y := regionPos.y * size; y < regionPos.y*size+size; y++ {
 			for z := regionPos.z * size; z < regionPos.z*size+size; z++ {
-				off := chunkPosToDataOffset(chunk.Position{X: x, Y: y, Z: z}, regionPos, size)
+				off := chunkPosToDataOffset(chunk.ChunkCoordinate{X: x, Y: y, Z: z}, regionPos, size)
 				data[off] = -1.0
 			}
 		}

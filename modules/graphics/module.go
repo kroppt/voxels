@@ -16,8 +16,8 @@ func New(settingsRepo settings.Interface) *Module {
 		core{
 			window:         nil,
 			settingsRepo:   settingsRepo,
-			loadedChunks:   map[chunk.Position]*ChunkObject{},
-			viewableChunks: map[chunk.Position]struct{}{},
+			loadedChunks:   map[chunk.ChunkCoordinate]*ChunkObject{},
+			viewableChunks: map[chunk.ChunkCoordinate]struct{}{},
 		},
 	}
 }

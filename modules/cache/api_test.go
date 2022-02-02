@@ -42,9 +42,9 @@ func TestCacheReadAndWriteSimpleChunk(t *testing.T) {
 		},
 	}
 	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
-	chPos := chunk.Position{X: 1, Y: 2, Z: 3}
+	chPos := chunk.ChunkCoordinate{X: 1, Y: 2, Z: 3}
 	vPos := chunk.VoxelCoordinate{X: 1, Y: 2, Z: 3}
-	testChunk := chunk.NewEmpty(chPos, settingsRepo.GetChunkSize())
+	testChunk := chunk.NewChunkEmpty(chPos, settingsRepo.GetChunkSize())
 	testChunk.SetAdjacency(vPos, chunk.AdjacentAll)
 	testChunk.SetLighting(vPos, chunk.LightFront, 5)
 	expectedData := testChunk.GetFlatData()
@@ -67,8 +67,8 @@ func TestCacheReadAndWriteComplexChunk(t *testing.T) {
 		},
 	}
 	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
-	chPos := chunk.Position{X: -1, Y: -1, Z: -1}
-	testChunk := chunk.NewEmpty(chPos, settingsRepo.GetChunkSize())
+	chPos := chunk.ChunkCoordinate{X: -1, Y: -1, Z: -1}
+	testChunk := chunk.NewChunkEmpty(chPos, settingsRepo.GetChunkSize())
 	testChunk.SetAdjacency(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.AdjacentAll)
 	testChunk.SetLighting(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.LightFront, 5)
 	testChunk.SetBlockType(chunk.VoxelCoordinate{X: -2, Y: -2, Z: -2}, chunk.BlockTypeAir)
@@ -96,12 +96,12 @@ func TestCacheReadAndWriteTwoChunks(t *testing.T) {
 		},
 	}
 	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
-	chPos1 := chunk.Position{X: -1, Y: -1, Z: -1}
-	testChunk1 := chunk.NewEmpty(chPos1, settingsRepo.GetChunkSize())
+	chPos1 := chunk.ChunkCoordinate{X: -1, Y: -1, Z: -1}
+	testChunk1 := chunk.NewChunkEmpty(chPos1, settingsRepo.GetChunkSize())
 	testChunk1.SetAdjacency(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.AdjacentAll)
 	testChunk1.SetLighting(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.LightFront, 5)
-	chPos2 := chunk.Position{X: 0, Y: 0, Z: 0}
-	testChunk2 := chunk.NewEmpty(chPos2, settingsRepo.GetChunkSize())
+	chPos2 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
+	testChunk2 := chunk.NewChunkEmpty(chPos2, settingsRepo.GetChunkSize())
 	testChunk2.SetAdjacency(chunk.VoxelCoordinate{X: 2, Y: 3, Z: 4}, chunk.AdjacentBottom)
 	testChunk2.SetLighting(chunk.VoxelCoordinate{X: 5, Y: 6, Z: 7}, chunk.LightLeft, 3)
 
@@ -135,16 +135,16 @@ func TestCacheReadWriteAndOverwriteThreeChunks(t *testing.T) {
 		},
 	}
 	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
-	chPos1 := chunk.Position{X: -1, Y: -1, Z: -1}
-	testChunk1 := chunk.NewEmpty(chPos1, settingsRepo.GetChunkSize())
+	chPos1 := chunk.ChunkCoordinate{X: -1, Y: -1, Z: -1}
+	testChunk1 := chunk.NewChunkEmpty(chPos1, settingsRepo.GetChunkSize())
 	testChunk1.SetAdjacency(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.AdjacentAll)
 	testChunk1.SetLighting(chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1}, chunk.LightFront, 5)
-	chPos2 := chunk.Position{X: 0, Y: 0, Z: 0}
-	testChunk2 := chunk.NewEmpty(chPos2, settingsRepo.GetChunkSize())
+	chPos2 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
+	testChunk2 := chunk.NewChunkEmpty(chPos2, settingsRepo.GetChunkSize())
 	testChunk2.SetAdjacency(chunk.VoxelCoordinate{X: 2, Y: 3, Z: 4}, chunk.AdjacentBottom)
 	testChunk2.SetLighting(chunk.VoxelCoordinate{X: 5, Y: 6, Z: 7}, chunk.LightLeft, 3)
-	chPos3 := chunk.Position{X: 5, Y: 5, Z: 5}
-	testChunk3 := chunk.NewEmpty(chPos3, settingsRepo.GetChunkSize())
+	chPos3 := chunk.ChunkCoordinate{X: 5, Y: 5, Z: 5}
+	testChunk3 := chunk.NewChunkEmpty(chPos3, settingsRepo.GetChunkSize())
 	testChunk3.SetAdjacency(chunk.VoxelCoordinate{X: 51, Y: 51, Z: 51}, chunk.AdjacentTop)
 	testChunk3.SetLighting(chunk.VoxelCoordinate{X: 55, Y: 55, Z: 52}, chunk.LightRight, 1)
 
@@ -194,12 +194,12 @@ func TestCacheReadAndWriteChunksInDifferentRegions(t *testing.T) {
 		},
 	}
 	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
-	chPos1 := chunk.Position{X: -100, Y: -100, Z: 345}
-	testChunk1 := chunk.NewEmpty(chPos1, settingsRepo.GetChunkSize())
+	chPos1 := chunk.ChunkCoordinate{X: -100, Y: -100, Z: 345}
+	testChunk1 := chunk.NewChunkEmpty(chPos1, settingsRepo.GetChunkSize())
 	testChunk1.SetAdjacency(chunk.VoxelCoordinate{X: -200, Y: -200, Z: 690}, chunk.AdjacentAll)
 	testChunk1.SetLighting(chunk.VoxelCoordinate{X: -200, Y: -200, Z: 690}, chunk.LightFront, 5)
-	chPos2 := chunk.Position{X: 66, Y: -70, Z: 0}
-	testChunk2 := chunk.NewEmpty(chPos2, settingsRepo.GetChunkSize())
+	chPos2 := chunk.ChunkCoordinate{X: 66, Y: -70, Z: 0}
+	testChunk2 := chunk.NewChunkEmpty(chPos2, settingsRepo.GetChunkSize())
 	testChunk2.SetAdjacency(chunk.VoxelCoordinate{X: 132, Y: -140, Z: 0}, chunk.AdjacentBottom)
 	testChunk2.SetLighting(chunk.VoxelCoordinate{X: 133, Y: -139, Z: 1}, chunk.LightLeft, 3)
 
@@ -236,12 +236,12 @@ func TestCacheReadAndWriteChunksInSameRegion(t *testing.T) {
 		},
 	}
 	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
-	chPos1 := chunk.Position{X: 0, Y: 0, Z: 0}
-	testChunk1 := chunk.NewEmpty(chPos1, settingsRepo.GetChunkSize())
+	chPos1 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
+	testChunk1 := chunk.NewChunkEmpty(chPos1, settingsRepo.GetChunkSize())
 	testChunk1.SetAdjacency(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3}, chunk.AdjacentAll)
 	testChunk1.SetLighting(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3}, chunk.LightFront, 5)
-	chPos2 := chunk.Position{X: 0, Y: 0, Z: 1}
-	testChunk2 := chunk.NewEmpty(chPos2, settingsRepo.GetChunkSize())
+	chPos2 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 1}
+	testChunk2 := chunk.NewChunkEmpty(chPos2, settingsRepo.GetChunkSize())
 	testChunk2.SetAdjacency(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 5}, chunk.AdjacentBottom)
 	testChunk2.SetLighting(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 5}, chunk.LightLeft, 3)
 
@@ -279,12 +279,12 @@ func TestCacheReadAndWriteAllInRenderDistance(t *testing.T) {
 	}
 
 	cacheMod := cache.New(afero.NewMemMapFs(), settingsRepo)
-	loadedChunks := map[chunk.Position]*chunk.Chunk{}
+	loadedChunks := map[chunk.ChunkCoordinate]*chunk.Chunk{}
 	for x := -1; x <= 1; x++ {
 		for y := -1; y <= 1; y++ {
 			for z := -1; z <= 1; z++ {
-				key := chunk.Position{X: int32(x), Y: int32(y), Z: int32(z)}
-				c := chunk.NewEmpty(key, settingsRepo.GetChunkSize())
+				key := chunk.ChunkCoordinate{X: int32(x), Y: int32(y), Z: int32(z)}
+				c := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 				v := chunk.VoxelCoordinate{
 					X: int32(x * int(settingsRepo.GetChunkSize())),
 					Y: int32(y * int(settingsRepo.GetChunkSize())),
@@ -301,7 +301,7 @@ func TestCacheReadAndWriteAllInRenderDistance(t *testing.T) {
 	for x := -1; x <= 1; x++ {
 		for y := -1; y <= 1; y++ {
 			for z := -1; z <= 1; z++ {
-				key := chunk.Position{X: int32(x), Y: int32(y), Z: int32(z)}
+				key := chunk.ChunkCoordinate{X: int32(x), Y: int32(y), Z: int32(z)}
 				c, loaded := cacheMod.Load(key)
 				if !loaded {
 					t.Fatal("failed to load")
