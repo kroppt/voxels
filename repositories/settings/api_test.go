@@ -105,6 +105,29 @@ func TestRepositoryRenderDistance(t *testing.T) {
 	})
 }
 
+func TestRepositoryCrosshair(t *testing.T) {
+	t.Parallel()
+
+	t.Run("set then get is same", func(t *testing.T) {
+		t.Parallel()
+		settings := settings.New()
+		expectedLength := 10.0
+		expectedThickness := 5.0
+
+		settings.SetCrosshairLength(expectedLength)
+		actualLength := settings.GetCrosshairLength()
+		settings.SetCrosshairThickness(expectedThickness)
+		actualThickness := settings.GetCrosshairThickness()
+
+		if expectedLength != actualLength {
+			t.Fatalf("expected crosshair length %v but got %v", expectedLength, actualLength)
+		}
+		if expectedThickness != actualThickness {
+			t.Fatalf("expected crosshair thickness %v but got %v", expectedThickness, actualThickness)
+		}
+	})
+}
+
 func TestRepositoryFromReader(t *testing.T) {
 	t.Parallel()
 
@@ -169,6 +192,8 @@ func TestRepositoryFromReader(t *testing.T) {
 			"near=0.1",
 			"chunkSize=5",
 			"regionSize=5",
+			"crosshairLength=0.03",
+			"crosshairThickness=2.0",
 		}, "\n"))
 		settings := settings.New()
 
@@ -186,6 +211,8 @@ func TestRepositoryFromReader(t *testing.T) {
 		expectFar := 100.0
 		expectChunkSize := 5
 		expectRegionSize := 5
+		expectCrosshairLength := 0.03
+		expectCrosshairThickness := 2.0
 
 		fov := settings.GetFOV()
 		if fov != expectFOV {
@@ -217,6 +244,14 @@ func TestRepositoryFromReader(t *testing.T) {
 		regionSize := settings.GetRegionSize()
 		if regionSize != uint32(expectRegionSize) {
 			t.Fatalf("expected region size %v but got %v", expectRegionSize, regionSize)
+		}
+		crosshairLength := settings.GetCrosshairLength()
+		if crosshairLength != expectCrosshairLength {
+			t.Fatalf("expected crosshair size %v but got %v", expectCrosshairLength, crosshairLength)
+		}
+		crosshairThickness := settings.GetCrosshairThickness()
+		if crosshairThickness != expectCrosshairThickness {
+			t.Fatalf("expected crosshair size %v but got %v", expectCrosshairThickness, crosshairThickness)
 		}
 	})
 }

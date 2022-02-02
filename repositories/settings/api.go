@@ -19,6 +19,10 @@ type Interface interface {
 	GetResolution() (uint32, uint32)
 	SetRenderDistance(renderDistance uint32)
 	GetRenderDistance() uint32
+	SetCrosshairLength(length float64)
+	GetCrosshairLength() float64
+	SetCrosshairThickness(thickness float64)
+	GetCrosshairThickness() float64
 	SetFromReader(reader io.Reader) error
 }
 
@@ -111,25 +115,42 @@ func (r *Repository) GetRenderDistance() uint32 {
 	return r.c.getRenderDistance()
 }
 
+func (r *Repository) SetCrosshairLength(length float64) {
+	r.c.setCrosshairLength(length)
+}
+func (r *Repository) GetCrosshairLength() float64 {
+	return r.c.getCrosshairLength()
+}
+func (r *Repository) SetCrosshairThickness(thickness float64) {
+	r.c.setCrosshairThickness(thickness)
+}
+func (r *Repository) GetCrosshairThickness() float64 {
+	return r.c.getCrosshairThickness()
+}
+
 // SetFromReader sets repository value from a reader in key=value format.
 func (r *Repository) SetFromReader(reader io.Reader) error {
 	return r.c.setFromReader(reader)
 }
 
 type FnRepository struct {
-	FnSetFOV            func(degY float64)
-	FnGetFOV            func() float64
-	FnSetFar            func(far float64)
-	FnGetFar            func() float64
-	FnSetNear           func(near float64)
-	FnGetNear           func() float64
-	FnSetResolution     func(width, height uint32)
-	FnGetResolution     func() (uint32, uint32)
-	FnSetRenderDistance func(renderDistance uint32)
-	FnGetRenderDistance func() uint32
-	FnSetFromReader     func(reader io.Reader) error
-	FnGetChunkSize      func() uint32
-	FnGetRegionSize     func() uint32
+	FnSetFOV                func(degY float64)
+	FnGetFOV                func() float64
+	FnSetFar                func(far float64)
+	FnGetFar                func() float64
+	FnSetNear               func(near float64)
+	FnGetNear               func() float64
+	FnSetResolution         func(width, height uint32)
+	FnGetResolution         func() (uint32, uint32)
+	FnSetRenderDistance     func(renderDistance uint32)
+	FnGetRenderDistance     func() uint32
+	FnSetFromReader         func(reader io.Reader) error
+	FnGetChunkSize          func() uint32
+	FnGetRegionSize         func() uint32
+	FnSetCrosshairLength    func(length float64)
+	FnGetCrosshairLength    func() float64
+	FnSetCrosshairThickness func(thickness float64)
+	FnGetCrosshairThickness func() float64
 }
 
 func (fn FnRepository) SetFOV(degY float64) {
@@ -216,4 +237,30 @@ func (fn FnRepository) GetRegionSize() uint32 {
 		return fn.FnGetRegionSize()
 	}
 	return 1
+}
+
+func (fn FnRepository) SetCrosshairLength(length float64) {
+	if fn.FnSetCrosshairLength != nil {
+		fn.FnSetCrosshairLength(length)
+	}
+}
+
+func (fn FnRepository) GetCrosshairLength() float64 {
+	if fn.FnGetCrosshairLength != nil {
+		return fn.FnGetCrosshairLength()
+	}
+	return 0.03
+}
+
+func (fn FnRepository) SetCrosshairThickness(thickness float64) {
+	if fn.FnSetCrosshairThickness != nil {
+		fn.FnSetCrosshairThickness(thickness)
+	}
+}
+
+func (fn FnRepository) GetCrosshairThickness() float64 {
+	if fn.FnGetCrosshairThickness != nil {
+		return fn.FnGetCrosshairThickness()
+	}
+	return 2
 }

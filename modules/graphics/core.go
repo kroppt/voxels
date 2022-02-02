@@ -18,6 +18,7 @@ import (
 type core struct {
 	ubo            *gfx.BufferObject
 	textureMap     *gfx.CubeMap
+	crosshair      *CrosshairObject
 	window         *sdl.Window
 	settingsRepo   settings.Interface
 	loadedChunks   map[chunk.ChunkCoordinate]*ChunkObject
@@ -91,6 +92,11 @@ func (c *core) createWindow(title string) error {
 
 	c.textureMap = loadSpriteSheet("sprite_sheet.png")
 
+	c.crosshair, err = NewCrosshairObject(float32(c.settingsRepo.GetCrosshairLength()), float32(width)/float32(height))
+	if err != nil {
+		return fmt.Errorf("failed to make crosshair: %v", err)
+	}
+
 	c.window = window
 	c.ubo = ubo
 	return nil
@@ -129,6 +135,7 @@ func (c *core) destroyWindow() error {
 	err := c.window.Destroy()
 	c.ubo.Destroy()
 	c.textureMap.Destroy()
+	c.crosshair.Destroy()
 	sdl.Quit()
 	return err
 }
@@ -192,6 +199,11 @@ func (c *core) render() {
 		chunkObj.Render()
 	}
 	c.textureMap.Unbind()
+
+	gl.Disable(gl.DEPTH_TEST)
+	gl.LineWidth(float32(c.settingsRepo.GetCrosshairThickness()))
+	c.crosshair.Render()
+	gl.Enable(gl.DEPTH_TEST)
 
 	sw.StopRecordAverage("Total World Render")
 	c.window.GLSwap()

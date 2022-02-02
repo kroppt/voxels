@@ -10,14 +10,16 @@ import (
 )
 
 type core struct {
-	fovY           float64
-	near           float64
-	far            float64
-	width          uint32
-	height         uint32
-	renderDistance uint32
-	chunkSize      uint32
-	regionSize     uint32
+	fovY               float64
+	near               float64
+	far                float64
+	width              uint32
+	height             uint32
+	renderDistance     uint32
+	chunkSize          uint32
+	regionSize         uint32
+	crosshairLength    float64
+	crosshairThickness float64
 }
 
 func (c *core) setFOV(degY float64) {
@@ -75,6 +77,19 @@ func (c *core) setRenderDistance(renderDistance uint32) {
 
 func (c *core) getRenderDistance() uint32 {
 	return c.renderDistance
+}
+
+func (c *core) setCrosshairLength(length float64) {
+	c.crosshairLength = length
+}
+func (c *core) getCrosshairLength() float64 {
+	return c.crosshairLength
+}
+func (c *core) setCrosshairThickness(thickness float64) {
+	c.crosshairThickness = thickness
+}
+func (c *core) getCrosshairThickness() float64 {
+	return c.crosshairThickness
 }
 
 func (c *core) setFromReader(reader io.Reader) error {
@@ -172,6 +187,24 @@ func (c *core) setFromReader(reader io.Reader) error {
 				}
 			}
 			c.setRegionSize(uint32(regionSize))
+		case "crosshairLength":
+			crosshairLength, err := strconv.ParseFloat(value, 64)
+			if err != nil || crosshairLength < 0 {
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
+			}
+			c.setCrosshairLength(crosshairLength)
+		case "crosshairThickness":
+			crosshairThickness, err := strconv.ParseFloat(value, 64)
+			if err != nil || crosshairThickness < 0 {
+				return &ErrParse{
+					Line: lineNumber,
+					Err:  ErrParseValue,
+				}
+			}
+			c.setCrosshairThickness(crosshairThickness)
 		default:
 			log.Warnf("invalid settings entry: %v=%v", key, value)
 		}
