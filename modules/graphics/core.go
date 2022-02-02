@@ -80,6 +80,7 @@ func (c *core) createWindow(title string) error {
 	gl.Enable(gl.BLEND)
 	gl.Enable(gl.DEPTH_TEST)
 	gl.Enable(gl.CULL_FACE)
+	gl.Enable(gl.POLYGON_OFFSET_FILL)
 	gl.CullFace(gl.BACK)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
@@ -210,17 +211,22 @@ func (c *core) render() {
 
 	sw := util.Start()
 
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.FILL)
+	gl.PolygonOffset(1.0, 1.0)
+
 	c.textureMap.Bind()
 	for _, chunkObj := range c.loadedChunks {
 		chunkObj.render()
 	}
 	c.textureMap.Unbind()
 
-	gl.Disable(gl.DEPTH_TEST)
+	gl.PolygonMode(gl.FRONT_AND_BACK, gl.LINE)
 	if c.selected {
 		gl.LineWidth(2.0)
 		c.selectionFrame.render()
 	}
+
+	gl.Disable(gl.DEPTH_TEST)
 	gl.LineWidth(float32(c.settingsRepo.GetCrosshairThickness()))
 	c.crosshair.render()
 	gl.Enable(gl.DEPTH_TEST)
