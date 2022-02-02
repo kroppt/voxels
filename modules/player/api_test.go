@@ -330,6 +330,43 @@ func TestChunksLoadedOnFirstPositionUpdate(t *testing.T) {
 	}
 }
 
+func TestViewUpdateAfterLoadingChunks(t *testing.T) {
+	x := 1
+	worldMod := world.FnModule{
+		FnLoadChunk: func(p chunk.ChunkCoordinate) {
+			x -= 1
+		},
+		FnUpdateView: func(vs world.ViewState) {
+			x *= 2
+		},
+	}
+	expected := 0
+	playerMod := player.New(worldMod, settings.FnRepository{}, nil)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{1, 1, 1})
+	if x != expected {
+		t.Fatal("player updated view before loading chunks")
+	}
+}
+
+func TestViewUpdateAfterUnloadingChunks(t *testing.T) {
+	x := 1
+	worldMod := world.FnModule{
+		FnUnloadChunk: func(p chunk.ChunkCoordinate) {
+			x -= 1
+		},
+		FnUpdateView: func(vs world.ViewState) {
+			x *= 2
+		},
+	}
+	expected := 0
+	playerMod := player.New(worldMod, settings.FnRepository{}, nil)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{1, 1, 1})
+	playerMod.UpdatePlayerPosition(player.PositionEvent{0, 1, 1})
+	if x != expected {
+		t.Fatal("player updated view before unloading chunks")
+	}
+}
+
 func withinError(x, y float64, diff float64) bool {
 	if x+diff > y && x-diff < y {
 		return true

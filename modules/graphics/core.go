@@ -162,7 +162,9 @@ func (c *core) getUpdatedProjMatrix() mgl.Mat4 {
 func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4, selectedVoxel SelectedVoxel, selected bool) {
 	c.viewableChunks = viewableChunks
 
-	if selected && c.selected && selectedVoxel != c.selectedVoxel {
+	somethingToSomethingElse := selected && c.selected && selectedVoxel != c.selectedVoxel
+	nothingToSomething := selected && !c.selected
+	if somethingToSomethingElse || nothingToSomething {
 		c.selectionFrame.setData([]float32{selectedVoxel.X, selectedVoxel.Y, selectedVoxel.Z, selectedVoxel.Vbits, 0})
 		c.selectedVoxel = selectedVoxel
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/cache"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/spf13/afero"
@@ -619,5 +620,40 @@ func TestWorldSendsSelectedVoxelFromFarAwayChunk(t *testing.T) {
 	}
 	if actual != expected {
 		t.Fatalf("expected to select voxel %v but got %v", expected, actual)
+	}
+}
+
+func TestDeselectAfterMovingAway(t *testing.T) {
+	t.Parallel()
+	actualSelected := false
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, selectedVoxel graphics.SelectedVoxel, selected bool) {
+			actualSelected = selected
+		},
+	}
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+		FnGetRenderDistance: func() uint32 {
+			return 1
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: -1}) {
+				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}, chunk.BlockTypeDirt)
+			}
+			return newChunk
+		},
+	}
+	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
+	playerMod := player.New(worldMod, settingsRepo, graphicsMod)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{X: 0.5, Y: 0.5, Z: 0.5})
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: mgl.QuatIdent()})
+	playerMod.UpdatePlayerPosition(player.PositionEvent{X: 0.5, Y: 0.5, Z: 1.5})
+	if actualSelected != false {
+		t.Fatal("voxel was selected in an unloaded chunk")
 	}
 }

@@ -83,11 +83,6 @@ func (c *core) viewState() world.ViewState {
 }
 
 func (c *core) updatePosition(posEvent PositionEvent) {
-	c.posAssigned = true
-	c.position = posEvent
-	if c.dirAssigned {
-		c.worldMod.UpdateView(c.viewState())
-	}
 	newChunkPos := chunk.VoxelCoordToChunkCoord(toVoxelPos(posEvent), c.settingsMod.GetChunkSize())
 	renderDistance := int32(c.settingsMod.GetRenderDistance())
 	old := chunkRange{
@@ -130,6 +125,12 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 		c.firstLoad = false
 	}
 	c.lastChunkPos = newChunkPos
+
+	c.posAssigned = true
+	c.position = posEvent
+	if c.dirAssigned {
+		c.worldMod.UpdateView(c.viewState())
+	}
 }
 
 func (c *core) updateDirection(dirEvent DirectionEvent) {
