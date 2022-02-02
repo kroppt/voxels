@@ -189,10 +189,8 @@ func alexHelper(pos chunk.VoxelCoordinate) chunk.BlockType {
 	h := int(math.Round(noiseAt(int(pos.X), int(pos.Z))) + 10)
 	if int(pos.Y) > h {
 		return chunk.BlockTypeAir
-	} else if int(pos.Y) == h && pos.X%5 == 0 && pos.Z%5 == 0 {
-		return chunk.BlockTypeGrass
 	} else {
-		return chunk.BlockTypeGrass
+		return chunk.BlockTypeGrassSides
 	}
 }
 

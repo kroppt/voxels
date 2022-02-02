@@ -24,6 +24,7 @@ const (
 	BlockTypeAir BlockType = iota
 	BlockTypeDirt
 	BlockTypeGrass
+	BlockTypeGrassSides
 	BlockTypeLabeled
 	BlockTypeCorrupted
 	BlockTypeStone
