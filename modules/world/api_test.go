@@ -649,7 +649,7 @@ func TestDeselectAfterMovingAway(t *testing.T) {
 		},
 	}
 	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
-	playerMod := player.New(worldMod, settingsRepo, graphicsMod)
+	playerMod := player.New(worldMod, settingsRepo)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{X: 0.5, Y: 0.5, Z: 0.5})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{Rotation: mgl.QuatIdent()})
 	playerMod.UpdatePlayerPosition(player.PositionEvent{X: 0.5, Y: 0.5, Z: 1.5})

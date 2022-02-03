@@ -1,7 +1,6 @@
 package player
 
 import (
-	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -12,14 +11,13 @@ type Module struct {
 }
 
 // New creates a player module.
-func New(worldMod world.Interface, settingsMod settings.Interface, graphicsMod graphics.Interface) *Module {
+func New(worldMod world.Interface, settingsMod settings.Interface) *Module {
 	if settingsMod == nil {
 		panic("settings is required to be non-nil")
 	}
 	core := core{
 		worldMod:    worldMod,
 		settingsMod: settingsMod,
-		graphicsMod: graphicsMod,
 		firstLoad:   true,
 	}
 	return &Module{

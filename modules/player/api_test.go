@@ -6,7 +6,6 @@ import (
 
 	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
-	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -18,7 +17,7 @@ func TestModuleNew(t *testing.T) {
 	t.Run("return is non-nil", func(t *testing.T) {
 		t.Parallel()
 
-		mod := player.New(world.FnModule{}, settings.FnRepository{}, graphics.FnModule{})
+		mod := player.New(world.FnModule{}, settings.FnRepository{})
 
 		if mod == nil {
 			t.Fatal("expected non-nil return")
@@ -33,7 +32,7 @@ func TestModuleNew(t *testing.T) {
 			}
 		}()
 
-		player.New(world.FnModule{}, nil, graphics.FnModule{})
+		player.New(world.FnModule{}, nil)
 	})
 
 	t.Run("nothing is loded by default", func(t *testing.T) {
@@ -51,7 +50,7 @@ func TestModuleNew(t *testing.T) {
 			},
 		}
 
-		player.New(worldMod, settingsMod, graphics.FnModule{})
+		player.New(worldMod, settingsMod)
 
 		if loaded != expected {
 			t.Fatal("expected no chunk to be loaded, but one was")
@@ -89,7 +88,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 			},
 		}
 		worldMod := &world.FnModule{}
-		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{})
+		playerMod := player.New(worldMod, settingsMod)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -150,7 +149,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return chunkSize
 			},
 		}
-		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{})
+		playerMod := player.New(worldMod, settingsMod)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -203,7 +202,7 @@ func TestModuleUpdatePlayerPosition(t *testing.T) {
 				return chunkSize
 			},
 		}
-		playerMod := player.New(worldMod, settingsMod, graphics.FnModule{})
+		playerMod := player.New(worldMod, settingsMod)
 		playerMod.UpdatePlayerPosition(player.PositionEvent{
 			X: 5,
 			Y: 0,
@@ -236,7 +235,7 @@ func TestWorldViewUpdateWithoutPos(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(worldMod, settingsMod, &graphics.FnModule{})
+	playerMod := player.New(worldMod, settingsMod)
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{})
 
 	if calledUpdateView != expected {
@@ -254,7 +253,7 @@ func TestWorldViewUpdateWithoutDirection(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(worldMod, settingsMod, &graphics.FnModule{})
+	playerMod := player.New(worldMod, settingsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{})
 
 	if calledUpdateView != expected {
@@ -278,7 +277,7 @@ func TestWorldViewUpdateWithPosAndDir(t *testing.T) {
 		},
 	}
 	settingsMod := settings.FnRepository{}
-	playerMod := player.New(worldMod, settingsMod, &graphics.FnModule{})
+	playerMod := player.New(worldMod, settingsMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{X: 1, Y: 2, Z: 3})
 	playerMod.UpdatePlayerDirection(player.DirectionEvent{
 		Rotation: mgl.Quat{
@@ -319,7 +318,7 @@ func TestChunksLoadedOnFirstPositionUpdate(t *testing.T) {
 			actualUnloadCall = true
 		},
 	}
-	playerMod := player.New(worldMod, settings.FnRepository{}, nil)
+	playerMod := player.New(worldMod, settings.FnRepository{})
 	playerMod.UpdatePlayerPosition(player.PositionEvent{1, 1, 1})
 
 	if expectedLoadCall != actualLoadCall {
@@ -341,7 +340,7 @@ func TestViewUpdateAfterLoadingChunks(t *testing.T) {
 		},
 	}
 	expected := 0
-	playerMod := player.New(worldMod, settings.FnRepository{}, nil)
+	playerMod := player.New(worldMod, settings.FnRepository{})
 	playerMod.UpdatePlayerPosition(player.PositionEvent{1, 1, 1})
 	if x != expected {
 		t.Fatal("player updated view before loading chunks")
@@ -359,7 +358,7 @@ func TestViewUpdateAfterUnloadingChunks(t *testing.T) {
 		},
 	}
 	expected := 0
-	playerMod := player.New(worldMod, settings.FnRepository{}, nil)
+	playerMod := player.New(worldMod, settings.FnRepository{})
 	playerMod.UpdatePlayerPosition(player.PositionEvent{1, 1, 1})
 	playerMod.UpdatePlayerPosition(player.PositionEvent{0, 1, 1})
 	if x != expected {

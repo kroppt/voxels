@@ -42,7 +42,7 @@ func main() {
 	generator := world.NewAlexWorldGenerator(settingsRepo)
 	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
 	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod)
-	playerMod := player.New(worldMod, settingsRepo, graphicsMod)
+	playerMod := player.New(worldMod, settingsRepo)
 	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 16.5, Z: 0.5})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo, playerMod)
 	tickRateNano := int64(100 * 1e6)

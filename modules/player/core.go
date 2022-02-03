@@ -2,7 +2,6 @@ package player
 
 import (
 	"github.com/kroppt/voxels/chunk"
-	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -10,7 +9,6 @@ import (
 type core struct {
 	worldMod     world.Interface
 	settingsMod  settings.Interface
-	graphicsMod  graphics.Interface
 	lastChunkPos chunk.ChunkCoordinate
 	posAssigned  bool
 	position     PositionEvent
