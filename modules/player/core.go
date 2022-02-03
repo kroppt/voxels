@@ -140,3 +140,7 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 		c.worldMod.UpdateView(c.viewState())
 	}
 }
+
+func (c *core) updateAction(actEvent ActionEvent) {
+
+}

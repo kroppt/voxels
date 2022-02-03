@@ -6,6 +6,7 @@ import (
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -14,6 +15,7 @@ type core struct {
 	graphicsMod  graphics.Interface
 	cameraMod    camera.Interface
 	settingsRepo settings.Interface
+	playerMod    player.Interface
 	quit         bool
 }
 
@@ -86,6 +88,12 @@ func (m *core) routeEvent(e sdl.Event) {
 		}
 		if evt.State == sdl.BUTTON_LEFT {
 			m.cameraMod.HandleLookEvent(lookEvt)
+		}
+	case *sdl.MouseWheelEvent:
+		if evt.Y < 0 {
+			m.playerMod.UpdatePlayerAction(player.ActionEvent{Scroll: player.ScrollDown})
+		} else {
+			m.playerMod.UpdatePlayerAction(player.ActionEvent{Scroll: player.ScrollUp})
 		}
 	}
 

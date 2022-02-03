@@ -7,6 +7,7 @@ import (
 	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/input"
+	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -18,7 +19,7 @@ const radPerPixel60Fov720p = 0.0016037493727933081682920232272817561049219508644
 func TestModuleNew(t *testing.T) {
 	t.Parallel()
 	t.Run("return is non-nil", func(t *testing.T) {
-		mod := input.New(nil, nil, nil)
+		mod := input.New(nil, nil, nil, nil)
 		if mod == nil {
 			t.Fatal("expected non-nil return")
 		}
@@ -42,7 +43,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				return nil
 			},
 		}
-		mod := input.New(graphicsMod, nil, nil)
+		mod := input.New(graphicsMod, nil, nil, nil)
 
 		quitResult := mod.RouteEvents()
 		expected := false
@@ -62,7 +63,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				return nil
 			},
 		}
-		mod := input.New(graphicsMod, nil, nil)
+		mod := input.New(graphicsMod, nil, nil, nil)
 
 		exhaustEventsResult := mod.RouteEvents()
 		expected := true
@@ -87,7 +88,7 @@ func TestModuleRouteEvents(t *testing.T) {
 				return nil
 			},
 		}
-		mod := input.New(graphicsMod, nil, nil)
+		mod := input.New(graphicsMod, nil, nil, nil)
 
 		mod.RouteEvents()
 
@@ -247,7 +248,7 @@ func TestModuleRouteEvents(t *testing.T) {
 					actualEvent = &evt
 				},
 			}
-			mod := input.New(graphicsMod, cameraMod, nil)
+			mod := input.New(graphicsMod, cameraMod, nil, nil)
 
 			mod.RouteEvents()
 
@@ -332,7 +333,7 @@ func TestModuleRouteEvents(t *testing.T) {
 			settingsRepo := settings.New()
 			settingsRepo.SetFOV(60)
 			settingsRepo.SetResolution(1920, 1080)
-			mod := input.New(graphicsMod, cameraMod, settingsRepo)
+			mod := input.New(graphicsMod, cameraMod, settingsRepo, nil)
 
 			mod.RouteEvents()
 
@@ -354,6 +355,73 @@ func TestModuleRouteEvents(t *testing.T) {
 		})
 	}
 
+}
+
+func TestRouteScrollEventsToPlayer(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		desc      string
+		scrollDir player.ScrollDirection
+		amount    int32
+	}{
+		{
+			desc:      "scroll up",
+			scrollDir: player.ScrollUp,
+			amount:    1,
+		},
+		{
+			desc:      "scroll down",
+			scrollDir: player.ScrollDown,
+			amount:    -1,
+		},
+	}
+	for _, tC := range testCases {
+		tC := tC
+		t.Run(tC.desc, func(t *testing.T) {
+			t.Parallel()
+			first := true
+			quitEvent := sdl.QuitEvent{
+				Type:      sdl.QUIT,
+				Timestamp: 0,
+			}
+			mouseWheelEvent := sdl.MouseWheelEvent{
+				Type:      0,
+				Timestamp: 0,
+				WindowID:  0,
+				Which:     0,
+				X:         0,
+				Y:         tC.amount,
+				Direction: 0,
+			}
+			graphicsMod := graphics.FnModule{
+				FnPollEvent: func() (sdl.Event, bool) {
+					if first {
+						first = false
+						return &mouseWheelEvent, true
+					}
+					return &quitEvent, true
+				},
+				FnDestroyWindow: func() error {
+					return nil
+				},
+			}
+			expected := player.ActionEvent{
+				Scroll: tC.scrollDir,
+			}
+			var actual player.ActionEvent
+			playerMod := &player.FnModule{
+				FnUpdatePlayerAction: func(actEvent player.ActionEvent) {
+					actual = actEvent
+				},
+			}
+			inputMod := input.New(graphicsMod, &camera.FnModule{}, nil, playerMod)
+			inputMod.RouteEvents()
+
+			if actual != expected {
+				t.Fatalf("expected player to receive action event %v but got %v", expected, actual)
+			}
+		})
+	}
 }
 
 func TestMouseMotionOnlyPassedToCameraIfM1Held(t *testing.T) {
@@ -392,7 +460,7 @@ func TestMouseMotionOnlyPassedToCameraIfM1Held(t *testing.T) {
 			actual = true
 		},
 	}
-	mod := input.New(graphicsMod, cameraMod, settings.FnRepository{})
+	mod := input.New(graphicsMod, cameraMod, settings.FnRepository{}, nil)
 	mod.RouteEvents()
 	if actual != expected {
 		t.Fatal("expected no handle look event, but there was one")
@@ -484,7 +552,7 @@ func TestModulePixelsToRadians(t *testing.T) {
 			settingsRepo := settings.New()
 			settingsRepo.SetFOV(tC.fov)
 			settingsRepo.SetResolution(tC.resX, tC.resY)
-			mod := input.New(nil, nil, settingsRepo)
+			mod := input.New(nil, nil, settingsRepo, nil)
 
 			xRad, yRad := mod.PixelsToRadians(tC.xRel, tC.yRel)
 

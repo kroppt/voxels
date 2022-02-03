@@ -7,6 +7,20 @@ import (
 type Interface interface {
 	UpdatePlayerPosition(posEvent PositionEvent)
 	UpdatePlayerDirection(dirEvent DirectionEvent)
+	UpdatePlayerAction(actEvent ActionEvent)
+}
+
+// ScrollDirection is either ScrollUp or ScrollDown.
+type ScrollDirection int
+
+const (
+	ScrollUp   ScrollDirection = 1
+	ScrollDown ScrollDirection = 2
+)
+
+// ActionEvent contains player action information.
+type ActionEvent struct {
+	Scroll ScrollDirection
 }
 
 // PositionEvent contains player position event information.
@@ -33,9 +47,15 @@ func (m *Module) UpdatePlayerDirection(dirEvent DirectionEvent) {
 	m.c.updateDirection(dirEvent)
 }
 
+// UpdatePlayerAction passes any world altering player actions.
+func (m *Module) UpdatePlayerAction(dirEvent ActionEvent) {
+	m.c.updateAction(dirEvent)
+}
+
 type FnModule struct {
 	FnUpdatePlayerPosition  func(posEvent PositionEvent)
 	FnUpdatePlayerDirection func(dirEvent DirectionEvent)
+	FnUpdatePlayerAction    func(actEvent ActionEvent)
 }
 
 func (fn *FnModule) UpdatePlayerPosition(posEvent PositionEvent) {
@@ -47,5 +67,11 @@ func (fn *FnModule) UpdatePlayerPosition(posEvent PositionEvent) {
 func (fn *FnModule) UpdatePlayerDirection(dirEvent DirectionEvent) {
 	if fn.FnUpdatePlayerDirection != nil {
 		fn.FnUpdatePlayerDirection(dirEvent)
+	}
+}
+
+func (fn *FnModule) UpdatePlayerAction(actEvent ActionEvent) {
+	if fn.FnUpdatePlayerAction != nil {
+		fn.FnUpdatePlayerAction(actEvent)
 	}
 }
