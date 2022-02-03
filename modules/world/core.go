@@ -16,7 +16,7 @@ type core struct {
 	generator    Generator
 	settingsRepo settings.Interface
 	cacheMod     cache.Interface
-	chunksLoaded map[chunk.ChunkCoordinate]*chunkState
+	loadedChunks map[chunk.ChunkCoordinate]*chunkState
 	viewState    ViewState
 }
 
@@ -27,7 +27,7 @@ type chunkState struct {
 }
 
 func (c *core) loadChunk(pos chunk.ChunkCoordinate) {
-	if _, ok := c.chunksLoaded[pos]; ok {
+	if _, ok := c.loadedChunks[pos]; ok {
 		panic("tried to load already-loaded chunk")
 	}
 	ch, ok := c.cacheMod.Load(pos)
@@ -35,7 +35,7 @@ func (c *core) loadChunk(pos chunk.ChunkCoordinate) {
 		ch = c.generator.GenerateChunk(pos)
 	}
 	root := c.octreeFromChunk(ch)
-	c.chunksLoaded[pos] = &chunkState{
+	c.loadedChunks[pos] = &chunkState{
 		ch:       ch,
 		modified: false,
 		root:     root,
@@ -44,13 +44,13 @@ func (c *core) loadChunk(pos chunk.ChunkCoordinate) {
 }
 
 func (c *core) unloadChunk(pos chunk.ChunkCoordinate) {
-	if _, ok := c.chunksLoaded[pos]; !ok {
+	if _, ok := c.loadedChunks[pos]; !ok {
 		panic("tried to unload a chunk that is not loaded")
 	}
-	if c.chunksLoaded[pos].modified {
-		c.cacheMod.Save(c.chunksLoaded[pos].ch)
+	if c.loadedChunks[pos].modified {
+		c.cacheMod.Save(c.loadedChunks[pos].ch)
 	}
-	delete(c.chunksLoaded, pos)
+	delete(c.loadedChunks, pos)
 	c.graphicsMod.UnloadChunk(pos)
 }
 
@@ -80,7 +80,7 @@ func (c *core) getSelectedVoxel() (graphics.SelectedVoxel, bool) {
 	var lowestDist float64
 	var closestVox chunk.VoxelCoordinate
 	var vbits uint32
-	for _, ch := range c.chunksLoaded {
+	for _, ch := range c.loadedChunks {
 		// chunks out of viewing frustum cannot be intersected
 		// TODO optimization here
 		// if _, ok := viewableChunks[chPos]; !ok {
@@ -111,38 +111,38 @@ func (c *core) updateView(viewState ViewState) {
 }
 
 func (c *core) quit() {
-	for key := range c.chunksLoaded {
+	for key := range c.loadedChunks {
 		c.unloadChunk(key)
 	}
 	c.cacheMod.Close()
 }
 
 func (c *core) countLoadedChunks() int {
-	return len(c.chunksLoaded)
+	return len(c.loadedChunks)
 }
 
 func (c *core) setBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
 	key := chunk.VoxelCoordToChunkCoord(pos, c.settingsRepo.GetChunkSize())
-	if _, ok := c.chunksLoaded[key]; !ok {
+	if _, ok := c.loadedChunks[key]; !ok {
 		panic("tried to set block in non-loaded chunk")
 	}
 	if btype == chunk.BlockTypeAir {
-		c.chunksLoaded[key].root, _ = c.chunksLoaded[key].root.Remove(pos)
+		c.loadedChunks[key].root, _ = c.loadedChunks[key].root.Remove(pos)
 	} else {
-		c.chunksLoaded[key].root = c.chunksLoaded[key].root.AddLeaf(&pos)
+		c.loadedChunks[key].root = c.loadedChunks[key].root.AddLeaf(&pos)
 	}
 	c.updateView(c.viewState)
-	c.chunksLoaded[key].ch.SetBlockType(pos, btype)
-	c.chunksLoaded[key].modified = true
-	c.graphicsMod.UpdateChunk(c.chunksLoaded[key].ch)
+	c.loadedChunks[key].ch.SetBlockType(pos, btype)
+	c.loadedChunks[key].modified = true
+	c.graphicsMod.UpdateChunk(c.loadedChunks[key].ch)
 }
 
 func (c *core) getBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 	key := chunk.VoxelCoordToChunkCoord(pos, c.settingsRepo.GetChunkSize())
-	if _, ok := c.chunksLoaded[key]; !ok {
+	if _, ok := c.loadedChunks[key]; !ok {
 		panic("tried to get block from non-loaded chunk")
 	}
-	return c.chunksLoaded[key].ch.BlockType(pos)
+	return c.loadedChunks[key].ch.BlockType(pos)
 }
 
 type fRange struct {
