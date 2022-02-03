@@ -667,7 +667,7 @@ func TestSetBlockTypeAddsAdjacenciesAutomatically(t *testing.T) {
 	}
 }
 
-func TestSetBlockTypeRemovesAdjacenciesAutomatically(t *testing.T) {
+func TestSetBlockTypeRemovesAdjacenciesAutomaticallyWithinChunk(t *testing.T) {
 	t.Parallel()
 	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
 	expect := chunk.AdjacentMask(chunk.AdjacentNone)

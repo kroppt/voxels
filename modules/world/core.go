@@ -73,11 +73,9 @@ func (c *core) getUpdatedViewMatrix() mgl.Mat4 {
 	return view
 }
 
-func (c *core) updateView(viewState ViewState) {
-	c.viewState = viewState
-	viewableChunks := c.getViewableChunks()
-	eye := viewState.Pos
-	dir := viewState.Dir.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
+func (c *core) getSelectedVoxel() (graphics.SelectedVoxel, bool) {
+	eye := c.viewState.Pos
+	dir := c.viewState.Dir.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
 	var found bool
 	var lowestDist float64
 	var closestVox chunk.VoxelCoordinate
@@ -102,6 +100,13 @@ func (c *core) updateView(viewState ViewState) {
 		Z:     float32(closestVox.Z),
 		Vbits: float32(vbits),
 	}
+	return sv, found
+}
+
+func (c *core) updateView(viewState ViewState) {
+	c.viewState = viewState
+	viewableChunks := c.getViewableChunks()
+	sv, found := c.getSelectedVoxel()
 	c.graphicsMod.UpdateView(viewableChunks, c.getUpdatedViewMatrix(), sv, found)
 }
 
@@ -121,9 +126,15 @@ func (c *core) setBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
 	if _, ok := c.chunksLoaded[key]; !ok {
 		panic("tried to set block in non-loaded chunk")
 	}
-	// TODO update octree
+	if btype == chunk.BlockTypeAir {
+		c.chunksLoaded[key].root, _ = c.chunksLoaded[key].root.Remove(pos)
+	} else {
+		c.chunksLoaded[key].root = c.chunksLoaded[key].root.AddLeaf(&pos)
+	}
+	c.updateView(c.viewState)
 	c.chunksLoaded[key].ch.SetBlockType(pos, btype)
 	c.chunksLoaded[key].modified = true
+	c.graphicsMod.UpdateChunk(c.chunksLoaded[key].ch)
 }
 
 func (c *core) getBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {

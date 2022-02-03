@@ -12,6 +12,7 @@ type Interface interface {
 	PollEvent() (sdl.Event, bool)
 	LoadChunk(chunk.Chunk)
 	UnloadChunk(chunk.ChunkCoordinate)
+	UpdateChunk(chunk.Chunk)
 	UpdateView(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, SelectedVoxel, bool)
 	DestroyWindow() error
 	Render()
@@ -44,6 +45,11 @@ func (m *Module) LoadChunk(chunk chunk.Chunk) {
 	m.c.loadChunk(chunk)
 }
 
+// UpdateChunk updates a chunk.
+func (m *Module) UpdateChunk(chunk chunk.Chunk) {
+	m.c.updateChunk(chunk)
+}
+
 // UnloadChunk unloads a chunk.
 func (m *Module) UnloadChunk(pos chunk.ChunkCoordinate) {
 	m.c.unloadChunk(pos)
@@ -69,6 +75,7 @@ type FnModule struct {
 	FnShowWindow    func()
 	FnPollEvent     func() (sdl.Event, bool)
 	FnLoadChunk     func(chunk.Chunk)
+	FnUpdateChunk   func(chunk.Chunk)
 	FnUnloadChunk   func(chunk.ChunkCoordinate)
 	FnUpdateView    func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, SelectedVoxel, bool)
 	FnDestroyWindow func() error
@@ -98,6 +105,12 @@ func (fn FnModule) PollEvent() (sdl.Event, bool) {
 func (fn FnModule) LoadChunk(chunk chunk.Chunk) {
 	if fn.FnLoadChunk != nil {
 		fn.FnLoadChunk(chunk)
+	}
+}
+
+func (fn FnModule) UpdateChunk(chunk chunk.Chunk) {
+	if fn.FnUpdateChunk != nil {
+		fn.FnUpdateChunk(chunk)
 	}
 }
 

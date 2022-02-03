@@ -195,6 +195,13 @@ func (c *core) loadChunk(chunk chunk.Chunk) {
 	c.loadedChunks[chunk.Position()] = chunkObj
 }
 
+func (c *core) updateChunk(chunk chunk.Chunk) {
+	if _, ok := c.loadedChunks[chunk.Position()]; !ok {
+		panic("attempting to update a chunk that is not loaded")
+	}
+	c.loadedChunks[chunk.Position()].setData(chunk.GetFlatData())
+}
+
 func (c *core) unloadChunk(key chunk.ChunkCoordinate) {
 	if _, ok := c.loadedChunks[key]; !ok {
 		panic("attempting to unload a chunk that is not loaded")
