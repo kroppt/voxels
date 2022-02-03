@@ -1,9 +1,20 @@
 package chunk
 
+import (
+	"container/list"
+)
+
 type Chunk struct {
 	pos      ChunkCoordinate
 	size     uint32
 	flatData []float32
+}
+
+type PendingAction struct {
+	ChPos  ChunkCoordinate
+	VoxPos VoxelCoordinate
+	Remove bool
+	Face   AdjacentMask
 }
 
 type ChunkCoordinate struct {
@@ -168,11 +179,72 @@ func (c Chunk) voxelPosToDataOffset(vpos VoxelCoordinate) int32 {
 	return (i + j*size + k*size*size) * VertSize
 }
 
-func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) {
+func max(a, b int32) int32 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func min(a, b int32) int32 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) list.List {
 	off := c.voxelPosToDataOffset(vpos)
 	vbits := uint32(c.flatData[off+3])
 	btypeBits := uint32(btype) << 6
 	c.flatData[off+3] = float32(vbits&(^btypeMask) | btypeBits)
+
+	minX := c.pos.X * int32(c.size)
+	maxX := minX + int32(c.size)
+	minY := c.pos.Y * int32(c.size)
+	maxY := minY + int32(c.size)
+	minZ := c.pos.Z * int32(c.size)
+	maxZ := minZ + int32(c.size)
+
+	forward := VoxelCoordinate{vpos.X, vpos.Y, vpos.Z - 1}
+	backward := VoxelCoordinate{vpos.X, vpos.Y, vpos.Z + 1}
+	left := VoxelCoordinate{vpos.X - 1, vpos.Y, vpos.Z}
+	right := VoxelCoordinate{vpos.X + 1, vpos.Y, vpos.Z}
+	down := VoxelCoordinate{vpos.X, vpos.Y - 1, vpos.Z}
+	up := VoxelCoordinate{vpos.X, vpos.Y + 1, vpos.Z}
+
+	pending := list.New()
+	remove := btype == BlockTypeAir
+
+	offsets := []struct {
+		isInChunk bool
+		vc        VoxelCoordinate
+		face      AdjacentMask
+	}{
+		{forward.Z >= minZ, forward, AdjacentBack},
+		{backward.Z < maxZ, backward, AdjacentFront},
+		{left.X >= minX, left, AdjacentRight},
+		{right.X < maxX, right, AdjacentLeft},
+		{down.Y >= minY, down, AdjacentTop},
+		{up.Y < maxY, up, AdjacentBottom},
+	}
+	for _, off := range offsets {
+		if off.isInChunk {
+			if remove {
+				c.RemoveAdjacency(off.vc, off.face)
+			} else {
+				c.AddAdjacency(off.vc, off.face)
+			}
+		} else {
+			pending.PushBack(PendingAction{
+				ChPos:  VoxelCoordToChunkCoord(off.vc, c.size),
+				VoxPos: off.vc,
+				Remove: !remove,
+				Face:   off.face,
+			})
+		}
+	}
+	return *pending
 }
 
 func (c Chunk) BlockType(vpos VoxelCoordinate) BlockType {
@@ -189,6 +261,26 @@ func (c Chunk) SetAdjacency(vpos VoxelCoordinate, adj AdjacentMask) {
 	vbits := uint32(c.flatData[off+3])
 	adjBits := uint32(adj)
 	c.flatData[off+3] = float32(vbits&(^uint32(AdjacentAll)) | adjBits)
+}
+
+func (c Chunk) AddAdjacency(vpos VoxelCoordinate, adj AdjacentMask) {
+	if adj > AdjacentAll {
+		panic("invalid adj mask")
+	}
+	off := c.voxelPosToDataOffset(vpos)
+	vbits := uint32(c.flatData[off+3])
+	adjBits := uint32(adj)
+	c.flatData[off+3] = float32(vbits | adjBits)
+}
+
+func (c Chunk) RemoveAdjacency(vpos VoxelCoordinate, adj AdjacentMask) {
+	if adj > AdjacentAll {
+		panic("invalid adj mask")
+	}
+	off := c.voxelPosToDataOffset(vpos)
+	vbits := uint32(c.flatData[off+3])
+	adjBits := uint32(adj)
+	c.flatData[off+3] = float32(vbits & ^adjBits)
 }
 
 func (c Chunk) Adjacency(vpos VoxelCoordinate) AdjacentMask {

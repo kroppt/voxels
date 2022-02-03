@@ -1,6 +1,7 @@
 package chunk_test
 
 import (
+	"container/list"
 	"fmt"
 	"reflect"
 	"testing"
@@ -558,6 +559,7 @@ func TestForEachVoxelInChunk(t *testing.T) {
 }
 
 func TestGetVbitsForVoxel(t *testing.T) {
+	t.Parallel()
 	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{1, 1, 1}, 3)
 	ch.SetBlockType(chunk.VoxelCoordinate{3, 3, 3}, chunk.BlockTypeCorrupted)
 	ch.SetAdjacency(chunk.VoxelCoordinate{3, 3, 3}, chunk.AdjacentBack|chunk.AdjacentBottom|chunk.AdjacentY)
@@ -566,4 +568,184 @@ func TestGetVbitsForVoxel(t *testing.T) {
 	if actualVbits != expectedVbits {
 		t.Fatalf("expected vbits %v but got %v", expectedVbits, actualVbits)
 	}
+}
+
+func TestAddAdjacency(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+	ch.SetAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentFront|chunk.AdjacentBack|chunk.AdjacentRight)
+	ch.AddAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentLeft)
+	expected := chunk.AdjacentFront | chunk.AdjacentBack | chunk.AdjacentRight | chunk.AdjacentLeft
+	actual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 1})
+	if actual != expected {
+		t.Fatalf("expected to get adjacency %v but got %v", expected, actual)
+	}
+}
+
+func TestAddSameAdjacencyNoChange(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+	ch.SetAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentFront)
+	ch.AddAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentFront)
+	expected := chunk.AdjacentFront
+	actual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 1})
+	if actual != expected {
+		t.Fatalf("expected to get adjacency %v but got %v", expected, actual)
+	}
+}
+
+func TestAddAdjacencyFromNone(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+	ch.AddAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentBottom)
+	expected := chunk.AdjacentBottom
+	actual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 1})
+	if actual != expected {
+		t.Fatalf("expected to get adjacency %v but got %v", expected, actual)
+	}
+}
+
+func TestRemoveAdjacency(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+	ch.SetAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentFront|chunk.AdjacentBack|chunk.AdjacentRight)
+	ch.RemoveAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentFront)
+	expected := chunk.AdjacentBack | chunk.AdjacentRight
+	actual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 1})
+	if actual != expected {
+		t.Fatalf("expected to get adjacency %v but got %v", expected, actual)
+	}
+}
+
+func TestRemoveAdjacencyFromNoneNoChange(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+	ch.RemoveAdjacency(chunk.VoxelCoordinate{1, 1, 1}, chunk.AdjacentFront)
+	expected := chunk.AdjacentMask(chunk.AdjacentNone)
+	actual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 1})
+	if actual != expected {
+		t.Fatalf("expected to get adjacency %v but got %v", expected, actual)
+	}
+}
+
+func TestSetBlockTypeAddsAdjacenciesAutomatically(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+	additionalChanges := ch.SetBlockType(chunk.VoxelCoordinate{1, 1, 1}, chunk.BlockTypeDirt)
+	if additionalChanges.Len() != 0 {
+		t.Fatal("received pending actions when there should be none")
+	}
+	frontExpect := chunk.AdjacentBack
+	frontActual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 0})
+	backExpect := chunk.AdjacentFront
+	backActual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 2})
+	rightExpect := chunk.AdjacentLeft
+	rightActual := ch.Adjacency(chunk.VoxelCoordinate{2, 1, 1})
+	leftExpect := chunk.AdjacentRight
+	leftActual := ch.Adjacency(chunk.VoxelCoordinate{0, 1, 1})
+	upExpect := chunk.AdjacentBottom
+	upActual := ch.Adjacency(chunk.VoxelCoordinate{1, 2, 1})
+	downExpect := chunk.AdjacentTop
+	downActual := ch.Adjacency(chunk.VoxelCoordinate{1, 0, 1})
+	if frontActual != frontExpect {
+		t.Fatalf("expected front adjacency %v but got %v", frontExpect, frontActual)
+	}
+	if backActual != backExpect {
+		t.Fatalf("expected back adjacency %v but got %v", backExpect, backActual)
+	}
+	if rightActual != rightExpect {
+		t.Fatalf("expected right adjacency %v but got %v", rightExpect, rightActual)
+	}
+	if leftActual != leftExpect {
+		t.Fatalf("expected left adjacency %v but got %v", leftExpect, leftActual)
+	}
+	if upActual != upExpect {
+		t.Fatalf("expected up adjacency %v but got %v", upExpect, upActual)
+	}
+	if downActual != downExpect {
+		t.Fatalf("expected down adjacency %v but got %v", downExpect, downActual)
+	}
+}
+
+func TestSetBlockTypeRemovesAdjacenciesAutomatically(t *testing.T) {
+	t.Parallel()
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+	expect := chunk.AdjacentMask(chunk.AdjacentNone)
+	ch.SetAdjacency(chunk.VoxelCoordinate{1, 1, 0}, chunk.AdjacentBack)
+	ch.SetAdjacency(chunk.VoxelCoordinate{1, 1, 2}, chunk.AdjacentFront)
+	ch.SetAdjacency(chunk.VoxelCoordinate{2, 1, 1}, chunk.AdjacentLeft)
+	ch.SetAdjacency(chunk.VoxelCoordinate{0, 1, 1}, chunk.AdjacentRight)
+	ch.SetAdjacency(chunk.VoxelCoordinate{1, 2, 1}, chunk.AdjacentBottom)
+	ch.SetAdjacency(chunk.VoxelCoordinate{1, 0, 1}, chunk.AdjacentTop)
+
+	additionalChanges := ch.SetBlockType(chunk.VoxelCoordinate{1, 1, 1}, chunk.BlockTypeAir)
+	if additionalChanges.Len() != 0 {
+		t.Fatal("received pending actions when there should be none")
+	}
+
+	frontActual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 0})
+	backActual := ch.Adjacency(chunk.VoxelCoordinate{1, 1, 2})
+	rightActual := ch.Adjacency(chunk.VoxelCoordinate{2, 1, 1})
+	leftActual := ch.Adjacency(chunk.VoxelCoordinate{0, 1, 1})
+	upActual := ch.Adjacency(chunk.VoxelCoordinate{1, 2, 1})
+	downActual := ch.Adjacency(chunk.VoxelCoordinate{1, 0, 1})
+
+	if frontActual != expect {
+		t.Fatalf("expected front adjacency %v but got %v", expect, frontActual)
+	}
+	if backActual != expect {
+		t.Fatalf("expected back adjacency %v but got %v", expect, backActual)
+	}
+	if rightActual != expect {
+		t.Fatalf("expected right adjacency %v but got %v", expect, rightActual)
+	}
+	if leftActual != expect {
+		t.Fatalf("expected left adjacency %v but got %v", expect, leftActual)
+	}
+	if upActual != expect {
+		t.Fatalf("expected up adjacency %v but got %v", expect, upActual)
+	}
+	if downActual != expect {
+		t.Fatalf("expected down adjacency %v but got %v", expect, downActual)
+	}
+}
+
+func TestRemoveBlockAtChunkBoundaries(t *testing.T) {
+	t.Parallel()
+	t.Run("simple removal one chunk affected", func(t *testing.T) {
+		ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
+		expected := list.New()
+		expected.PushBack(chunk.PendingAction{
+			ChPos:  chunk.ChunkCoordinate{0, 0, -1},
+			VoxPos: chunk.VoxelCoordinate{1, 1, -1},
+			Remove: false,
+			Face:   chunk.AdjacentBack,
+		})
+		actual := ch.SetBlockType(chunk.VoxelCoordinate{1, 1, 0}, chunk.BlockTypeAir)
+
+		if !reflect.DeepEqual(*expected, actual) {
+			t.Fatalf("received wrong pending actions")
+		}
+	})
+	t.Run("extreme edge case", func(t *testing.T) {
+		ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 1)
+		expected := list.New()
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 0, -1},
+			VoxPos: chunk.VoxelCoordinate{0, 0, -1}, Remove: false, Face: chunk.AdjacentBack})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 0, 1},
+			VoxPos: chunk.VoxelCoordinate{0, 0, 1}, Remove: false, Face: chunk.AdjacentFront})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{-1, 0, 0},
+			VoxPos: chunk.VoxelCoordinate{-1, 0, 0}, Remove: false, Face: chunk.AdjacentRight})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{1, 0, 0},
+			VoxPos: chunk.VoxelCoordinate{1, 0, 0}, Remove: false, Face: chunk.AdjacentLeft})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, -1, 0},
+			VoxPos: chunk.VoxelCoordinate{0, -1, 0}, Remove: false, Face: chunk.AdjacentTop})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 1, 0},
+			VoxPos: chunk.VoxelCoordinate{0, 1, 0}, Remove: false, Face: chunk.AdjacentBottom})
+		actual := ch.SetBlockType(chunk.VoxelCoordinate{0, 0, 0}, chunk.BlockTypeAir)
+
+		if !reflect.DeepEqual(*expected, actual) {
+			t.Fatalf("received wrong pending actions")
+		}
+	})
 }
