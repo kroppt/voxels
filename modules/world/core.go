@@ -12,12 +12,14 @@ import (
 )
 
 type core struct {
-	graphicsMod  graphics.Interface
-	generator    Generator
-	settingsRepo settings.Interface
-	cacheMod     cache.Interface
-	loadedChunks map[chunk.ChunkCoordinate]*chunkState
-	viewState    ViewState
+	graphicsMod   graphics.Interface
+	generator     Generator
+	settingsRepo  settings.Interface
+	cacheMod      cache.Interface
+	loadedChunks  map[chunk.ChunkCoordinate]*chunkState
+	viewState     ViewState
+	selection     bool
+	selectedVoxel graphics.SelectedVoxel
 }
 
 type chunkState struct {
@@ -106,8 +108,8 @@ func (c *core) getSelectedVoxel() (graphics.SelectedVoxel, bool) {
 func (c *core) updateView(viewState ViewState) {
 	c.viewState = viewState
 	viewableChunks := c.getViewableChunks()
-	sv, found := c.getSelectedVoxel()
-	c.graphicsMod.UpdateView(viewableChunks, c.getUpdatedViewMatrix(), sv, found)
+	c.selectedVoxel, c.selection = c.getSelectedVoxel()
+	c.graphicsMod.UpdateView(viewableChunks, c.getUpdatedViewMatrix(), c.selectedVoxel, c.selection)
 }
 
 func (c *core) quit() {
@@ -131,10 +133,10 @@ func (c *core) setBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
 	} else {
 		c.loadedChunks[key].root = c.loadedChunks[key].root.AddLeaf(&pos)
 	}
-	c.updateView(c.viewState)
 	c.loadedChunks[key].ch.SetBlockType(pos, btype)
 	c.loadedChunks[key].modified = true
 	c.graphicsMod.UpdateChunk(c.loadedChunks[key].ch)
+	c.updateView(c.viewState)
 }
 
 func (c *core) getBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
@@ -342,4 +344,16 @@ func (c *core) getViewableChunks() map[chunk.ChunkCoordinate]struct{} {
 	})
 
 	return viewChunks
+}
+
+func (c *core) removeSelection() bool {
+	if c.selection {
+		c.setBlockType(chunk.VoxelCoordinate{
+			X: int32(c.selectedVoxel.X),
+			Y: int32(c.selectedVoxel.Y),
+			Z: int32(c.selectedVoxel.Z),
+		}, chunk.BlockTypeAir)
+		return true
+	}
+	return false
 }

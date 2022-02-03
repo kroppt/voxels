@@ -366,6 +366,42 @@ func TestViewUpdateAfterUnloadingChunks(t *testing.T) {
 	}
 }
 
+func TestPlayerScrollDownTriggersRemoval(t *testing.T) {
+	actual := false
+	expected := true
+	worldMod := world.FnModule{
+		FnRemoveSelection: func() bool {
+			actual = true
+			return true
+		},
+	}
+	playerMod := player.New(worldMod, settings.FnRepository{})
+	playerMod.UpdatePlayerAction(player.ActionEvent{
+		Scroll: player.ScrollDown,
+	})
+	if actual != expected {
+		t.Fatal("expected scroll down to trigger block removal")
+	}
+}
+
+func TestPlayerScrollUpDoesNotTriggerRemoval(t *testing.T) {
+	actual := false
+	expected := false
+	worldMod := world.FnModule{
+		FnRemoveSelection: func() bool {
+			actual = true
+			return true
+		},
+	}
+	playerMod := player.New(worldMod, settings.FnRepository{})
+	playerMod.UpdatePlayerAction(player.ActionEvent{
+		Scroll: player.ScrollUp,
+	})
+	if actual != expected {
+		t.Fatal("expected scroll up to not trigger block removal")
+	}
+}
+
 func withinError(x, y float64, diff float64) bool {
 	if x+diff > y && x-diff < y {
 		return true

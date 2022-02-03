@@ -14,6 +14,7 @@ type Interface interface {
 	CountLoadedChunks() int
 	SetBlockType(chunk.VoxelCoordinate, chunk.BlockType)
 	GetBlockType(chunk.VoxelCoordinate) chunk.BlockType
+	RemoveSelection() bool
 }
 
 type ViewState struct {
@@ -49,6 +50,10 @@ func (m *Module) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 	return m.c.getBlockType(pos)
 }
 
+func (m *Module) RemoveSelection() bool {
+	return m.c.removeSelection()
+}
+
 type FnModule struct {
 	FnLoadChunk         func(chunk.ChunkCoordinate)
 	FnUnloadChunk       func(chunk.ChunkCoordinate)
@@ -57,6 +62,7 @@ type FnModule struct {
 	FnCountLoadedChunks func() int
 	FnSetBlockType      func(chunk.VoxelCoordinate, chunk.BlockType)
 	FnGetBlockType      func(chunk.VoxelCoordinate) chunk.BlockType
+	FnRemoveSelection   func() bool
 }
 
 func (fn FnModule) LoadChunk(pos chunk.ChunkCoordinate) {
@@ -101,4 +107,11 @@ func (fn FnModule) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 		return fn.FnGetBlockType(pos)
 	}
 	return chunk.BlockTypeAir
+}
+
+func (fn FnModule) RemoveSelection() bool {
+	if fn.FnRemoveSelection != nil {
+		return fn.FnRemoveSelection()
+	}
+	return false
 }

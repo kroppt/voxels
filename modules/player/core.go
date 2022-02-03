@@ -140,5 +140,7 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 }
 
 func (c *core) updateAction(actEvent ActionEvent) {
-
+	if actEvent.Scroll == ScrollDown {
+		c.worldMod.RemoveSelection()
+	}
 }

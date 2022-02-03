@@ -658,47 +658,6 @@ func TestDeselectAfterMovingAway(t *testing.T) {
 	}
 }
 
-func TestSelectAfterRemovingSelection(t *testing.T) {
-	t.Parallel()
-	expected := graphics.SelectedVoxel{X: 3, Y: 3, Z: 2, Vbits: float32(chunk.BlockTypeDirt<<6 | chunk.BlockType(chunk.AdjacentBack))}
-	actualSelected := false
-	var actualSelectedVoxel graphics.SelectedVoxel
-	graphicsMod := &graphics.FnModule{
-		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, selectedVoxel graphics.SelectedVoxel, selected bool) {
-			actualSelected = selected
-			actualSelectedVoxel = selectedVoxel
-		},
-	}
-	settingsRepo := settings.FnRepository{
-		FnGetChunkSize: func() uint32 {
-			return 5
-		},
-	}
-	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
-			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
-			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
-				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3}, chunk.BlockTypeDirt)
-				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 2}, chunk.BlockTypeDirt)
-			}
-			return newChunk
-		},
-	}
-	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
-	worldMod.UpdateView(world.ViewState{
-		Pos: [3]float64{3.5, 3.5, 4.5},
-		Dir: mgl.QuatIdent(),
-	})
-	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3}, chunk.BlockTypeAir)
-	if actualSelected != true {
-		t.Fatal("no voxel was selected but one should have been")
-	}
-	if actualSelectedVoxel != expected {
-		t.Fatalf("expected selected voxel to be %v but got %v", expected, actualSelectedVoxel)
-	}
-}
-
 func TestGraphicsReceivesChunkUpdateOnWorldModification(t *testing.T) {
 	t.Parallel()
 	var actual chunk.Chunk
@@ -733,5 +692,115 @@ func TestGraphicsReceivesChunkUpdateOnWorldModification(t *testing.T) {
 
 	if !reflect.DeepEqual(actual, expected) {
 		t.Fatalf("expected graphics to receive chunk update of %v but got %v", expected, actual)
+	}
+}
+
+func TestRemoveSelection(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
+				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2}, chunk.BlockTypeStone)
+			}
+			return newChunk
+		},
+	}
+	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+	worldMod.UpdateView(world.ViewState{
+		Pos: [3]float64{2.5, 2.5, 3.5},
+		Dir: mgl.QuatIdent(),
+	})
+	removed := worldMod.RemoveSelection()
+	if !removed {
+		t.Fatal("expected there to be a selection removal, but there was not")
+	}
+	expected := chunk.BlockTypeAir
+	actual := worldMod.GetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2})
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected removed block to be air, but was type # = %v", actual)
+	}
+}
+
+func TestRemoveSelectionWithoutSelection(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
+				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2}, chunk.BlockTypeStone)
+			}
+			return newChunk
+		},
+	}
+	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+	worldMod.UpdateView(world.ViewState{
+		Pos: [3]float64{2.5, 2.5, 1.5},
+		Dir: mgl.QuatIdent(),
+	})
+	removed := worldMod.RemoveSelection()
+	if removed {
+		t.Fatal("expected there to be no selection removal, but there was")
+	}
+	expected := chunk.BlockTypeStone
+	actual := worldMod.GetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2})
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Fatalf("expected non-selected block behind player to be unaffected")
+	}
+}
+
+func TestSelectAfterRemovingSelection(t *testing.T) {
+	t.Parallel()
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
+				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 3, Z: 2}, chunk.BlockTypeCorrupted)
+				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2}, chunk.BlockTypeStone)
+				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 3}, chunk.BlockTypeGrass)
+			}
+			return newChunk
+		},
+	}
+	expected := graphics.SelectedVoxel{
+		X:     2,
+		Y:     2,
+		Z:     2,
+		Vbits: float32(uint32(chunk.BlockTypeStone<<6) | uint32(chunk.AdjacentTop)),
+	}
+	var actual graphics.SelectedVoxel
+	graphicsMod := &graphics.FnModule{
+		FnUpdateView: func(_ map[chunk.ChunkCoordinate]struct{}, _ mgl.Mat4, sv graphics.SelectedVoxel, _ bool) {
+			actual = sv
+		},
+	}
+	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+	worldMod.UpdateView(world.ViewState{
+		Pos: [3]float64{2.5, 2.5, 4.5},
+		Dir: mgl.QuatIdent(),
+	})
+	worldMod.RemoveSelection()
+	if actual != expected {
+		t.Fatalf("expected new selected voxel to be %v but got %v", expected, actual)
 	}
 }
