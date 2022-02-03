@@ -41,7 +41,7 @@ const (
 	BlockTypeStone
 	BlockTypeLight
 )
-const LargestVbits = uint32(BlockTypeDirt)<<6 | uint32(AdjacentAll)
+const LargestVbits = uint32(BlockTypeLight)<<6 | uint32(AdjacentAll)
 
 const VertSize = 5
 const BytesPerElement = 4
