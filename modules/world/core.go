@@ -21,7 +21,7 @@ type core struct {
 	pendingActions map[chunk.ChunkCoordinate]*list.List
 	viewState      ViewState
 	selection      bool
-	selectedVoxel  graphics.SelectedVoxel
+	selectedVoxel  chunk.VoxelCoordinate
 }
 
 type chunkState struct {
@@ -131,13 +131,12 @@ func (c *core) getUpdatedViewMatrix() mgl.Mat4 {
 	return view
 }
 
-func (c *core) getSelectedVoxel() (graphics.SelectedVoxel, bool) {
+func (c *core) getSelectedVoxel() (chunk.VoxelCoordinate, bool) {
 	eye := c.viewState.Pos
 	dir := c.viewState.Dir.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
 	var found bool
 	var lowestDist float64
 	var closestVox chunk.VoxelCoordinate
-	var vbits uint32
 	for _, ch := range c.loadedChunks {
 		// chunks out of viewing frustum cannot be intersected
 		// TODO optimization here
@@ -148,17 +147,10 @@ func (c *core) getSelectedVoxel() (graphics.SelectedVoxel, bool) {
 		if ok && (dist < lowestDist || !found) {
 			lowestDist = dist
 			closestVox = vc
-			vbits = ch.ch.Vbits(vc)
 			found = true
 		}
 	}
-	sv := graphics.SelectedVoxel{
-		X:     float32(closestVox.X),
-		Y:     float32(closestVox.Y),
-		Z:     float32(closestVox.Z),
-		Vbits: float32(vbits),
-	}
-	return sv, found
+	return closestVox, found
 }
 
 func (c *core) updateView(viewState ViewState) {

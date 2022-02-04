@@ -29,12 +29,12 @@ func newChunkObject() (*glObject, error) {
 
 // newFrameObject returns a renderable frame.
 func newFrameObject() (*glObject, error) {
-	prog, err := getProgram(vertColShader, fragFrameShader, geoFrameShader)
+	prog, err := getProgram(vertFrameShader, fragFrameShader, geoFrameShader)
 
 	if err != nil {
 		return nil, err
 	}
-	vao := gfx.NewVAO(gl.POINTS, []int32{4, 1})
+	vao := gfx.NewVAO(gl.POINTS, []int32{3})
 
 	return &glObject{
 		program: prog,

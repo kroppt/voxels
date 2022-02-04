@@ -19,7 +19,7 @@ type core struct {
 	ubo            *gfx.BufferObject
 	textureMap     *gfx.CubeMap
 	crosshair      *glObject
-	selectedVoxel  SelectedVoxel
+	selectedVoxel  chunk.VoxelCoordinate
 	selected       bool
 	selectionFrame *glObject
 	window         *sdl.Window
@@ -159,13 +159,17 @@ func (c *core) getUpdatedProjMatrix() mgl.Mat4 {
 	return mgl.Perspective(fovRad, aspect, near, far)
 }
 
-func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4, selectedVoxel SelectedVoxel, selected bool) {
+func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
 	c.viewableChunks = viewableChunks
 
 	somethingToSomethingElse := selected && c.selected && selectedVoxel != c.selectedVoxel
 	nothingToSomething := selected && !c.selected
 	if somethingToSomethingElse || nothingToSomething {
-		c.selectionFrame.setData([]float32{selectedVoxel.X, selectedVoxel.Y, selectedVoxel.Z, selectedVoxel.Vbits, 0})
+		c.selectionFrame.setData([]float32{
+			float32(selectedVoxel.X),
+			float32(selectedVoxel.Y),
+			float32(selectedVoxel.Z),
+		})
 		c.selectedVoxel = selectedVoxel
 	}
 	c.selected = selected

@@ -50,6 +50,17 @@ const vertColShader = `
 	}
 `
 
+const vertFrameShader = `
+	#version 420 core
+
+	layout (location = 0) in vec3 pos;
+
+	void main()
+	{
+		gl_Position = vec4(pos, 1.0f);
+	}
+`
+
 const geoColShader = `
 	#version 420 core
 
@@ -189,11 +200,6 @@ const geoFrameShader = `
 		dmat4 projection;
 	} cam;
 
-	in Vertex {
-		float vbits;
-		float lighting;
-	} IN[];
-
 	out Vertex {
 		vec4 col;
 	} OUT;
@@ -216,48 +222,18 @@ const geoFrameShader = `
 	void main() {
 		vec4 origin = gl_in[0].gl_Position;
 
-		// bottom 6 bits are for adjacency
-		int adjaBits = 6;
-		// bit order = right left top bottom backward forward
-		int rightmask = 0x20;
-		int leftmask = 0x10;
-		int topmask = 0x08;
-		int bottommask = 0x04;
-		int backwardmask = 0x02;
-		int forwardmask = 0x01;
-		int bits = int(IN[0].vbits);
-
-		// top 26 bits are for block types (for now)
-		int blockmask = 0xFFFFFFC0;
-		int blockType = (blockmask & bits) >> adjaBits;
-		if (blockType == 0) {
-			return; // render nothing if air block
-		}
-
 		vec4 dx = vec4(1.0, 0.0, 0.0, 0.0);
 		vec4 dy = vec4(0.0, 1.0, 0.0, 0.0);
 		vec4 dz = vec4(0.0, 0.0, 1.0, 0.0);
 		vec4 p1 = origin;
 		vec4 p2 = p1 + dx + dy + dz;
 
-		if ((bits & backwardmask) - backwardmask != 0) {
-			createQuad(p2, -dx, -dy); // backward
-		}
-		if ((bits & forwardmask) - forwardmask != 0) {
-			createQuad(p1, dy, dx); // forward
-		}
-		if ((bits & topmask) - topmask != 0) {
-			createQuad(p2, -dz, -dx); // top
-		}
-		if ((bits & bottommask) - bottommask != 0) {
-			createQuad(p1, dx, dz); // bottom
-		}
-		if ((bits & rightmask) - rightmask != 0) {
-			createQuad(p2, -dy, -dz); // right
-		}
-		if ((bits & leftmask) - leftmask != 0) {
-			createQuad(p1, dz, dy); // left
-		}
+		createQuad(p2, -dx, -dy); // backward
+		createQuad(p1, dy, dx); // forward
+		createQuad(p2, -dz, -dx); // top
+		createQuad(p1, dx, dz); // bottom
+		createQuad(p2, -dy, -dz); // right
+		createQuad(p1, dz, dy); // left
 	}
 `
 
