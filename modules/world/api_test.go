@@ -1,6 +1,7 @@
 package world_test
 
 import (
+	"container/list"
 	"reflect"
 	"testing"
 
@@ -110,7 +111,7 @@ func TestWorldUnloadChunkPassesToGraphics(t *testing.T) {
 			actual = pos
 		},
 	}
-	worldMod := world.New(graphicsMod, &world.FnGenerator{}, &settings.Repository{}, &cache.FnModule{})
+	worldMod := world.New(graphicsMod, &world.FnGenerator{}, &settings.FnRepository{}, &cache.FnModule{})
 	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 1, Y: 2, Z: 3})
 	worldMod.UnloadChunk(chunk.ChunkCoordinate{X: 1, Y: 2, Z: 3})
 	expected := chunk.ChunkCoordinate{X: 1, Y: 2, Z: 3}
@@ -127,7 +128,7 @@ func TestWorldGeneration(t *testing.T) {
 		},
 	}
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{
@@ -136,7 +137,7 @@ func TestWorldGeneration(t *testing.T) {
 					Z: 0,
 				}, chunk.BlockTypeDirt)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	expected := chunk.BlockTypeDirt
@@ -550,12 +551,12 @@ func TestWorldSendsSelectedVoxel(t *testing.T) {
 		},
 	}
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3}, chunk.BlockTypeDirt)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
@@ -592,7 +593,7 @@ func TestWorldSendsSelectedVoxelFromFarAwayChunk(t *testing.T) {
 		},
 	}
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 2, Z: 4}, chunk.BlockTypeDirt)
@@ -605,7 +606,7 @@ func TestWorldSendsSelectedVoxelFromFarAwayChunk(t *testing.T) {
 				newChunk.SetAdjacency(chunk.VoxelCoordinate{X: 3, Y: 3, Z: -1}, chunk.AdjacentFront)
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 3, Y: 3, Z: -4}, chunk.BlockTypeDirt)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
@@ -640,12 +641,12 @@ func TestDeselectAfterMovingAway(t *testing.T) {
 		},
 	}
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: -1}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}, chunk.BlockTypeDirt)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
@@ -677,13 +678,13 @@ func TestGraphicsReceivesChunkUpdateOnWorldModification(t *testing.T) {
 	expected.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 3}, chunk.BlockTypeStone)
 
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 2, Z: 3}, chunk.BlockTypeDirt)
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 3}, chunk.BlockTypeGrass)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
@@ -703,12 +704,12 @@ func TestRemoveSelection(t *testing.T) {
 		},
 	}
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2}, chunk.BlockTypeStone)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{})
@@ -737,12 +738,12 @@ func TestRemoveSelectionWithoutSelection(t *testing.T) {
 		},
 	}
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2}, chunk.BlockTypeStone)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{})
@@ -771,14 +772,14 @@ func TestSelectAfterRemovingSelection(t *testing.T) {
 		},
 	}
 	testGen := &world.FnGenerator{
-		FnGenerateChunk: func(key chunk.ChunkCoordinate) chunk.Chunk {
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
 			if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 3, Z: 2}, chunk.BlockTypeCorrupted)
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2}, chunk.BlockTypeStone)
 				newChunk.SetBlockType(chunk.VoxelCoordinate{X: 2, Y: 2, Z: 3}, chunk.BlockTypeGrass)
 			}
-			return newChunk
+			return newChunk, list.New()
 		},
 	}
 	expected := graphics.SelectedVoxel{
@@ -804,3 +805,189 @@ func TestSelectAfterRemovingSelection(t *testing.T) {
 		t.Fatalf("expected new selected voxel to be %v but got %v", expected, actual)
 	}
 }
+
+func TestSetAdjacenciesAcrossChunksAutomatically(t *testing.T) {
+	chunkPos1 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
+	chunkPos2 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: -1}
+	var actual1 []float32
+	var actual2 []float32
+	graphicsMod := graphics.FnModule{
+		FnLoadChunk: func(ch chunk.Chunk) {
+			if ch.Position() == chunkPos1 {
+				actual1 = ch.GetFlatData()
+			} else if ch.Position() == chunkPos2 {
+				actual2 = ch.GetFlatData()
+			}
+		},
+	}
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	chunk1 := chunk.NewChunkEmpty(chunkPos1, settingsRepo.FnGetChunkSize())
+	chunk1.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeCorrupted)
+	chunk1.SetAdjacency(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.AdjacentFront)
+	expected1 := chunk1.GetFlatData()
+	chunk2 := chunk.NewChunkEmpty(chunkPos2, settingsRepo.FnGetChunkSize())
+	chunk2.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}, chunk.BlockTypeCorrupted)
+	chunk2.SetAdjacency(chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}, chunk.AdjacentBack)
+	expected2 := chunk2.GetFlatData()
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			pending := list.New()
+			if key == chunkPos1 {
+				pending.PushBackList(newChunk.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeCorrupted))
+			} else if key == chunkPos2 {
+				pending.PushBackList(newChunk.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}, chunk.BlockTypeCorrupted))
+			}
+			return newChunk, pending
+		},
+	}
+	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
+	worldMod.LoadChunk(chunkPos1)
+	worldMod.LoadChunk(chunkPos2)
+	if !reflect.DeepEqual(actual1, expected1) {
+		t.Fatalf("expected chunk %v to have flat data %v but had %v", chunkPos1, expected1, actual1)
+	}
+	if !reflect.DeepEqual(actual2, expected2) {
+		t.Fatalf("expected chunk %v to have flat data %v but had %v", chunkPos2, expected2, actual2)
+	}
+}
+
+func TestPendingActionsAlsoUpdatesGraphics(t *testing.T) {
+	chunkPos1 := chunk.ChunkCoordinate{X: 1, Y: 0, Z: 0}
+	chunkPos2 := chunk.ChunkCoordinate{X: 1, Y: 0, Z: -1}
+	var actual []float32
+	graphicsMod := graphics.FnModule{
+		FnLoadChunk: func(ch chunk.Chunk) {
+			if ch.Position() == chunkPos1 {
+				actual = ch.GetFlatData()
+			}
+		},
+	}
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	chunk1 := chunk.NewChunkEmpty(chunkPos1, settingsRepo.FnGetChunkSize())
+	chunk1.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0}, chunk.BlockTypeCorrupted)
+	expected1 := chunk1.GetFlatData()
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			pending := list.New()
+			if key == chunkPos1 {
+				pending.PushBackList(newChunk.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0}, chunk.BlockTypeCorrupted))
+			} else if key == chunkPos2 {
+				pending.PushBackList(newChunk.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 0, Z: -1}, chunk.BlockTypeCorrupted))
+			}
+			return newChunk, pending
+		},
+	}
+	worldMod := world.New(graphicsMod, testGen, settingsRepo, &cache.FnModule{})
+	worldMod.UpdateView(world.ViewState{
+		Pos: [3]float64{1.5, 0.5, -2.5},
+		Dir: mgl.Quat{
+			W: 0,
+			V: [3]float64{0, -1, 0},
+		},
+	})
+	worldMod.LoadChunk(chunkPos1)
+	worldMod.LoadChunk(chunkPos2)
+	worldMod.RemoveSelection()
+
+	if !reflect.DeepEqual(actual, expected1) {
+		t.Fatalf("expected chunk %v to have flat data %v but had %v", chunkPos1, expected1, actual)
+	}
+}
+
+func TestUpdateViewAfterUnload(t *testing.T) {
+	chunkPos1 := chunk.ChunkCoordinate{X: 1, Y: 0, Z: 0}
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			pending := list.New()
+			if key == chunkPos1 {
+				pending.PushBackList(newChunk.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0}, chunk.BlockTypeCorrupted))
+			}
+			return newChunk, pending
+		},
+	}
+	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{})
+	worldMod.LoadChunk(chunkPos1)
+	worldMod.UpdateView(world.ViewState{
+		Pos: [3]float64{1.5, 0.5, -2.5},
+		Dir: mgl.Quat{
+			W: 0,
+			V: [3]float64{0, -1, 0},
+		},
+	})
+	worldMod.UnloadChunk(chunkPos1)
+	worldMod.RemoveSelection()
+}
+
+func TestGraphicsExpectedLoadsAndUpdates(t *testing.T) {
+	expectedLoads := 1
+	expectedUpdates := 1
+	actualLoads := 0
+	actualUpdates := 0
+	pos := chunk.ChunkCoordinate{X: 1, Y: 0, Z: 0}
+	pos2 := chunk.ChunkCoordinate{X: 1, Y: 0, Z: -1}
+	graphicMod := graphics.FnModule{
+		FnLoadChunk: func(c chunk.Chunk) {
+			if c.Position() == pos {
+				actualLoads++
+			}
+		},
+		FnUpdateChunk: func(c chunk.Chunk) {
+			if c.Position() == pos {
+				actualUpdates++
+			}
+		},
+	}
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(key chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			newChunk := chunk.NewChunkEmpty(key, settingsRepo.GetChunkSize())
+			pending := list.New()
+			if key == pos {
+				pending.PushBackList(newChunk.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0}, chunk.BlockTypeCorrupted))
+			} else if key == pos2 {
+				pending.PushBackList(newChunk.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 0, Z: -1}, chunk.BlockTypeCorrupted))
+			}
+			return newChunk, pending
+		},
+	}
+	worldMod := world.New(graphicMod, testGen, settingsRepo, &cache.FnModule{})
+	worldMod.UpdateView(world.ViewState{
+		Pos: [3]float64{1.5, 0.5, -2.5},
+		Dir: mgl.Quat{
+			W: 0,
+			V: [3]float64{0, -1, 0},
+		},
+	})
+	worldMod.LoadChunk(pos)
+	worldMod.LoadChunk(pos2)
+
+	if expectedLoads != actualLoads {
+		t.Fatalf("expected %v loads for %v but got %v loads", expectedLoads, pos, actualLoads)
+	}
+	if expectedUpdates != actualUpdates {
+		t.Fatalf("expected %v updates for %v but got %v updates", expectedUpdates, pos, actualUpdates)
+	}
+}
+
+// TODO test that world saves pending actions on quit by loading each chunk with pending actions,
+// applying the actions, and then saving those chunks

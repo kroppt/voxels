@@ -1,6 +1,7 @@
 package world
 
 import (
+	"container/list"
 	"math"
 
 	"github.com/kroppt/voxels/chunk"
@@ -8,18 +9,18 @@ import (
 )
 
 type Generator interface {
-	GenerateChunk(chunk.ChunkCoordinate) chunk.Chunk
+	GenerateChunk(chunk.ChunkCoordinate) (chunk.Chunk, *list.List)
 }
 
 type FnGenerator struct {
-	FnGenerateChunk func(chunk.ChunkCoordinate) chunk.Chunk
+	FnGenerateChunk func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List)
 }
 
-func (fn *FnGenerator) GenerateChunk(pos chunk.ChunkCoordinate) chunk.Chunk {
+func (fn *FnGenerator) GenerateChunk(pos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 	if fn.FnGenerateChunk != nil {
 		return fn.FnGenerateChunk(pos)
 	}
-	return chunk.NewChunkEmpty(pos, 1)
+	return chunk.NewChunkEmpty(pos, 1), list.New()
 }
 
 type TestGenerator struct {
@@ -35,16 +36,18 @@ func NewTestGenerator(settingsRepo settings.Interface) *TestGenerator {
 	}
 }
 
-func (gen *TestGenerator) GenerateChunk(key chunk.ChunkCoordinate) chunk.Chunk {
+func (gen *TestGenerator) GenerateChunk(key chunk.ChunkCoordinate) (chunk.Chunk, list.List) {
 	newChunk := chunk.NewChunkEmpty(key, gen.settingsRepo.GetChunkSize())
+	pending := list.New()
 	if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
-		newChunk.SetBlockType(chunk.VoxelCoordinate{
+		list := newChunk.SetBlockType(chunk.VoxelCoordinate{
 			X: 0,
 			Y: 0,
 			Z: 0,
 		}, chunk.BlockTypeLabeled)
+		pending.PushBackList(list)
 	}
-	return newChunk
+	return newChunk, *pending
 }
 
 type FlatWorldGenerator struct {
@@ -65,19 +68,21 @@ type genVoxel struct {
 	bType   chunk.BlockType
 }
 
-func (gen *FlatWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) chunk.Chunk {
+func (gen *FlatWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 	size := int32(gen.settingsRepo.GetChunkSize())
 	ch := chunk.NewChunkEmpty(chPos, uint32(size))
+	pending := list.New()
 	for x := chPos.X * size; x < chPos.X*size+size; x++ {
 		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
 			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
 				voxInfo := gen.generateAt(x, y, z)
 				ch.SetAdjacency(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.adjMask)
-				ch.SetBlockType(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.bType)
+				list := ch.SetBlockType(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.bType)
+				pending.PushBackList(list)
 			}
 		}
 	}
-	return ch
+	return ch, pending
 }
 
 func (gen *FlatWorldGenerator) generateAt(x, y, z int32) *genVoxel {
@@ -135,19 +140,21 @@ func NewAlexWorldGenerator(settingsRepo settings.Interface) *AlexWorldGenerator 
 	}
 }
 
-func (gen *AlexWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) chunk.Chunk {
+func (gen *AlexWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 	size := int32(gen.settingsRepo.GetChunkSize())
 	ch := chunk.NewChunkEmpty(chPos, uint32(size))
+	pending := list.New()
 	for x := chPos.X * size; x < chPos.X*size+size; x++ {
 		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
 			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
 				voxInfo := gen.generateAt(x, y, z)
 				ch.SetAdjacency(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.adjMask)
-				ch.SetBlockType(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.bType)
+				list := ch.SetBlockType(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.bType)
+				pending.PushBackList(list)
 			}
 		}
 	}
-	return ch
+	return ch, pending
 }
 
 func (gen *AlexWorldGenerator) generateAt(x, y, z int32) *genVoxel {
@@ -189,8 +196,12 @@ func alexHelper(pos chunk.VoxelCoordinate) chunk.BlockType {
 	h := int(math.Round(noiseAt(int(pos.X), int(pos.Z))) + 10)
 	if int(pos.Y) > h {
 		return chunk.BlockTypeAir
-	} else {
+	} else if int(pos.Y) == h {
 		return chunk.BlockTypeGrassSides
+	} else if int(pos.Y) < h && int(pos.Y) > h-3 {
+		return chunk.BlockTypeDirt
+	} else {
+		return chunk.BlockTypeStone
 	}
 }
 

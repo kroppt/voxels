@@ -72,31 +72,6 @@ func TestModuleRouteEvents(t *testing.T) {
 		}
 	})
 
-	t.Run("calls DestroyWindow on quit event", func(t *testing.T) {
-		t.Parallel()
-
-		destroyed := false
-		graphicsMod := graphics.FnModule{
-			FnPollEvent: func() (sdl.Event, bool) {
-				return &sdl.QuitEvent{
-					Type:      sdl.QUIT,
-					Timestamp: 0,
-				}, true
-			},
-			FnDestroyWindow: func() error {
-				destroyed = true
-				return nil
-			},
-		}
-		mod := input.New(graphicsMod, nil, nil, nil)
-
-		mod.RouteEvents()
-
-		if !destroyed {
-			t.Fatal("expected tests to fail")
-		}
-	})
-
 	testCases := []struct {
 		message   string
 		evtType   uint32

@@ -1,6 +1,8 @@
 package world
 
 import (
+	"container/list"
+
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/cache"
 	"github.com/kroppt/voxels/modules/graphics"
@@ -28,11 +30,12 @@ func New(
 	}
 	return &Module{
 		core{
-			graphicsMod:  graphicsMod,
-			generator:    generator,
-			settingsRepo: settingsRepo,
-			cacheMod:     cacheMod,
-			loadedChunks: map[chunk.ChunkCoordinate]*chunkState{},
+			graphicsMod:    graphicsMod,
+			generator:      generator,
+			settingsRepo:   settingsRepo,
+			cacheMod:       cacheMod,
+			loadedChunks:   map[chunk.ChunkCoordinate]*chunkState{},
+			pendingActions: map[chunk.ChunkCoordinate]*list.List{},
 		},
 	}
 }

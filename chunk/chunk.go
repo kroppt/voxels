@@ -11,10 +11,10 @@ type Chunk struct {
 }
 
 type PendingAction struct {
-	ChPos  ChunkCoordinate
-	VoxPos VoxelCoordinate
-	Remove bool
-	Face   AdjacentMask
+	ChPos    ChunkCoordinate
+	VoxPos   VoxelCoordinate
+	HideFace bool
+	Face     AdjacentMask
 }
 
 type ChunkCoordinate struct {
@@ -193,7 +193,7 @@ func min(a, b int32) int32 {
 	return b
 }
 
-func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) list.List {
+func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) *list.List {
 	off := c.voxelPosToDataOffset(vpos)
 	vbits := uint32(c.flatData[off+3])
 	btypeBits := uint32(btype) << 6
@@ -214,7 +214,7 @@ func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) list.List {
 	up := VoxelCoordinate{vpos.X, vpos.Y + 1, vpos.Z}
 
 	pending := list.New()
-	remove := btype == BlockTypeAir
+	hideFace := btype != BlockTypeAir
 
 	offsets := []struct {
 		isInChunk bool
@@ -230,21 +230,21 @@ func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) list.List {
 	}
 	for _, off := range offsets {
 		if off.isInChunk {
-			if remove {
-				c.RemoveAdjacency(off.vc, off.face)
-			} else {
+			if hideFace {
 				c.AddAdjacency(off.vc, off.face)
+			} else {
+				c.RemoveAdjacency(off.vc, off.face)
 			}
 		} else {
 			pending.PushBack(PendingAction{
-				ChPos:  VoxelCoordToChunkCoord(off.vc, c.size),
-				VoxPos: off.vc,
-				Remove: !remove,
-				Face:   off.face,
+				ChPos:    VoxelCoordToChunkCoord(off.vc, c.size),
+				VoxPos:   off.vc,
+				HideFace: hideFace,
+				Face:     off.face,
 			})
 		}
 	}
-	return *pending
+	return pending
 }
 
 func (c Chunk) BlockType(vpos VoxelCoordinate) BlockType {

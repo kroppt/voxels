@@ -40,10 +40,11 @@ func main() {
 		log.Fatal(err)
 	}
 	generator := world.NewAlexWorldGenerator(settingsRepo)
+	// generator := world.NewFlatWorldGenerator(settingsRepo)
 	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
 	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod)
 	playerMod := player.New(worldMod, settingsRepo)
-	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 16.5, Z: 0.5})
+	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 20, Z: 0.5})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo, playerMod)
 	tickRateNano := int64(100 * 1e6)
 	tickMod := tick.New(cameraMod, tick.FnTime{}, tickRateNano)
@@ -58,5 +59,6 @@ func main() {
 		keepRunning = inputMod.RouteEvents()
 	}
 	worldMod.Quit()
+	graphicsMod.DestroyWindow()
 	util.LogMetrics()
 }

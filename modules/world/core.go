@@ -1,6 +1,7 @@
 package world
 
 import (
+	"container/list"
 	"math"
 
 	mgl "github.com/go-gl/mathgl/mgl64"
@@ -12,14 +13,15 @@ import (
 )
 
 type core struct {
-	graphicsMod   graphics.Interface
-	generator     Generator
-	settingsRepo  settings.Interface
-	cacheMod      cache.Interface
-	loadedChunks  map[chunk.ChunkCoordinate]*chunkState
-	viewState     ViewState
-	selection     bool
-	selectedVoxel graphics.SelectedVoxel
+	graphicsMod    graphics.Interface
+	generator      Generator
+	settingsRepo   settings.Interface
+	cacheMod       cache.Interface
+	loadedChunks   map[chunk.ChunkCoordinate]*chunkState
+	pendingActions map[chunk.ChunkCoordinate]*list.List
+	viewState      ViewState
+	selection      bool
+	selectedVoxel  graphics.SelectedVoxel
 }
 
 type chunkState struct {
@@ -33,16 +35,24 @@ func (c *core) loadChunk(pos chunk.ChunkCoordinate) {
 		panic("tried to load already-loaded chunk")
 	}
 	ch, ok := c.cacheMod.Load(pos)
+	actions := list.New()
 	if !ok {
-		ch = c.generator.GenerateChunk(pos)
+		ch, actions = c.generator.GenerateChunk(pos)
 	}
+
 	root := c.octreeFromChunk(ch)
 	c.loadedChunks[pos] = &chunkState{
 		ch:       ch,
 		modified: false,
 		root:     root,
 	}
+	c.handlePendingActions(actions)
+	if _, ok := c.pendingActions[pos]; ok {
+		c.performPendingActions(pos)
+	}
 	c.graphicsMod.LoadChunk(ch)
+
+	c.updateView(c.viewState)
 }
 
 func (c *core) unloadChunk(pos chunk.ChunkCoordinate) {
@@ -54,6 +64,52 @@ func (c *core) unloadChunk(pos chunk.ChunkCoordinate) {
 	}
 	delete(c.loadedChunks, pos)
 	c.graphicsMod.UnloadChunk(pos)
+	c.updateView(c.viewState)
+}
+
+func (c *core) handlePendingActions(actions *list.List) {
+	// go through all of the actions
+	// perform any actions right now that can be performed because those chunks are loaded
+	// for the ones that you can't do now, save them for later
+	immediateUpdateChunks := map[chunk.ChunkCoordinate]struct{}{}
+	for action := actions.Front(); action != nil; action = action.Next() {
+		pa := action.Value.(chunk.PendingAction)
+		if _, ok := c.loadedChunks[pa.ChPos]; ok {
+			immediateUpdateChunks[pa.ChPos] = struct{}{}
+		}
+		if _, ok := c.pendingActions[pa.ChPos]; ok {
+			c.pendingActions[pa.ChPos].PushBack(pa)
+		} else {
+			c.pendingActions[pa.ChPos] = list.New()
+			c.pendingActions[pa.ChPos].PushBack(pa)
+		}
+	}
+
+	for otherChunk := range immediateUpdateChunks {
+		c.performPendingActions(otherChunk)
+		c.graphicsMod.UpdateChunk(c.loadedChunks[otherChunk].ch)
+	}
+}
+
+func (c *core) performPendingActions(cc chunk.ChunkCoordinate) {
+	if _, ok := c.loadedChunks[cc]; !ok {
+		panic("attempted to perform pending actions on a chunk that isn't loaded")
+	}
+	if _, ok := c.pendingActions[cc]; !ok {
+		panic("attempted to perform pending actions on a chunk that doesn't have any")
+	}
+	actions := c.pendingActions[cc]
+	for action := actions.Front(); action != nil; action = action.Next() {
+		pa := action.Value.(chunk.PendingAction)
+		ch := c.loadedChunks[pa.ChPos]
+		if pa.HideFace {
+			ch.ch.AddAdjacency(pa.VoxPos, pa.Face)
+		} else {
+			ch.ch.RemoveAdjacency(pa.VoxPos, pa.Face)
+		}
+	}
+	c.loadedChunks[cc].modified = true
+	delete(c.pendingActions, cc)
 }
 
 func (c *core) octreeFromChunk(ch chunk.Chunk) *Octree {
@@ -133,7 +189,9 @@ func (c *core) setBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
 	} else {
 		c.loadedChunks[key].root = c.loadedChunks[key].root.AddLeaf(&pos)
 	}
-	c.loadedChunks[key].ch.SetBlockType(pos, btype)
+	actions := c.loadedChunks[key].ch.SetBlockType(pos, btype)
+	c.handlePendingActions(actions)
+
 	c.loadedChunks[key].modified = true
 	c.graphicsMod.UpdateChunk(c.loadedChunks[key].ch)
 	c.updateView(c.viewState)

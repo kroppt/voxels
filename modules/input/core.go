@@ -3,7 +3,6 @@ package input
 import (
 	"math"
 
-	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
@@ -34,10 +33,6 @@ func (m *core) routeEvents() bool {
 func (m *core) routeEvent(e sdl.Event) {
 	switch evt := e.(type) {
 	case *sdl.QuitEvent:
-		err := m.graphicsMod.DestroyWindow()
-		if err != nil {
-			log.Warnf("error closing window: %v", err)
-		}
 		m.quit = true
 	case *sdl.KeyboardEvent:
 		pressed := evt.Type == sdl.KEYDOWN

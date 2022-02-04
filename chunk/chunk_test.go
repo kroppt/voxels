@@ -716,35 +716,56 @@ func TestRemoveBlockAtChunkBoundaries(t *testing.T) {
 		ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 3)
 		expected := list.New()
 		expected.PushBack(chunk.PendingAction{
-			ChPos:  chunk.ChunkCoordinate{0, 0, -1},
-			VoxPos: chunk.VoxelCoordinate{1, 1, -1},
-			Remove: false,
-			Face:   chunk.AdjacentBack,
+			ChPos:    chunk.ChunkCoordinate{0, 0, -1},
+			VoxPos:   chunk.VoxelCoordinate{1, 1, -1},
+			HideFace: false,
+			Face:     chunk.AdjacentBack,
 		})
 		actual := ch.SetBlockType(chunk.VoxelCoordinate{1, 1, 0}, chunk.BlockTypeAir)
 
-		if !reflect.DeepEqual(*expected, actual) {
+		if !reflect.DeepEqual(expected, actual) {
 			t.Fatalf("received wrong pending actions")
 		}
 	})
-	t.Run("extreme edge case", func(t *testing.T) {
+	t.Run("extreme removal edge case", func(t *testing.T) {
 		ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 1)
 		expected := list.New()
 		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 0, -1},
-			VoxPos: chunk.VoxelCoordinate{0, 0, -1}, Remove: false, Face: chunk.AdjacentBack})
+			VoxPos: chunk.VoxelCoordinate{0, 0, -1}, HideFace: false, Face: chunk.AdjacentBack})
 		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 0, 1},
-			VoxPos: chunk.VoxelCoordinate{0, 0, 1}, Remove: false, Face: chunk.AdjacentFront})
+			VoxPos: chunk.VoxelCoordinate{0, 0, 1}, HideFace: false, Face: chunk.AdjacentFront})
 		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{-1, 0, 0},
-			VoxPos: chunk.VoxelCoordinate{-1, 0, 0}, Remove: false, Face: chunk.AdjacentRight})
+			VoxPos: chunk.VoxelCoordinate{-1, 0, 0}, HideFace: false, Face: chunk.AdjacentRight})
 		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{1, 0, 0},
-			VoxPos: chunk.VoxelCoordinate{1, 0, 0}, Remove: false, Face: chunk.AdjacentLeft})
+			VoxPos: chunk.VoxelCoordinate{1, 0, 0}, HideFace: false, Face: chunk.AdjacentLeft})
 		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, -1, 0},
-			VoxPos: chunk.VoxelCoordinate{0, -1, 0}, Remove: false, Face: chunk.AdjacentTop})
+			VoxPos: chunk.VoxelCoordinate{0, -1, 0}, HideFace: false, Face: chunk.AdjacentTop})
 		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 1, 0},
-			VoxPos: chunk.VoxelCoordinate{0, 1, 0}, Remove: false, Face: chunk.AdjacentBottom})
+			VoxPos: chunk.VoxelCoordinate{0, 1, 0}, HideFace: false, Face: chunk.AdjacentBottom})
 		actual := ch.SetBlockType(chunk.VoxelCoordinate{0, 0, 0}, chunk.BlockTypeAir)
 
-		if !reflect.DeepEqual(*expected, actual) {
+		if !reflect.DeepEqual(expected, actual) {
+			t.Fatalf("received wrong pending actions")
+		}
+	})
+	t.Run("extreme add edge case", func(t *testing.T) {
+		ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{0, 0, 0}, 1)
+		expected := list.New()
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 0, -1},
+			VoxPos: chunk.VoxelCoordinate{0, 0, -1}, HideFace: true, Face: chunk.AdjacentBack})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 0, 1},
+			VoxPos: chunk.VoxelCoordinate{0, 0, 1}, HideFace: true, Face: chunk.AdjacentFront})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{-1, 0, 0},
+			VoxPos: chunk.VoxelCoordinate{-1, 0, 0}, HideFace: true, Face: chunk.AdjacentRight})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{1, 0, 0},
+			VoxPos: chunk.VoxelCoordinate{1, 0, 0}, HideFace: true, Face: chunk.AdjacentLeft})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, -1, 0},
+			VoxPos: chunk.VoxelCoordinate{0, -1, 0}, HideFace: true, Face: chunk.AdjacentTop})
+		expected.PushBack(chunk.PendingAction{ChPos: chunk.ChunkCoordinate{0, 1, 0},
+			VoxPos: chunk.VoxelCoordinate{0, 1, 0}, HideFace: true, Face: chunk.AdjacentBottom})
+		actual := ch.SetBlockType(chunk.VoxelCoordinate{0, 0, 0}, chunk.BlockTypeDirt)
+
+		if !reflect.DeepEqual(expected, actual) {
 			t.Fatalf("received wrong pending actions")
 		}
 	})
