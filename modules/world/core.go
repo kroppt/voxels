@@ -169,6 +169,22 @@ func (c *core) updateView(viewState ViewState) {
 }
 
 func (c *core) quit() {
+	for key, actions := range c.pendingActions {
+		ch, ok := c.cacheMod.Load(key)
+		if !ok {
+			ch, _ = c.generator.GenerateChunk(key)
+		}
+		for action := actions.Front(); action != nil; action = action.Next() {
+			pa := action.Value.(chunk.PendingAction)
+			if pa.HideFace {
+				ch.AddAdjacency(pa.VoxPos, pa.Face)
+			} else {
+				ch.RemoveAdjacency(pa.VoxPos, pa.Face)
+			}
+		}
+		c.cacheMod.Save(ch)
+	}
+
 	for key := range c.loadedChunks {
 		c.unloadChunk(key)
 	}

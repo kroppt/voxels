@@ -297,7 +297,7 @@ func TestWorldUnloadAllChunksOnQuit(t *testing.T) {
 			return 1
 		},
 	}
-	expectSaved := 3
+	expectSaved := 19
 	actualSaved := 0
 	cacheMod := &cache.FnModule{
 		FnSave: func(chunk.Chunk) {
@@ -336,7 +336,7 @@ func TestWorldClosesCacheOnQuit(t *testing.T) {
 
 func TestWorldDoesNotSaveChunkIfUnmodified(t *testing.T) {
 	t.Parallel()
-	expectSaved := 2
+	expectSaved := 0
 	actualSaved := 0
 	settingsRepo := settings.FnRepository{
 		FnGetChunkSize: func() uint32 {
@@ -350,14 +350,6 @@ func TestWorldDoesNotSaveChunkIfUnmodified(t *testing.T) {
 	}
 	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settingsRepo, cacheMod)
 	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 2, Z: 3})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
-	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
-	worldMod.UnloadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 2, Y: 4, Z: 0})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 1, Y: 0, Z: 5})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 8, Y: 5, Z: 5})
-	worldMod.SetBlockType(chunk.VoxelCoordinate{X: 8, Y: 5, Z: 5}, chunk.BlockTypeDirt)
 	worldMod.Quit()
 
 	if actualSaved != expectSaved {
