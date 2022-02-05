@@ -354,6 +354,7 @@ func TestChunksLoadedOnFirstPositionUpdate(t *testing.T) {
 }
 
 func TestViewUpdateAfterLoadingChunks(t *testing.T) {
+	t.Parallel()
 	x := 1
 	worldMod := world.FnModule{
 		FnLoadChunk: func(p chunk.ChunkCoordinate) {
@@ -374,6 +375,7 @@ func TestViewUpdateAfterLoadingChunks(t *testing.T) {
 }
 
 func TestViewUpdateAfterUnloadingChunks(t *testing.T) {
+	t.Parallel()
 	x := 1
 	worldMod := world.FnModule{
 		FnUnloadChunk: func(p chunk.ChunkCoordinate) {
@@ -395,6 +397,7 @@ func TestViewUpdateAfterUnloadingChunks(t *testing.T) {
 }
 
 func TestPlayerScrollDown(t *testing.T) {
+	t.Parallel()
 	blockRemoved := false
 	worldMod := world.FnModule{
 		FnRemoveBlock: func(chunk.VoxelCoordinate) {
@@ -424,6 +427,7 @@ func TestPlayerScrollDown(t *testing.T) {
 }
 
 func TestPlayerScrollUp(t *testing.T) {
+	t.Parallel()
 	worldMod := world.FnModule{
 		FnRemoveBlock: func(chunk.VoxelCoordinate) {
 			t.Fatal("called remove block on scroll up")

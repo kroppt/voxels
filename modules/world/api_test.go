@@ -330,6 +330,7 @@ func TestUpdateGraphicsOnRemove(t *testing.T) {
 }
 
 func TestRemoveBlockPanic(t *testing.T) {
+	t.Parallel()
 	defer func() {
 		if err := recover(); err == nil {
 			t.Fatal("expected panic, but didn't")
@@ -340,6 +341,7 @@ func TestRemoveBlockPanic(t *testing.T) {
 }
 
 func TestLoadChunkUpdateSelection(t *testing.T) {
+	t.Parallel()
 	updated := false
 	viewMod := view.FnModule{
 		FnUpdateSelection: func() {
@@ -354,6 +356,7 @@ func TestLoadChunkUpdateSelection(t *testing.T) {
 }
 
 func TestUnloadChunkUpdateSelection(t *testing.T) {
+	t.Parallel()
 	updated := false
 	viewMod := view.FnModule{
 		FnUpdateSelection: func() {
@@ -369,6 +372,7 @@ func TestUnloadChunkUpdateSelection(t *testing.T) {
 }
 
 func TestLoadChunkAddNode(t *testing.T) {
+	t.Parallel()
 	expected := map[chunk.VoxelCoordinate]struct{}{}
 	expected[chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}] = struct{}{}
 	expected[chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}] = struct{}{}
@@ -401,6 +405,7 @@ func TestLoadChunkAddNode(t *testing.T) {
 }
 
 func TestUnloadChunkRemoveNode(t *testing.T) {
+	t.Parallel()
 	expected := map[chunk.VoxelCoordinate]struct{}{}
 	expected[chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}] = struct{}{}
 	expected[chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}] = struct{}{}
@@ -434,6 +439,7 @@ func TestUnloadChunkRemoveNode(t *testing.T) {
 }
 
 func TestSetAdjacenciesAcrossChunksAutomatically(t *testing.T) {
+	t.Parallel()
 	chunkPos1 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
 	chunkPos2 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: -1}
 	var actual1 []float32
@@ -484,6 +490,7 @@ func TestSetAdjacenciesAcrossChunksAutomatically(t *testing.T) {
 }
 
 func TestPendingActionsAlsoUpdatesGraphics(t *testing.T) {
+	t.Parallel()
 	chunkPos1 := chunk.ChunkCoordinate{X: 1, Y: 0, Z: 0}
 	chunkPos2 := chunk.ChunkCoordinate{X: 1, Y: 0, Z: -1}
 	var actual []float32
@@ -525,6 +532,7 @@ func TestPendingActionsAlsoUpdatesGraphics(t *testing.T) {
 }
 
 func TestGraphicsExpectedLoadsAndUpdates(t *testing.T) {
+	t.Parallel()
 	expectedLoads := 1
 	expectedUpdates := 1
 	actualLoads := 0

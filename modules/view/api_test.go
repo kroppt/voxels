@@ -33,6 +33,7 @@ func TestRequiredSubModules(t *testing.T) {
 }
 
 func TestUpdateSelectionCallsGraphics(t *testing.T) {
+	t.Parallel()
 	graphicsMod := graphics.FnModule{
 		FnUpdateSelection: func(vc chunk.VoxelCoordinate, b bool) {
 			if b {
@@ -47,6 +48,7 @@ func TestUpdateSelectionCallsGraphics(t *testing.T) {
 }
 
 func TestCannotGetSelectionWithoutViewState(t *testing.T) {
+	t.Parallel()
 	expected := false
 	viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
 	_, actual := viewMod.GetSelection()
@@ -56,6 +58,7 @@ func TestCannotGetSelectionWithoutViewState(t *testing.T) {
 }
 
 func TestGetSelectionValidEmptyTree(t *testing.T) {
+	t.Parallel()
 	expected := false
 	viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
 	viewMod.UpdateView(view.ViewState{
@@ -69,6 +72,7 @@ func TestGetSelectionValidEmptyTree(t *testing.T) {
 }
 
 func TestGetSelectionValid(t *testing.T) {
+	t.Parallel()
 	expectedSelection := chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}
 	viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
 	viewMod.UpdateView(view.ViewState{
@@ -85,6 +89,7 @@ func TestGetSelectionValid(t *testing.T) {
 	}
 }
 func TestUpdateViewCallsGraphics(t *testing.T) {
+	t.Parallel()
 	expected := true
 	actual := false
 	graphicsMod := graphics.FnModule{
