@@ -13,6 +13,7 @@ type Interface interface {
 	CountLoadedChunks() int
 	GetBlockType(chunk.VoxelCoordinate) chunk.BlockType
 	RemoveBlock(chunk.VoxelCoordinate)
+	AddBlock(chunk.VoxelCoordinate, chunk.BlockType)
 }
 
 type ViewState struct {
@@ -44,6 +45,10 @@ func (m *Module) RemoveBlock(vc chunk.VoxelCoordinate) {
 	m.c.removeBlock(vc)
 }
 
+func (m *Module) AddBlock(vc chunk.VoxelCoordinate, bt chunk.BlockType) {
+	m.c.addBlock(vc, bt)
+}
+
 type FnModule struct {
 	FnLoadChunk         func(chunk.ChunkCoordinate)
 	FnUnloadChunk       func(chunk.ChunkCoordinate)
@@ -51,6 +56,7 @@ type FnModule struct {
 	FnCountLoadedChunks func() int
 	FnGetBlockType      func(chunk.VoxelCoordinate) chunk.BlockType
 	FnRemoveBlock       func(chunk.VoxelCoordinate)
+	FnAddBlock          func(chunk.VoxelCoordinate, chunk.BlockType)
 }
 
 func (fn FnModule) LoadChunk(pos chunk.ChunkCoordinate) {
@@ -88,5 +94,11 @@ func (fn FnModule) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 func (fn FnModule) RemoveBlock(vc chunk.VoxelCoordinate) {
 	if fn.FnRemoveBlock != nil {
 		fn.FnRemoveBlock(vc)
+	}
+}
+
+func (fn FnModule) AddBlock(vc chunk.VoxelCoordinate, bt chunk.BlockType) {
+	if fn.FnAddBlock != nil {
+		fn.FnAddBlock(vc, bt)
 	}
 }

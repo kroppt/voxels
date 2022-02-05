@@ -610,6 +610,144 @@ func TestWorldUnloadAllChunksOnQuit(t *testing.T) {
 	}
 }
 
+func TestWorldAddBlock(t *testing.T) {
+	t.Parallel()
+
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	worldGen := &world.FnGenerator{
+		FnGenerateChunk: func(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			ch := chunk.NewChunkEmpty(chPos, settingsRepo.GetChunkSize())
+			ch.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
+			return ch, list.New()
+		},
+	}
+	newPos := chunk.VoxelCoordinate{X: 0, Y: 0, Z: 1}
+	expectType := chunk.BlockTypeStone
+	worldMod := world.New(&graphics.FnModule{}, worldGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+
+	worldMod.AddBlock(newPos, expectType)
+	actualType := worldMod.GetBlockType(newPos)
+
+	if actualType != expectType {
+		t.Fatalf("expected block type %v but got %v", expectType, actualType)
+	}
+}
+
+func TestWorldAddBlockAddsNode(t *testing.T) {
+	t.Parallel()
+
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	worldGen := &world.FnGenerator{
+		FnGenerateChunk: func(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			ch := chunk.NewChunkEmpty(chPos, settingsRepo.GetChunkSize())
+			ch.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
+			return ch, list.New()
+		},
+	}
+	var actualVc chunk.VoxelCoordinate
+	viewMod := &view.FnModule{
+		FnAddNode: func(vc chunk.VoxelCoordinate) {
+			actualVc = vc
+		},
+	}
+	expectVc := chunk.VoxelCoordinate{X: 0, Y: 0, Z: 1}
+	worldMod := world.New(&graphics.FnModule{}, worldGen, settingsRepo, &cache.FnModule{}, viewMod)
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+
+	worldMod.AddBlock(expectVc, chunk.BlockTypeStone)
+
+	if actualVc != expectVc {
+		t.Fatalf("expected %v but got %v", expectVc, actualVc)
+	}
+}
+
+func TestWorldAddBlockUpdatesGraphicsChunk(t *testing.T) {
+	t.Parallel()
+
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	worldGen := &world.FnGenerator{
+		FnGenerateChunk: func(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			ch := chunk.NewChunkEmpty(chPos, settingsRepo.GetChunkSize())
+			ch.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
+			return ch, list.New()
+		},
+	}
+	newPos := chunk.VoxelCoordinate{X: 0, Y: 0, Z: 1}
+	blockType := chunk.BlockTypeStone
+	expectChunk := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.GetChunkSize())
+	expectChunk.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
+	expectChunk.SetBlockType(newPos, blockType)
+	var actualChunk chunk.Chunk
+	graphicsMod := &graphics.FnModule{
+		FnUpdateChunk: func(ch chunk.Chunk) {
+			actualChunk = ch
+		},
+	}
+	worldMod := world.New(graphicsMod, worldGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+
+	worldMod.AddBlock(newPos, blockType)
+
+	if !reflect.DeepEqual(actualChunk, expectChunk) {
+		t.Fatalf("expected chunk %v but got %v", expectChunk, actualChunk)
+	}
+}
+
+func TestWorldAddBlockUpdatesGraphicsNeighbor(t *testing.T) {
+	t.Parallel()
+
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 2
+		},
+	}
+	chunkPos1 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
+	worldGen := &world.FnGenerator{
+		FnGenerateChunk: func(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			ch := chunk.NewChunkEmpty(chPos, settingsRepo.GetChunkSize())
+			if chPos == chunkPos1 {
+				ch.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeDirt)
+			}
+			return ch, list.New()
+		},
+	}
+	newPos := chunk.VoxelCoordinate{X: 0, Y: 0, Z: 1}
+	chunkPos2 := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 1}
+	expectChunk := chunk.NewChunkEmpty(chunkPos2, settingsRepo.GetChunkSize())
+	expectChunk.AddAdjacency(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 2}, chunk.AdjacentFront)
+	var actualChunk chunk.Chunk
+	graphicsMod := &graphics.FnModule{
+		FnUpdateChunk: func(ch chunk.Chunk) {
+			if ch.Position() == chunkPos1 {
+				return
+			}
+			actualChunk = ch
+		},
+	}
+	worldMod := world.New(graphicsMod, worldGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
+	worldMod.LoadChunk(chunkPos1)
+	worldMod.LoadChunk(chunkPos2)
+
+	worldMod.AddBlock(newPos, chunk.BlockTypeStone)
+
+	if !reflect.DeepEqual(actualChunk, expectChunk) {
+		t.Fatalf("expected chunk %v but got %v", expectChunk, actualChunk)
+	}
+}
+
 func BenchmarkWorldLoadUnload(b *testing.B) {
 	chPos := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
 	chunkSize := uint32(25)

@@ -162,3 +162,17 @@ func (c *core) removeBlock(vc chunk.VoxelCoordinate) {
 	c.handlePendingActions(actions)
 	c.graphicsMod.UpdateChunk(cs.ch)
 }
+
+func (c *core) addBlock(vc chunk.VoxelCoordinate, bt chunk.BlockType) {
+	key := chunk.VoxelCoordToChunkCoord(vc, c.settingsRepo.GetChunkSize())
+	cs, ok := c.loadedChunks[key]
+	if !ok {
+		panic("tried to add a block from a chunk that isn't loaded")
+	}
+	actions := cs.ch.SetBlockType(vc, bt)
+	c.handlePendingActions(actions)
+	// TODO weird that Add/Remove Node is used here
+	// but also used in player mod..?
+	c.viewMod.AddNode(vc)
+	c.graphicsMod.UpdateChunk(cs.ch)
+}
