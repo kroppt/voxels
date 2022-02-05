@@ -2,70 +2,21 @@ package main
 
 import (
 	"os"
-	"runtime"
 
-	"github.com/go-gl/gl/v2.1/gl"
-	"github.com/kroppt/voxels/app"
 	"github.com/kroppt/voxels/log"
-	"github.com/veandco/go-sdl2/sdl"
+	"github.com/kroppt/voxels/modules/cache"
+	"github.com/kroppt/voxels/modules/camera"
+	"github.com/kroppt/voxels/modules/file"
+	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/input"
+	"github.com/kroppt/voxels/modules/player"
+	"github.com/kroppt/voxels/modules/tick"
+	"github.com/kroppt/voxels/modules/view"
+	"github.com/kroppt/voxels/modules/world"
+	"github.com/kroppt/voxels/repositories/settings"
+	"github.com/kroppt/voxels/util"
+	"github.com/spf13/afero"
 )
-
-// ErrRenderDriver indicates that SDL failed to enable the OpenGL render driver
-const ErrRenderDriver log.ConstErr = "failed to set opengl render driver hint"
-
-func initWindow(title string, width, height int32) (*sdl.Window, error) {
-	if !sdl.SetHint(sdl.HINT_RENDER_DRIVER, "opengl") {
-		return nil, ErrRenderDriver
-	}
-	var err error
-	if err = sdl.Init(sdl.INIT_VIDEO | sdl.INIT_EVENTS); err != nil {
-		return nil, err
-	}
-	if err = sdl.GLSetAttribute(sdl.GL_CONTEXT_MAJOR_VERSION, 4); err != nil {
-		return nil, err
-	}
-	if err = sdl.GLSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 3); err != nil {
-		return nil, err
-	}
-	if err = sdl.GLSetAttribute(sdl.GL_DOUBLEBUFFER, 1); err != nil {
-		return nil, err
-	}
-	if err = sdl.GLSetAttribute(sdl.GL_CONTEXT_PROFILE_MASK, sdl.GL_CONTEXT_PROFILE_CORE); err != nil {
-		return nil, err
-	}
-
-	var window *sdl.Window
-	if window, err = sdl.CreateWindow(title, sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED,
-		width, height, sdl.WINDOW_HIDDEN|sdl.WINDOW_OPENGL); err != nil {
-		return nil, err
-	}
-	window.SetResizable(true)
-	// creates context AND makes current
-	if _, err = window.GLCreateContext(); err != nil {
-		return nil, err
-	}
-	if err = sdl.GLSetSwapInterval(1); err != nil {
-		return nil, err
-	}
-
-	if err = gl.Init(); err != nil {
-		return nil, err
-	}
-	gl.Enable(gl.BLEND)
-	gl.Enable(gl.DEPTH_TEST)
-	gl.Enable(gl.CULL_FACE)
-	gl.CullFace(gl.BACK)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
-	version := gl.GoStr(gl.GetString(gl.VERSION))
-	log.Debug("OpenGL version ", version)
-
-	return window, nil
-}
-
-func init() {
-	runtime.LockOSThread()
-}
 
 func main() {
 	log.SetInfoOutput(os.Stderr)
@@ -73,29 +24,43 @@ func main() {
 	log.SetDebugOutput(os.Stderr)
 	log.SetPerfOutput(os.Stderr)
 	log.SetFatalOutput(os.Stderr)
-	log.SetColorized(true)
+	log.SetColorized(false)
+	util.SetMetricsEnabled(true)
 
-	win, err := initWindow("voxels", 1920, 1080)
+	fileMod := file.New()
+	settingsRepo := settings.New()
+	if readCloser, err := fileMod.GetReadCloser("settings.conf"); err != nil {
+		log.Warn(err)
+	} else {
+		settingsRepo.SetFromReader(readCloser)
+		readCloser.Close()
+	}
+	graphicsMod := graphics.New(settingsRepo)
+	err := graphicsMod.CreateWindow("voxels")
 	if err != nil {
 		log.Fatal(err)
 	}
+	generator := world.NewAlexWorldGenerator(settingsRepo)
+	// generator := world.NewFlatWorldGenerator(settingsRepo)
+	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
+	viewMod := view.New(graphicsMod, settingsRepo)
+	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod, viewMod)
+	playerMod := player.New(worldMod, settingsRepo, viewMod)
+	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 20, Z: 0.5})
+	inputMod := input.New(graphicsMod, cameraMod, settingsRepo, playerMod)
+	tickRateNano := int64(100 * 1e6)
+	tickMod := tick.New(cameraMod, tick.FnTime{}, tickRateNano)
+	graphicsMod.ShowWindow()
 
-	app, err := app.New(win)
-	if err != nil {
-		log.Fatal(err)
-	}
-	app.Start()
-
-	for app.Running() {
-		for evt := sdl.PollEvent(); evt != nil; evt = sdl.PollEvent() {
-			err := app.HandleSdlEvent(evt)
-			if err != nil {
-				log.Fatalf("error handling sdl events: %v", err)
-			}
+	keepRunning := true
+	for keepRunning {
+		if tickMod.IsNextTickReady() {
+			tickMod.AdvanceTick()
 		}
-
-		app.PostEventActions()
+		graphicsMod.Render()
+		keepRunning = inputMod.RouteEvents()
 	}
-
-	app.Quit()
+	worldMod.Quit()
+	graphicsMod.DestroyWindow()
+	util.LogMetrics()
 }
