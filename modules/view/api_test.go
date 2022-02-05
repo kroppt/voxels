@@ -180,6 +180,35 @@ func TestFrustumCulling(t *testing.T) {
 			renderDist: 1,
 			chunkSize:  1,
 		},
+		{
+			desc: "edge case found in production",
+			expect: map[chunk.ChunkCoordinate]struct{}{
+				{X: 0, Y: -1, Z: -1}: {},
+				{X: 0, Y: 0, Z: -1}:  {},
+				{X: 0, Y: 1, Z: -1}:  {},
+				{X: 1, Y: -1, Z: -1}: {},
+				{X: 1, Y: 0, Z: -1}:  {},
+				{X: 1, Y: 1, Z: -1}:  {},
+				{X: 1, Y: -1, Z: 0}:  {},
+				{X: 1, Y: 0, Z: 0}:   {},
+				{X: 1, Y: 1, Z: 0}:   {},
+				{X: 0, Y: 0, Z: 0}:   {},
+			},
+			viewState: view.ViewState{
+				Pos: [3]float64{0.5, 0.5, 0.5},
+				Dir: mgl.Quat{
+					W: 0.9238795325112867,
+					V: mgl.Vec3{0, -0.3826834323650898, 0},
+				},
+			},
+			fov:        60,
+			far:        100,
+			near:       0.1,
+			width:      1280,
+			height:     720,
+			renderDist: 1,
+			chunkSize:  1,
+		},
 	}
 	for _, tC := range testCases {
 		tC := tC

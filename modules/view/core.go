@@ -71,14 +71,13 @@ type camera struct {
 }
 
 func createCamera(rot mgl.Quat, pos mgl.Vec3) *camera {
-	inverse := rot.Inverse()
 	return &camera{
 		eye:   pos,
-		dir:   inverse.Rotate(mgl.Vec3{0.0, 0.0, -1.0}),
-		left:  inverse.Rotate(mgl.Vec3{-1.0, 0.0, 0.0}),
-		right: inverse.Rotate(mgl.Vec3{1.0, 0.0, 0.0}),
-		up:    inverse.Rotate(mgl.Vec3{0.0, 1.0, 0.0}),
-		down:  inverse.Rotate(mgl.Vec3{0.0, -1.0, 0.0}),
+		dir:   rot.Rotate(mgl.Vec3{0.0, 0.0, -1.0}),
+		left:  rot.Rotate(mgl.Vec3{-1.0, 0.0, 0.0}),
+		right: rot.Rotate(mgl.Vec3{1.0, 0.0, 0.0}),
+		up:    rot.Rotate(mgl.Vec3{0.0, 1.0, 0.0}),
+		down:  rot.Rotate(mgl.Vec3{0.0, -1.0, 0.0}),
 	}
 
 }

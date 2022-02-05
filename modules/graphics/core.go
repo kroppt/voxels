@@ -161,7 +161,6 @@ func (c *core) getUpdatedProjMatrix() mgl.Mat4 {
 
 func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4) {
 	c.viewableChunks = viewableChunks
-	// TODO actually use viewable chunks
 	proj := c.getUpdatedProjMatrix()
 	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
 	if err != nil {
@@ -230,9 +229,8 @@ func (c *core) render() {
 	gl.PolygonOffset(1.0, 1.0)
 
 	c.textureMap.Bind()
-	for _, chunkObj := range c.loadedChunks {
-		// TODO use viewable chunks
-		chunkObj.render()
+	for key := range c.viewableChunks {
+		c.loadedChunks[key].render()
 	}
 	c.textureMap.Unbind()
 
