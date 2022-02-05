@@ -252,3 +252,33 @@ func TestFrustumCulling(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkViewAddRemoveNode(b *testing.B) {
+	voxCoord := chunk.VoxelCoordinate{
+		X: 0,
+		Y: 0,
+		Z: 0,
+	}
+	viewMod := view.New(graphics.FnModule{}, &settings.Repository{})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		viewMod.AddNode(voxCoord)
+		viewMod.RemoveNode(voxCoord)
+	}
+}
+
+func BenchmarkViewAddRemoveChunk(b *testing.B) {
+	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}, 5)
+	viewMod := view.New(graphics.FnModule{}, &settings.Repository{})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+			viewMod.AddNode(vc)
+		})
+		ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+			viewMod.RemoveNode(vc)
+		})
+	}
+}
