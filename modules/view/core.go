@@ -13,7 +13,7 @@ type core struct {
 	graphicsMod  graphics.Interface
 	settingsRepo settings.Interface
 	viewState    ViewState
-	tree         *Octree
+	trees        map[chunk.ChunkCoordinate]*Octree
 }
 
 func (c *core) updateSelection() {
@@ -23,8 +23,23 @@ func (c *core) updateSelection() {
 func (c *core) getSelection() (chunk.VoxelCoordinate, bool) {
 	eye := c.viewState.Pos
 	dir := c.viewState.Dir.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
-	vc, _, found := c.tree.FindClosestIntersect(eye, dir)
-	return vc, found
+	var found bool
+	var lowestDist float64
+	var closestVox chunk.VoxelCoordinate
+	for _, root := range c.trees {
+		// chunks out of viewing frustum cannot be intersected
+		// TODO optimization here
+		// if _, ok := viewableChunks[chPos]; !ok {
+		// 	continue
+		// }
+		vc, dist, ok := root.FindClosestIntersect(eye, dir)
+		if ok && (dist < lowestDist || !found) {
+			lowestDist = dist
+			closestVox = vc
+			found = true
+		}
+	}
+	return closestVox, found
 }
 
 func (c *core) updateView(vs ViewState) {
@@ -33,11 +48,33 @@ func (c *core) updateView(vs ViewState) {
 	c.graphicsMod.UpdateView(viewableChunks, c.getUpdatedViewMatrix())
 }
 
+func (c *core) addTree(cc chunk.ChunkCoordinate, root *Octree) {
+	if _, ok := c.trees[cc]; ok {
+		panic("unintended use: adding tree but one already exists for this chunk")
+	}
+	c.trees[cc] = root
+}
+
+func (c *core) removeTree(cc chunk.ChunkCoordinate) {
+	if _, ok := c.trees[cc]; !ok {
+		panic("unintended use: removing tree but none existed for this chunk")
+	}
+	delete(c.trees, cc)
+}
+
 func (c *core) addNode(vc chunk.VoxelCoordinate) {
-	c.tree = c.tree.AddLeaf(&vc)
+	cc := chunk.VoxelCoordToChunkCoord(vc, c.settingsRepo.GetChunkSize())
+	if _, ok := c.trees[cc]; !ok {
+		panic("tree not found for add node, unintended use")
+	}
+	c.trees[cc] = c.trees[cc].AddLeaf(&vc)
 }
 func (c *core) removeNode(vc chunk.VoxelCoordinate) {
-	c.tree, _ = c.tree.Remove(vc)
+	cc := chunk.VoxelCoordToChunkCoord(vc, c.settingsRepo.GetChunkSize())
+	if _, ok := c.trees[cc]; !ok {
+		panic("tree not found for add node, unintended use")
+	}
+	c.trees[cc], _ = c.trees[cc].Remove(vc)
 }
 
 func (c *core) getUpdatedViewMatrix() mgl.Mat4 {

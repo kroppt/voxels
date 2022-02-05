@@ -79,7 +79,8 @@ func TestGetSelectionValid(t *testing.T) {
 		Pos: [3]float64{0.5, 0.5, 0.5},
 		Dir: mgl.QuatIdent(),
 	})
-	viewMod.AddNode(chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1})
+	var tree *view.Octree
+	viewMod.AddTree(chunk.ChunkCoordinate{X: 0, Y: 0, Z: -1}, tree.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}))
 	actualSelection, selected := viewMod.GetSelection()
 	if !selected {
 		t.Fatal("expected to get a true selection, but got a false one")
@@ -258,17 +259,65 @@ func TestFrustumCulling(t *testing.T) {
 	}
 }
 
-func BenchmarkViewAddRemoveChunk(b *testing.B) {
-	ch := chunk.NewChunkEmpty(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}, 5)
-	viewMod := view.New(graphics.FnModule{}, &settings.Repository{})
+func TestTreePanicCases(t *testing.T) {
+	t.Parallel()
+	t.Run("AddNode without parent chunk", func(t *testing.T) {
+		viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but did not")
+			}
+		}()
+		viewMod.AddNode(chunk.VoxelCoordinate{})
+	})
+	t.Run("RemoveNode without parent chunk", func(t *testing.T) {
+		viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but did not")
+			}
+		}()
+		viewMod.RemoveNode(chunk.VoxelCoordinate{})
+	})
+	t.Run("same AddTree twice", func(t *testing.T) {
+		viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but did not")
+			}
+		}()
+		viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+		viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+	})
+	t.Run("RemoveTree that wasn't loaded", func(t *testing.T) {
+		viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+		defer func() {
+			if err := recover(); err == nil {
+				t.Fatal("expected panic, but did not")
+			}
+		}()
+		viewMod.RemoveTree(chunk.ChunkCoordinate{})
+	})
+}
 
-	b.ResetTimer()
-	for n := 0; n < b.N; n++ {
-		ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
-			viewMod.AddNode(vc)
-		})
-		ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
-			viewMod.RemoveNode(vc)
-		})
-	}
+func TestExistingTreeNodeActions(t *testing.T) {
+	// all expecting no panic, not actually inspecting the tree
+	// a more thorough test would set up a view intersection scenario for selection
+	t.Parallel()
+	t.Run("AddNode to existing tree", func(t *testing.T) {
+		viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+		viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+		viewMod.AddNode(chunk.VoxelCoordinate{})
+	})
+	t.Run("RemoveNode from existing tree", func(t *testing.T) {
+		viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+		viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+		viewMod.AddNode(chunk.VoxelCoordinate{})
+		viewMod.RemoveNode(chunk.VoxelCoordinate{})
+	})
+	t.Run("unload a tree", func(t *testing.T) {
+		viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+		viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+		viewMod.RemoveTree(chunk.ChunkCoordinate{})
+	})
 }

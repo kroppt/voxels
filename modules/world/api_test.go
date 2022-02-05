@@ -373,14 +373,11 @@ func TestUnloadChunkUpdateSelection(t *testing.T) {
 
 func TestLoadChunkAddNode(t *testing.T) {
 	t.Parallel()
-	expected := map[chunk.VoxelCoordinate]struct{}{}
-	expected[chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}] = struct{}{}
-	expected[chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}] = struct{}{}
-
-	actual := map[chunk.VoxelCoordinate]struct{}{}
+	expected := 2
+	actual := 0
 	viewMod := view.FnModule{
-		FnAddNode: func(vc chunk.VoxelCoordinate) {
-			actual[vc] = struct{}{}
+		FnAddTree: func(cc chunk.ChunkCoordinate, o *view.Octree) {
+			actual = o.CountChildren()
 		},
 	}
 	settingsRepo := settings.FnRepository{
@@ -399,21 +396,17 @@ func TestLoadChunkAddNode(t *testing.T) {
 	}
 	worldMod := world.New(graphics.FnModule{}, &gen, settingsRepo, &cache.FnModule{}, &viewMod)
 	worldMod.LoadChunk(chunk.ChunkCoordinate{})
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("expected add nodes %v but got %v", expected, actual)
+	if actual != expected {
+		t.Fatalf("expected %v leaves to be added, but %v leaves were added", expected, actual)
 	}
 }
 
 func TestUnloadChunkRemoveNode(t *testing.T) {
 	t.Parallel()
-	expected := map[chunk.VoxelCoordinate]struct{}{}
-	expected[chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}] = struct{}{}
-	expected[chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}] = struct{}{}
-
-	actual := map[chunk.VoxelCoordinate]struct{}{}
+	unloaded := false
 	viewMod := view.FnModule{
-		FnRemoveNode: func(vc chunk.VoxelCoordinate) {
-			actual[vc] = struct{}{}
+		FnRemoveTree: func(cc chunk.ChunkCoordinate) {
+			unloaded = true
 		},
 	}
 	settingsRepo := settings.FnRepository{
@@ -433,8 +426,8 @@ func TestUnloadChunkRemoveNode(t *testing.T) {
 	worldMod := world.New(graphics.FnModule{}, &gen, settingsRepo, &cache.FnModule{}, &viewMod)
 	worldMod.LoadChunk(chunk.ChunkCoordinate{})
 	worldMod.UnloadChunk(chunk.ChunkCoordinate{})
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("expected remove nodes %v but got %v", expected, actual)
+	if !unloaded {
+		t.Fatal("expected unload chunk to unload tree, but it did not")
 	}
 }
 
@@ -617,16 +610,21 @@ func TestWorldUnloadAllChunksOnQuit(t *testing.T) {
 
 func BenchmarkWorldLoadUnload(b *testing.B) {
 	chPos := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
-	ch := chunk.NewChunkEmpty(chPos, 5)
+	chunkSize := uint32(25)
+	ch := chunk.NewChunkEmpty(chPos, chunkSize)
 	ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
 		ch.SetBlockType(vc, chunk.BlockTypeDirt)
 	})
+	settingsMod := settings.FnRepository{
+		FnGetChunkSize: func() uint32 { return chunkSize },
+	}
 	actions := list.New()
+	viewMod := view.New(&graphics.FnModule{}, settingsMod)
 	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{
 		FnGenerateChunk: func(coord chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			return ch, actions
 		},
-	}, settings.FnRepository{}, &cache.FnModule{}, &view.FnModule{})
+	}, settings.FnRepository{}, &cache.FnModule{}, viewMod)
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {

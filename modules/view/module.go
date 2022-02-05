@@ -1,6 +1,7 @@
 package view
 
 import (
+	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -20,6 +21,7 @@ func New(graphicsMod graphics.Interface, settingsRepo settings.Interface) *Modul
 		c: &core{
 			graphicsMod:  graphicsMod,
 			settingsRepo: settingsRepo,
+			trees:        map[chunk.ChunkCoordinate]*Octree{},
 		},
 	}
 }

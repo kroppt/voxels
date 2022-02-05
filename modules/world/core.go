@@ -34,11 +34,13 @@ func (c *core) loadChunk(pos chunk.ChunkCoordinate) {
 	if !ok {
 		ch, actions = c.generator.GenerateChunk(pos)
 	}
+	var root *view.Octree
 	ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
 		if ch.BlockType(vc) != chunk.BlockTypeAir {
-			c.viewMod.AddNode(vc)
+			root = root.AddLeaf(&vc)
 		}
 	})
+	c.viewMod.AddTree(pos, root)
 
 	c.loadedChunks[pos] = &chunkState{
 		ch:       ch,
@@ -60,11 +62,7 @@ func (c *core) unloadChunk(pos chunk.ChunkCoordinate) {
 	if cs.modified {
 		c.cacheMod.Save(cs.ch)
 	}
-	cs.ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
-		if cs.ch.BlockType(vc) != chunk.BlockTypeAir {
-			c.viewMod.RemoveNode(vc)
-		}
-	})
+	c.viewMod.RemoveTree(pos)
 	delete(c.loadedChunks, pos)
 	c.graphicsMod.UnloadChunk(pos)
 	c.viewMod.UpdateSelection()

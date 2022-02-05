@@ -7,6 +7,8 @@ import (
 )
 
 type Interface interface {
+	AddTree(chunk.ChunkCoordinate, *Octree)
+	RemoveTree(chunk.ChunkCoordinate)
 	AddNode(chunk.VoxelCoordinate)
 	RemoveNode(chunk.VoxelCoordinate)
 	UpdateView(ViewState)
@@ -14,12 +16,22 @@ type Interface interface {
 	GetSelection() (chunk.VoxelCoordinate, bool)
 }
 
-// AddNode adds a voxel to the underlying octree, to be considered for selection.
+// AddTree adds an entire tree to the map of trees by chunk coord.
+func (m *Module) AddTree(cc chunk.ChunkCoordinate, root *Octree) {
+	m.c.addTree(cc, root)
+}
+
+// RemoveTree removes an entire tree from the map of trees.
+func (m *Module) RemoveTree(cc chunk.ChunkCoordinate) {
+	m.c.removeTree(cc)
+}
+
+// AddNode adds a voxel to its chunk's tree, panics if no tree found.
 func (m *Module) AddNode(vc chunk.VoxelCoordinate) {
 	m.c.addNode(vc)
 }
 
-// RemoveNode removes a voxel from the underlying octree, to no longer be considered for selection.
+// RemoveNode removes a voxel from its chunk's tree, panics if no tree found.
 func (m *Module) RemoveNode(vc chunk.VoxelCoordinate) {
 	m.c.removeNode(vc)
 }
@@ -49,6 +61,8 @@ type ViewState struct {
 }
 
 type FnModule struct {
+	FnAddTree         func(chunk.ChunkCoordinate, *Octree)
+	FnRemoveTree      func(chunk.ChunkCoordinate)
 	FnAddNode         func(chunk.VoxelCoordinate)
 	FnRemoveNode      func(chunk.VoxelCoordinate)
 	FnUpdateView      func(ViewState)
@@ -81,4 +95,16 @@ func (fn *FnModule) GetSelection() (chunk.VoxelCoordinate, bool) {
 		return fn.FnGetSelection()
 	}
 	return chunk.VoxelCoordinate{}, false
+}
+
+func (fn *FnModule) AddTree(cc chunk.ChunkCoordinate, root *Octree) {
+	if fn.FnAddTree != nil {
+		fn.FnAddTree(cc, root)
+	}
+}
+
+func (fn *FnModule) RemoveTree(cc chunk.ChunkCoordinate) {
+	if fn.FnRemoveTree != nil {
+		fn.FnRemoveTree(cc)
+	}
 }
