@@ -130,7 +130,6 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	c.position = posEvent
 	if c.dirAssigned {
 		c.viewMod.UpdateView(c.viewState())
-		c.viewMod.UpdateSelection()
 	}
 }
 
@@ -139,7 +138,6 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 	c.direction = dirEvent
 	if c.posAssigned {
 		c.viewMod.UpdateView(c.viewState())
-		c.viewMod.UpdateSelection()
 	}
 }
 
@@ -148,8 +146,6 @@ func (c *core) updateAction(actEvent ActionEvent) {
 		vc, selected := c.viewMod.GetSelection()
 		if selected {
 			c.worldMod.RemoveBlock(vc)
-			c.viewMod.RemoveNode(vc)
-			c.viewMod.UpdateSelection()
 		}
 	}
 }

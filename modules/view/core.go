@@ -16,10 +16,6 @@ type core struct {
 	trees        map[chunk.ChunkCoordinate]*Octree
 }
 
-func (c *core) updateSelection() {
-	c.graphicsMod.UpdateSelection(c.getSelection())
-}
-
 func (c *core) getSelection() (chunk.VoxelCoordinate, bool) {
 	eye := c.viewState.Pos
 	dir := c.viewState.Dir.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
@@ -41,6 +37,7 @@ func (c *core) updateView(vs ViewState) {
 	c.viewState = vs
 	viewableChunks := c.getViewableChunks()
 	c.graphicsMod.UpdateView(viewableChunks, c.getUpdatedViewMatrix())
+	c.graphicsMod.UpdateSelection(c.getSelection())
 }
 
 func (c *core) addTree(cc chunk.ChunkCoordinate, root *Octree) {
@@ -48,6 +45,7 @@ func (c *core) addTree(cc chunk.ChunkCoordinate, root *Octree) {
 		panic("unintended use: adding tree but one already exists for this chunk")
 	}
 	c.trees[cc] = root
+	c.graphicsMod.UpdateSelection(c.getSelection())
 }
 
 func (c *core) removeTree(cc chunk.ChunkCoordinate) {
@@ -55,6 +53,7 @@ func (c *core) removeTree(cc chunk.ChunkCoordinate) {
 		panic("unintended use: removing tree but none existed for this chunk")
 	}
 	delete(c.trees, cc)
+	c.graphicsMod.UpdateSelection(c.getSelection())
 }
 
 func (c *core) addNode(vc chunk.VoxelCoordinate) {
@@ -63,13 +62,16 @@ func (c *core) addNode(vc chunk.VoxelCoordinate) {
 		panic("tree not found for add node, unintended use")
 	}
 	c.trees[cc] = c.trees[cc].AddLeaf(&vc)
+	c.graphicsMod.UpdateSelection(c.getSelection())
 }
+
 func (c *core) removeNode(vc chunk.VoxelCoordinate) {
 	cc := chunk.VoxelCoordToChunkCoord(vc, c.settingsRepo.GetChunkSize())
 	if _, ok := c.trees[cc]; !ok {
-		panic("tree not found for add node, unintended use")
+		panic("tree not found for remove node, unintended use")
 	}
 	c.trees[cc], _ = c.trees[cc].Remove(vc)
+	c.graphicsMod.UpdateSelection(c.getSelection())
 }
 
 func (c *core) getUpdatedViewMatrix() mgl.Mat4 {

@@ -12,7 +12,6 @@ type Interface interface {
 	AddNode(chunk.VoxelCoordinate)
 	RemoveNode(chunk.VoxelCoordinate)
 	UpdateView(ViewState)
-	UpdateSelection()
 	GetSelection() (chunk.VoxelCoordinate, bool)
 }
 
@@ -42,12 +41,6 @@ func (m *Module) UpdateView(vs ViewState) {
 	m.c.updateView(vs)
 }
 
-// UpdateSelection re-calculates the currently selected voxel and passes it to
-// the graphics module.
-func (m *Module) UpdateSelection() {
-	m.c.updateSelection()
-}
-
 // GetSelection re-calculates the currently selected voxel and returns it. The return
 // value should only be considered if it is paired with a true boolean return.
 func (m *Module) GetSelection() (chunk.VoxelCoordinate, bool) {
@@ -61,13 +54,12 @@ type ViewState struct {
 }
 
 type FnModule struct {
-	FnAddTree         func(chunk.ChunkCoordinate, *Octree)
-	FnRemoveTree      func(chunk.ChunkCoordinate)
-	FnAddNode         func(chunk.VoxelCoordinate)
-	FnRemoveNode      func(chunk.VoxelCoordinate)
-	FnUpdateView      func(ViewState)
-	FnUpdateSelection func()
-	FnGetSelection    func() (chunk.VoxelCoordinate, bool)
+	FnAddTree      func(chunk.ChunkCoordinate, *Octree)
+	FnRemoveTree   func(chunk.ChunkCoordinate)
+	FnAddNode      func(chunk.VoxelCoordinate)
+	FnRemoveNode   func(chunk.VoxelCoordinate)
+	FnUpdateView   func(ViewState)
+	FnGetSelection func() (chunk.VoxelCoordinate, bool)
 }
 
 func (fn *FnModule) AddNode(vc chunk.VoxelCoordinate) {
@@ -75,21 +67,19 @@ func (fn *FnModule) AddNode(vc chunk.VoxelCoordinate) {
 		fn.FnAddNode(vc)
 	}
 }
+
 func (fn *FnModule) RemoveNode(vc chunk.VoxelCoordinate) {
 	if fn.FnRemoveNode != nil {
 		fn.FnRemoveNode(vc)
 	}
 }
+
 func (fn *FnModule) UpdateView(vs ViewState) {
 	if fn.FnUpdateView != nil {
 		fn.FnUpdateView(vs)
 	}
 }
-func (fn *FnModule) UpdateSelection() {
-	if fn.FnUpdateSelection != nil {
-		fn.FnUpdateSelection()
-	}
-}
+
 func (fn *FnModule) GetSelection() (chunk.VoxelCoordinate, bool) {
 	if fn.FnGetSelection != nil {
 		return fn.FnGetSelection()

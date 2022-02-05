@@ -51,7 +51,6 @@ func (c *core) loadChunk(pos chunk.ChunkCoordinate) {
 		c.performPendingActions(pos)
 	}
 	c.graphicsMod.LoadChunk(ch)
-	c.viewMod.UpdateSelection()
 }
 
 func (c *core) unloadChunk(pos chunk.ChunkCoordinate) {
@@ -65,7 +64,6 @@ func (c *core) unloadChunk(pos chunk.ChunkCoordinate) {
 	c.viewMod.RemoveTree(pos)
 	delete(c.loadedChunks, pos)
 	c.graphicsMod.UnloadChunk(pos)
-	c.viewMod.UpdateSelection()
 }
 
 func (c *core) handlePendingActions(actions *list.List) {
@@ -160,6 +158,7 @@ func (c *core) removeBlock(vc chunk.VoxelCoordinate) {
 	actions := cs.ch.SetBlockType(vc, chunk.BlockTypeAir)
 	cs.modified = true
 	c.handlePendingActions(actions)
+	c.viewMod.RemoveNode(vc)
 	c.graphicsMod.UpdateChunk(cs.ch)
 }
 
@@ -171,8 +170,6 @@ func (c *core) addBlock(vc chunk.VoxelCoordinate, bt chunk.BlockType) {
 	}
 	actions := cs.ch.SetBlockType(vc, bt)
 	c.handlePendingActions(actions)
-	// TODO weird that Add/Remove Node is used here
-	// but also used in player mod..?
 	c.viewMod.AddNode(vc)
 	c.graphicsMod.UpdateChunk(cs.ch)
 }

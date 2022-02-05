@@ -342,38 +342,7 @@ func TestRemoveBlockPanic(t *testing.T) {
 	worldMod.RemoveBlock(chunk.VoxelCoordinate{})
 }
 
-func TestLoadChunkUpdateSelection(t *testing.T) {
-	t.Parallel()
-	updated := false
-	viewMod := view.FnModule{
-		FnUpdateSelection: func() {
-			updated = true
-		},
-	}
-	worldMod := world.New(graphics.FnModule{}, &world.FnGenerator{}, settings.FnRepository{}, &cache.FnModule{}, &viewMod)
-	worldMod.LoadChunk(chunk.ChunkCoordinate{})
-	if !updated {
-		t.Fatal("expected selection to be updated, but it was not")
-	}
-}
-
-func TestUnloadChunkUpdateSelection(t *testing.T) {
-	t.Parallel()
-	updated := false
-	viewMod := view.FnModule{
-		FnUpdateSelection: func() {
-			updated = true
-		},
-	}
-	worldMod := world.New(graphics.FnModule{}, &world.FnGenerator{}, settings.FnRepository{}, &cache.FnModule{}, &viewMod)
-	worldMod.LoadChunk(chunk.ChunkCoordinate{})
-	worldMod.UnloadChunk(chunk.ChunkCoordinate{})
-	if !updated {
-		t.Fatal("expected selection to be updated, but it was not")
-	}
-}
-
-func TestLoadChunkAddNode(t *testing.T) {
+func TestLoadChunkAddTree(t *testing.T) {
 	t.Parallel()
 	expected := 2
 	actual := 0
@@ -403,7 +372,7 @@ func TestLoadChunkAddNode(t *testing.T) {
 	}
 }
 
-func TestUnloadChunkRemoveNode(t *testing.T) {
+func TestUnloadChunkRemoveTree(t *testing.T) {
 	t.Parallel()
 	unloaded := false
 	viewMod := view.FnModule{
@@ -670,6 +639,38 @@ func TestWorldAddBlockAddsNode(t *testing.T) {
 	}
 }
 
+func TestWorldRemoveBlockRemovesNode(t *testing.T) {
+	t.Parallel()
+
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	expectVc := chunk.VoxelCoordinate{X: 0, Y: 0, Z: 1}
+	worldGen := &world.FnGenerator{
+		FnGenerateChunk: func(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			ch := chunk.NewChunkEmpty(chPos, settingsRepo.GetChunkSize())
+			ch.SetBlockType(expectVc, chunk.BlockTypeDirt)
+			return ch, list.New()
+		},
+	}
+	var actualVc chunk.VoxelCoordinate
+	viewMod := &view.FnModule{
+		FnRemoveNode: func(vc chunk.VoxelCoordinate) {
+			actualVc = vc
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, worldGen, settingsRepo, &cache.FnModule{}, viewMod)
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+
+	worldMod.RemoveBlock(expectVc)
+
+	if actualVc != expectVc {
+		t.Fatalf("expected %v but got %v", expectVc, actualVc)
+	}
+}
+
 func TestWorldAddBlockUpdatesGraphicsChunk(t *testing.T) {
 	t.Parallel()
 
@@ -773,6 +774,9 @@ func BenchmarkWorldLoadUnload(b *testing.B) {
 	}
 }
 
+var Vc chunk.VoxelCoordinate
+var Hit bool
+
 func BenchmarkViewGetSelection(b *testing.B) {
 	chunkSize := uint32(15)
 	settingsMod := settings.FnRepository{
@@ -798,6 +802,6 @@ func BenchmarkViewGetSelection(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		viewMod.UpdateSelection()
+		Vc, Hit = viewMod.GetSelection()
 	}
 }

@@ -251,9 +251,6 @@ func TestUpdateViewWithoutPos(t *testing.T) {
 		FnUpdateView: func(viewState view.ViewState) {
 			t.Fatal("expected update view to not be called, but it was")
 		},
-		FnUpdateSelection: func() {
-			t.Fatal("expected update selection to not be called, but it was")
-		},
 	}
 	settingsMod := settings.FnRepository{}
 	playerMod := player.New(world.FnModule{}, settingsMod, viewMod)
@@ -266,9 +263,6 @@ func TestWorldViewUpdateWithoutDirection(t *testing.T) {
 		FnUpdateView: func(viewState view.ViewState) {
 			t.Fatal("expected update view to not be called, but it was")
 		},
-		FnUpdateSelection: func() {
-			t.Fatal("expected update selection to not be called, but it was")
-		},
 	}
 	playerMod := player.New(world.FnModule{}, settings.FnRepository{}, viewMod)
 	playerMod.UpdatePlayerPosition(player.PositionEvent{})
@@ -276,7 +270,6 @@ func TestWorldViewUpdateWithoutDirection(t *testing.T) {
 
 func TestWorldViewUpdateWithPosAndDir(t *testing.T) {
 	t.Parallel()
-	updatedSelection := false
 	expectedViewState := view.ViewState{
 		Pos: [3]float64{1, 2, 3},
 		Dir: mgl.Quat{
@@ -288,9 +281,6 @@ func TestWorldViewUpdateWithPosAndDir(t *testing.T) {
 	viewMod := &view.FnModule{
 		FnUpdateView: func(viewState view.ViewState) {
 			actualViewState = viewState
-		},
-		FnUpdateSelection: func() {
-			updatedSelection = true
 		},
 	}
 	settingsMod := settings.FnRepository{}
@@ -306,10 +296,6 @@ func TestWorldViewUpdateWithPosAndDir(t *testing.T) {
 	if actualViewState != expectedViewState {
 		t.Fatalf("expected view to receive view state %v but got %v", expectedViewState, actualViewState)
 	}
-	if !updatedSelection {
-		t.Fatal("failed to update selection")
-	}
-	updatedSelection = false
 
 	expected2 := view.ViewState{
 		Pos: [3]float64{7, 8, 9},
@@ -322,9 +308,6 @@ func TestWorldViewUpdateWithPosAndDir(t *testing.T) {
 
 	if actualViewState != expected2 {
 		t.Fatalf("expected world to receive view state %v but got %v", expected2, actualViewState)
-	}
-	if !updatedSelection {
-		t.Fatal("failed to update selection")
 	}
 }
 
@@ -404,14 +387,7 @@ func TestPlayerScrollDown(t *testing.T) {
 			blockRemoved = true
 		},
 	}
-	var nodeRemoved, updated bool
 	viewMod := view.FnModule{
-		FnRemoveNode: func(chunk.VoxelCoordinate) {
-			nodeRemoved = true
-		},
-		FnUpdateSelection: func() {
-			updated = true
-		},
 		FnGetSelection: func() (chunk.VoxelCoordinate, bool) {
 			return chunk.VoxelCoordinate{}, true
 		},
@@ -421,8 +397,8 @@ func TestPlayerScrollDown(t *testing.T) {
 	playerMod.UpdatePlayerAction(player.ActionEvent{
 		Scroll: player.ScrollDown,
 	})
-	if !blockRemoved || !nodeRemoved || !updated {
-		t.Fatal("failed to remove block, node, or update sel")
+	if !blockRemoved {
+		t.Fatal("failed to remove block, node, or update selection")
 	}
 }
 
@@ -436,9 +412,6 @@ func TestPlayerScrollUp(t *testing.T) {
 	viewMod := view.FnModule{
 		FnRemoveNode: func(chunk.VoxelCoordinate) {
 			t.Fatal("called remove node on scroll up")
-		},
-		FnUpdateSelection: func() {
-			t.Fatal("called update selection on scroll up")
 		},
 	}
 

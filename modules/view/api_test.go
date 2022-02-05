@@ -32,21 +32,6 @@ func TestRequiredSubModules(t *testing.T) {
 	})
 }
 
-func TestUpdateSelectionCallsGraphics(t *testing.T) {
-	t.Parallel()
-	graphicsMod := graphics.FnModule{
-		FnUpdateSelection: func(vc chunk.VoxelCoordinate, b bool) {
-			if b {
-				t.Fatal("should not have received a selection")
-			}
-		},
-	}
-	viewMod := view.New(graphicsMod, settings.FnRepository{
-		FnGetChunkSize: func() uint32 { return 1 },
-	})
-	viewMod.UpdateSelection()
-}
-
 func TestCannotGetSelectionWithoutViewState(t *testing.T) {
 	t.Parallel()
 	expected := false
@@ -324,4 +309,71 @@ func TestExistingTreeNodeActions(t *testing.T) {
 		viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
 		viewMod.RemoveTree(chunk.ChunkCoordinate{})
 	})
+}
+
+func TestTreeChangesUpdateGraphicsSelect(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		desc   string
+		calls  int
+		action func(*view.Module)
+	}
+	testCases := []testCase{
+		{
+			desc:  "add node calls update selection",
+			calls: 2,
+			action: func(viewMod *view.Module) {
+				viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+				viewMod.AddNode(chunk.VoxelCoordinate{})
+			},
+		},
+		{
+			desc:  "remove node calls update selection",
+			calls: 3,
+			action: func(viewMod *view.Module) {
+				viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+				viewMod.AddNode(chunk.VoxelCoordinate{})
+				viewMod.RemoveNode(chunk.VoxelCoordinate{})
+			},
+		},
+		{
+			desc:  "add tree calls update selection",
+			calls: 1,
+			action: func(viewMod *view.Module) {
+				viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+			},
+		},
+		{
+			desc:  "remove tree calls update selection",
+			calls: 2,
+			action: func(viewMod *view.Module) {
+				viewMod.AddTree(chunk.ChunkCoordinate{}, nil)
+				viewMod.RemoveTree(chunk.ChunkCoordinate{})
+			},
+		},
+		{
+			desc:  "update view calls update selection",
+			calls: 1,
+			action: func(viewMod *view.Module) {
+				viewMod.UpdateView(view.ViewState{})
+			},
+		},
+	}
+
+	for _, tC := range testCases {
+		t.Run(tC.desc, func(t *testing.T) {
+			var calls int
+			graphicsMod := &graphics.FnModule{
+				FnUpdateSelection: func(chunk.VoxelCoordinate, bool) {
+					calls++
+				},
+			}
+			viewMod := view.New(graphicsMod, settings.FnRepository{})
+			tC.action(viewMod)
+			if calls != tC.calls {
+				t.Fatalf("expected %v calls but got %v", tC.calls, calls)
+			}
+		})
+	}
 }
