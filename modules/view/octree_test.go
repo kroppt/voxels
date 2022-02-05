@@ -1,18 +1,18 @@
-package world_test
+package view_test
 
 import (
 	"testing"
 
 	mgl "github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
-	"github.com/kroppt/voxels/modules/world"
+	"github.com/kroppt/voxels/modules/view"
 )
 
 func TestOneVoxelOctree(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   1,
 	}
@@ -34,10 +34,10 @@ func TestOneVoxelOctree(t *testing.T) {
 
 func TestAdjacentTwoVoxelOctree(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   2,
 	}
@@ -55,10 +55,10 @@ func TestAdjacentTwoVoxelOctree(t *testing.T) {
 
 func TestCorneredTwoVoxelOctree(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   2,
 	}
@@ -76,10 +76,10 @@ func TestCorneredTwoVoxelOctree(t *testing.T) {
 
 func TestTwoDistantVoxelOctree(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 0, Z: 0})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   4,
 	}
@@ -98,10 +98,10 @@ func TestTwoDistantVoxelOctree(t *testing.T) {
 
 func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 4, Y: 0, Z: 0})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   8,
 	}
@@ -119,11 +119,11 @@ func TestTwoVeryDistantVoxelOctree(t *testing.T) {
 
 func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   4,
 	}
@@ -142,12 +142,12 @@ func TestTwoDistantVoxelOctreeWithAnother(t *testing.T) {
 
 func TestOctreeReassignment(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	vOld := &chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}
 	root = root.AddLeaf(vOld)
 	vNew := &chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}
 	root = root.AddLeaf(vNew)
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   1,
 	}
@@ -171,11 +171,11 @@ func TestOctreeReassignment(t *testing.T) {
 
 func TestThreeVoxelOctree(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{0, 0, 0},
 		Size:   4,
 	}
@@ -194,12 +194,12 @@ func TestThreeVoxelOctree(t *testing.T) {
 
 func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{-4, -4, -4},
 		Size:   8,
 	}
@@ -217,13 +217,13 @@ func TestThreeVoxelOctreeWithBackwards(t *testing.T) {
 
 func TestOctreeFarCornerDoesntChange(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: -1, Y: -1, Z: -1})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: -4, Y: 3, Z: 3})
-	expectedAABC := &world.AABC{
+	expectedAABC := &view.AABC{
 		Origin: mgl.Vec3{-4, -4, -4},
 		Size:   8,
 	}
@@ -241,7 +241,7 @@ func TestOctreeFarCornerDoesntChange(t *testing.T) {
 
 func TestOctreeRemoveRoot(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 1, Z: 0})
@@ -269,7 +269,7 @@ func TestOctreeRemoveRoot(t *testing.T) {
 
 func TestOctreeDoNotRemoveRoot(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 1, Z: 0})
@@ -293,7 +293,7 @@ func TestOctreeDoNotRemoveRoot(t *testing.T) {
 
 func TestOctreeFastRootBreak(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 1, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 1, Z: 1})
@@ -314,7 +314,7 @@ func TestOctreeFastRootBreak(t *testing.T) {
 
 func TestOctreeFasterRootBreak(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 1, Z: 0})
 	result, removed := root.Remove(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
@@ -328,7 +328,7 @@ func TestOctreeFasterRootBreak(t *testing.T) {
 
 func TestOctreeRootSingleShrink(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1})
 	result, removed := root.Remove(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
@@ -345,7 +345,7 @@ func TestOctreeRootSingleShrink(t *testing.T) {
 
 func TestOctreeRootDoubleShrink(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 2, Z: 2})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3})
@@ -360,7 +360,7 @@ func TestOctreeRootDoubleShrink(t *testing.T) {
 
 func TestOctreeNoRootShrink(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0})
@@ -375,7 +375,7 @@ func TestOctreeNoRootShrink(t *testing.T) {
 
 func TestFindClosestIntersectSingleVoxel(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 3, Y: 3, Z: 3})
 	eye := mgl.Vec3{3.5, 3.5, 4.5}
 	dir := mgl.Vec3{0, 0, -1}
@@ -395,7 +395,7 @@ func TestFindClosestIntersectSingleVoxel(t *testing.T) {
 
 func TestFindClosestIntersect(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: -2})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: -3})
@@ -423,7 +423,7 @@ func TestFindClosestIntersect(t *testing.T) {
 
 func TestFindClosestIntersectFar(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: -3})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: -1, Y: 0, Z: 0})
@@ -449,7 +449,7 @@ func TestFindClosestIntersectFar(t *testing.T) {
 
 func TestFindClosestIntersectAngle(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 0, Z: -2})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: -1, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 1, Z: 0})
@@ -474,7 +474,7 @@ func TestFindClosestIntersectAngle(t *testing.T) {
 
 func TestFindClosestIntersectAngle2(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 2, Y: 0, Z: -2})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: -2})
 
@@ -496,7 +496,7 @@ func TestFindClosestIntersectAngle2(t *testing.T) {
 
 func TestFindClosestIntersectInsideVoxel(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 1})
@@ -518,7 +518,7 @@ func TestFindClosestIntersectInsideVoxel(t *testing.T) {
 
 func TestTreePrint(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	actual := root.String()
 	expected := "{(0,0,0)->{}}"
@@ -529,7 +529,7 @@ func TestTreePrint(t *testing.T) {
 
 func TestTreePrintTwoNodes(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0})
 
@@ -542,7 +542,7 @@ func TestTreePrintTwoNodes(t *testing.T) {
 
 func TestTreePrintDoubleExpand(t *testing.T) {
 	t.Parallel()
-	var root *world.Octree
+	var root *view.Octree
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 	root = root.AddLeaf(&chunk.VoxelCoordinate{X: 3, Y: 0, Z: 0})
 

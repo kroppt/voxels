@@ -13,7 +13,8 @@ type Interface interface {
 	LoadChunk(chunk.Chunk)
 	UnloadChunk(chunk.ChunkCoordinate)
 	UpdateChunk(chunk.Chunk)
-	UpdateView(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, chunk.VoxelCoordinate, bool)
+	UpdateView(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4)
+	UpdateSelection(chunk.VoxelCoordinate, bool)
 	DestroyWindow() error
 	Render()
 }
@@ -50,8 +51,13 @@ func (m *Module) UnloadChunk(pos chunk.ChunkCoordinate) {
 
 // UpdateView updates what chunks the graphics module should
 // try to render.
-func (m *Module) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
-	m.c.updateView(viewableChunks, viewMat, selectedVoxel, selected)
+func (m *Module) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4) {
+	m.c.updateView(viewableChunks, viewMat)
+}
+
+// UpdateSelection updates the currently selected voxel
+func (m *Module) UpdateSelection(selectedVoxel chunk.VoxelCoordinate, selected bool) {
+	m.c.updateSelection(selectedVoxel, selected)
 }
 
 // DestroyWindow destroys an SDL window.
@@ -64,15 +70,16 @@ func (m *Module) Render() {
 }
 
 type FnModule struct {
-	FnCreateWindow  func(string)
-	FnShowWindow    func()
-	FnPollEvent     func() (sdl.Event, bool)
-	FnLoadChunk     func(chunk.Chunk)
-	FnUpdateChunk   func(chunk.Chunk)
-	FnUnloadChunk   func(chunk.ChunkCoordinate)
-	FnUpdateView    func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4, chunk.VoxelCoordinate, bool)
-	FnDestroyWindow func() error
-	FnRender        func()
+	FnCreateWindow    func(string)
+	FnShowWindow      func()
+	FnPollEvent       func() (sdl.Event, bool)
+	FnLoadChunk       func(chunk.Chunk)
+	FnUpdateChunk     func(chunk.Chunk)
+	FnUnloadChunk     func(chunk.ChunkCoordinate)
+	FnUpdateView      func(map[chunk.ChunkCoordinate]struct{}, mgl.Mat4)
+	FnUpdateSelection func(chunk.VoxelCoordinate, bool)
+	FnDestroyWindow   func() error
+	FnRender          func()
 }
 
 func (fn FnModule) CreateWindow(title string) error {
@@ -113,9 +120,15 @@ func (fn FnModule) UnloadChunk(pos chunk.ChunkCoordinate) {
 	}
 }
 
-func (fn FnModule) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+func (fn FnModule) UpdateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, viewMat mgl.Mat4) {
 	if fn.FnUpdateView != nil {
-		fn.FnUpdateView(viewableChunks, viewMat, selectedVoxel, selected)
+		fn.FnUpdateView(viewableChunks, viewMat)
+	}
+}
+
+func (fn FnModule) UpdateSelection(selectedVoxel chunk.VoxelCoordinate, selected bool) {
+	if fn.FnUpdateSelection != nil {
+		fn.FnUpdateSelection(selectedVoxel, selected)
 	}
 }
 

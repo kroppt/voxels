@@ -2,6 +2,7 @@ package player
 
 import (
 	"github.com/kroppt/voxels/chunk"
+	"github.com/kroppt/voxels/modules/view"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -9,6 +10,7 @@ import (
 type core struct {
 	worldMod     world.Interface
 	settingsMod  settings.Interface
+	viewMod      view.Interface
 	lastChunkPos chunk.ChunkCoordinate
 	posAssigned  bool
 	position     PositionEvent
@@ -70,11 +72,11 @@ func (rng chunkRange) contains(pos chunk.ChunkCoordinate) bool {
 	return true
 }
 
-func (c *core) viewState() world.ViewState {
+func (c *core) viewState() view.ViewState {
 	if !c.dirAssigned || !c.posAssigned {
 		panic("direction or position not assigned, unintended use")
 	}
-	return world.ViewState{
+	return view.ViewState{
 		Pos: [3]float64{c.position.X, c.position.Y, c.position.Z},
 		Dir: c.direction.Rotation,
 	}
@@ -127,7 +129,8 @@ func (c *core) updatePosition(posEvent PositionEvent) {
 	c.posAssigned = true
 	c.position = posEvent
 	if c.dirAssigned {
-		c.worldMod.UpdateView(c.viewState())
+		c.viewMod.UpdateView(c.viewState())
+		c.viewMod.UpdateSelection()
 	}
 }
 
@@ -135,12 +138,18 @@ func (c *core) updateDirection(dirEvent DirectionEvent) {
 	c.dirAssigned = true
 	c.direction = dirEvent
 	if c.posAssigned {
-		c.worldMod.UpdateView(c.viewState())
+		c.viewMod.UpdateView(c.viewState())
+		c.viewMod.UpdateSelection()
 	}
 }
 
 func (c *core) updateAction(actEvent ActionEvent) {
 	if actEvent.Scroll == ScrollDown {
-		c.worldMod.RemoveSelection()
+		vc, selected := c.viewMod.GetSelection()
+		if selected {
+			c.worldMod.RemoveBlock(vc)
+			c.viewMod.RemoveNode(vc)
+			c.viewMod.UpdateSelection()
+		}
 	}
 }

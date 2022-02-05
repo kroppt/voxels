@@ -11,6 +11,7 @@ import (
 	"github.com/kroppt/voxels/modules/input"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/tick"
+	"github.com/kroppt/voxels/modules/view"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
 	"github.com/kroppt/voxels/util"
@@ -42,8 +43,9 @@ func main() {
 	generator := world.NewAlexWorldGenerator(settingsRepo)
 	// generator := world.NewFlatWorldGenerator(settingsRepo)
 	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
-	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod)
-	playerMod := player.New(worldMod, settingsRepo)
+	viewMod := view.New(graphicsMod, settingsRepo)
+	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod, viewMod)
+	playerMod := player.New(worldMod, settingsRepo, viewMod)
 	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 20, Z: 0.5})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo, playerMod)
 	tickRateNano := int64(100 * 1e6)

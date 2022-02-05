@@ -9,12 +9,10 @@ import (
 type Interface interface {
 	LoadChunk(chunk.ChunkCoordinate)
 	UnloadChunk(chunk.ChunkCoordinate)
-	UpdateView(ViewState)
 	Quit()
 	CountLoadedChunks() int
-	SetBlockType(chunk.VoxelCoordinate, chunk.BlockType)
 	GetBlockType(chunk.VoxelCoordinate) chunk.BlockType
-	RemoveSelection() bool
+	RemoveBlock(chunk.VoxelCoordinate)
 }
 
 type ViewState struct {
@@ -30,10 +28,6 @@ func (m *Module) UnloadChunk(pos chunk.ChunkCoordinate) {
 	m.c.unloadChunk(pos)
 }
 
-func (m *Module) UpdateView(viewState ViewState) {
-	m.c.updateView(viewState)
-}
-
 func (m *Module) Quit() {
 	m.c.quit()
 }
@@ -42,27 +36,21 @@ func (m *Module) CountLoadedChunks() int {
 	return m.c.countLoadedChunks()
 }
 
-func (m *Module) SetBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
-	m.c.setBlockType(pos, btype)
-}
-
 func (m *Module) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 	return m.c.getBlockType(pos)
 }
 
-func (m *Module) RemoveSelection() bool {
-	return m.c.removeSelection()
+func (m *Module) RemoveBlock(vc chunk.VoxelCoordinate) {
+	m.c.removeBlock(vc)
 }
 
 type FnModule struct {
 	FnLoadChunk         func(chunk.ChunkCoordinate)
 	FnUnloadChunk       func(chunk.ChunkCoordinate)
-	FnUpdateView        func(ViewState)
 	FnQuit              func()
 	FnCountLoadedChunks func() int
-	FnSetBlockType      func(chunk.VoxelCoordinate, chunk.BlockType)
 	FnGetBlockType      func(chunk.VoxelCoordinate) chunk.BlockType
-	FnRemoveSelection   func() bool
+	FnRemoveBlock       func(chunk.VoxelCoordinate)
 }
 
 func (fn FnModule) LoadChunk(pos chunk.ChunkCoordinate) {
@@ -74,12 +62,6 @@ func (fn FnModule) LoadChunk(pos chunk.ChunkCoordinate) {
 func (fn FnModule) UnloadChunk(pos chunk.ChunkCoordinate) {
 	if fn.FnUnloadChunk != nil {
 		fn.FnUnloadChunk(pos)
-	}
-}
-
-func (fn FnModule) UpdateView(viewState ViewState) {
-	if fn.FnUpdateView != nil {
-		fn.FnUpdateView(viewState)
 	}
 }
 
@@ -96,12 +78,6 @@ func (fn FnModule) CountLoadedChunks() int {
 	return 0
 }
 
-func (fn FnModule) SetBlockType(pos chunk.VoxelCoordinate, btype chunk.BlockType) {
-	if fn.FnSetBlockType != nil {
-		fn.FnSetBlockType(pos, btype)
-	}
-}
-
 func (fn FnModule) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 	if fn.FnGetBlockType != nil {
 		return fn.FnGetBlockType(pos)
@@ -109,9 +85,8 @@ func (fn FnModule) GetBlockType(pos chunk.VoxelCoordinate) chunk.BlockType {
 	return chunk.BlockTypeAir
 }
 
-func (fn FnModule) RemoveSelection() bool {
-	if fn.FnRemoveSelection != nil {
-		return fn.FnRemoveSelection()
+func (fn FnModule) RemoveBlock(vc chunk.VoxelCoordinate) {
+	if fn.FnRemoveBlock != nil {
+		fn.FnRemoveBlock(vc)
 	}
-	return false
 }

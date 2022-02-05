@@ -6,6 +6,7 @@ import (
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/cache"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/view"
 	"github.com/kroppt/voxels/repositories/settings"
 )
 
@@ -18,6 +19,7 @@ func New(
 	generator Generator,
 	settingsRepo settings.Interface,
 	cacheMod cache.Interface,
+	viewMod view.Interface,
 ) *Module {
 	if generator == nil {
 		panic("world received a nil generator")
@@ -28,12 +30,16 @@ func New(
 	if graphicsMod == nil {
 		panic("world received a nil graphics module")
 	}
+	if viewMod == nil {
+		panic("world received a nil view module")
+	}
 	return &Module{
 		core{
 			graphicsMod:    graphicsMod,
 			generator:      generator,
 			settingsRepo:   settingsRepo,
 			cacheMod:       cacheMod,
+			viewMod:        viewMod,
 			loadedChunks:   map[chunk.ChunkCoordinate]*chunkState{},
 			pendingActions: map[chunk.ChunkCoordinate]*list.List{},
 		},

@@ -159,9 +159,21 @@ func (c *core) getUpdatedProjMatrix() mgl.Mat4 {
 	return mgl.Perspective(fovRad, aspect, near, far)
 }
 
-func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4, selectedVoxel chunk.VoxelCoordinate, selected bool) {
+func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, view mgl.Mat4) {
 	c.viewableChunks = viewableChunks
+	// TODO actually use viewable chunks
+	proj := c.getUpdatedProjMatrix()
+	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
+	if err != nil {
+		panic(fmt.Sprintf("failed to upload camera view to ubo: %v", err))
+	}
+	err = c.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(view)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
+	if err != nil {
+		panic(fmt.Sprintf("failed to upload camera proj to ubo: %v", err))
+	}
+}
 
+func (c *core) updateSelection(selectedVoxel chunk.VoxelCoordinate, selected bool) {
 	somethingToSomethingElse := selected && c.selected && selectedVoxel != c.selectedVoxel
 	nothingToSomething := selected && !c.selected
 	if somethingToSomethingElse || nothingToSomething {
@@ -173,16 +185,6 @@ func (c *core) updateView(viewableChunks map[chunk.ChunkCoordinate]struct{}, vie
 		c.selectedVoxel = selectedVoxel
 	}
 	c.selected = selected
-
-	proj := c.getUpdatedProjMatrix()
-	err := c.ubo.BufferSubData(gl.UNIFORM_BUFFER, 0, uint32(unsafe.Sizeof(view)), gl.Ptr(&view[0]))
-	if err != nil {
-		panic(fmt.Sprintf("failed to upload camera view to ubo: %v", err))
-	}
-	err = c.ubo.BufferSubData(gl.UNIFORM_BUFFER, uint32(unsafe.Sizeof(view)), uint32(unsafe.Sizeof(proj)), gl.Ptr(&proj[0]))
-	if err != nil {
-		panic(fmt.Sprintf("failed to upload camera proj to ubo: %v", err))
-	}
 }
 
 func (c *core) loadChunk(chunk chunk.Chunk) {
@@ -229,6 +231,7 @@ func (c *core) render() {
 
 	c.textureMap.Bind()
 	for _, chunkObj := range c.loadedChunks {
+		// TODO use viewable chunks
 		chunkObj.render()
 	}
 	c.textureMap.Unbind()
