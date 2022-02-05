@@ -14,26 +14,35 @@ type Interface interface {
 	GetSelection() (chunk.VoxelCoordinate, bool)
 }
 
+// AddNode adds a voxel to the underlying octree, to be considered for selection.
 func (m *Module) AddNode(vc chunk.VoxelCoordinate) {
 	m.c.addNode(vc)
 }
 
+// RemoveNode removes a voxel from the underlying octree, to no longer be considered for selection.
 func (m *Module) RemoveNode(vc chunk.VoxelCoordinate) {
 	m.c.removeNode(vc)
 }
 
+// UpdateView calculated frustum culling and the view matrix and passes it to
+// the graphics module.
 func (m *Module) UpdateView(vs ViewState) {
 	m.c.updateView(vs)
 }
 
+// UpdateSelection re-calculates the currently selected voxel and passes it to
+// the graphics module.
 func (m *Module) UpdateSelection() {
 	m.c.updateSelection()
 }
 
+// GetSelection re-calculates the currently selected voxel and returns it. The return
+// value should only be considered if it is paired with a true boolean return.
 func (m *Module) GetSelection() (chunk.VoxelCoordinate, bool) {
 	return m.c.getSelection()
 }
 
+// ViewState represents the way the view is positioned and oriented.
 type ViewState struct {
 	Pos mgl.Vec3
 	Dir mgl.Quat

@@ -157,7 +157,7 @@ func (c *core) removeBlock(vc chunk.VoxelCoordinate) {
 	cc := chunk.VoxelCoordToChunkCoord(vc, c.settingsRepo.GetChunkSize())
 	cs, ok := c.loadedChunks[cc]
 	if !ok {
-		panic("tried to a remove a block in a chunk that isn't loaded")
+		panic("tried to a remove a block from a chunk that isn't loaded")
 	}
 	actions := cs.ch.SetBlockType(vc, chunk.BlockTypeAir)
 	cs.modified = true
