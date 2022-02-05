@@ -601,3 +601,23 @@ func TestGraphicsExpectedLoadsAndUpdates(t *testing.T) {
 // 		t.Fatalf("expected chunk count to be %v but was %v", expectSaved, actualSaved)
 // 	}
 // }
+
+func BenchmarkWorldLoadUnload(b *testing.B) {
+	chPos := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}
+	ch := chunk.NewChunkEmpty(chPos, 5)
+	ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+		ch.SetBlockType(vc, chunk.BlockTypeDirt)
+	})
+	actions := list.New()
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{
+		FnGenerateChunk: func(coord chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			return ch, actions
+		},
+	}, settings.FnRepository{}, &cache.FnModule{}, &view.FnModule{})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		worldMod.LoadChunk(chPos)
+		worldMod.UnloadChunk(chPos)
+	}
+}
