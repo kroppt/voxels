@@ -169,6 +169,7 @@ func (c *core) addBlock(vc chunk.VoxelCoordinate, bt chunk.BlockType) {
 		panic("tried to add a block from a chunk that isn't loaded")
 	}
 	actions := cs.ch.SetBlockType(vc, bt)
+	cs.modified = true
 	c.handlePendingActions(actions)
 	c.viewMod.AddNode(vc)
 	c.graphicsMod.UpdateChunk(cs.ch)

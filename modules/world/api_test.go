@@ -241,43 +241,84 @@ func TestCannotGetBlockInUnloadedChunk(t *testing.T) {
 	worldMod.GetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0})
 }
 
-func TestWorldSavesAfterUnloading(t *testing.T) {
+func TestWorldAddedSavesOnUnload(t *testing.T) {
 	t.Parallel()
-	saved := false
-	loaded := false
+
+	var saved bool
 	cacheMod := &cache.FnModule{
 		FnSave: func(chunk.Chunk) {
 			saved = true
 		},
-		FnLoad: func(cc chunk.ChunkCoordinate) (chunk.Chunk, bool) {
-			loaded = true
-			return chunk.Chunk{}, false
-		},
 	}
 	settingsRepo := settings.FnRepository{
 		FnGetChunkSize: func() uint32 {
-			return 2
+			return 1
 		},
 	}
 	gen := world.FnGenerator{
 		FnGenerateChunk: func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.GetChunkSize())
-			l := list.New()
-			l.PushBackList(c.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}, chunk.BlockTypeStone))
-			return c, l
+			return c, list.New()
 		},
 	}
 	worldMod := world.New(&graphics.FnModule{}, &gen, settingsRepo, cacheMod, &view.FnModule{})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
-	worldMod.RemoveBlock(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1})
-	worldMod.UnloadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
-	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{})
+	worldMod.AddBlock(chunk.VoxelCoordinate{}, chunk.BlockTypeSnow)
+	worldMod.UnloadChunk(chunk.ChunkCoordinate{})
 
 	if !saved {
-		t.Fatal("expected chunk to be saved, but it wasn't")
+		t.Fatal("expected to be saved but was not")
 	}
-	if !loaded {
-		t.Fatal("expected chunk to be loaded, but it wasn't")
+}
+
+func TestWorldRemovedSavesOnUnload(t *testing.T) {
+	t.Parallel()
+
+	var saved bool
+	cacheMod := &cache.FnModule{
+		FnSave: func(chunk.Chunk) {
+			saved = true
+		},
+	}
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 1
+		},
+	}
+	gen := world.FnGenerator{
+		FnGenerateChunk: func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.GetChunkSize())
+			c.SetBlockType(chunk.VoxelCoordinate{}, chunk.BlockTypeSand)
+			return c, list.New()
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &gen, settingsRepo, cacheMod, &view.FnModule{})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{})
+	worldMod.RemoveBlock(chunk.VoxelCoordinate{})
+	worldMod.UnloadChunk(chunk.ChunkCoordinate{})
+
+	if !saved {
+		t.Fatal("expected to be saved but was not")
+	}
+}
+
+func TestWorldLoadCallsCacheLoad(t *testing.T) {
+	t.Parallel()
+
+	var actualCc chunk.ChunkCoordinate
+	cacheMod := &cache.FnModule{
+		FnLoad: func(cc chunk.ChunkCoordinate) (chunk.Chunk, bool) {
+			actualCc = cc
+			return chunk.Chunk{}, true
+		},
+	}
+	expectCc := chunk.ChunkCoordinate{X: 0, Y: 0, Z: 1}
+	worldMod := world.New(graphics.FnModule{}, &world.FnGenerator{}, settings.FnRepository{}, cacheMod, &view.FnModule{})
+
+	worldMod.LoadChunk(expectCc)
+
+	if expectCc != actualCc {
+		t.Fatalf("expected load of %v but got %v", expectCc, actualCc)
 	}
 }
 
@@ -297,7 +338,19 @@ func TestWorldClosesCacheOnQuit(t *testing.T) {
 	}
 }
 
-func TestWorldDoesNotSaveChunkIfUnmodified(t *testing.T) {
+func TestWorldUnmodifiedNotSavedOnUnload(t *testing.T) {
+	t.Parallel()
+	cacheMod := &cache.FnModule{
+		FnSave: func(chunk.Chunk) {
+			t.Fatal("chunk was saved when none were expected to")
+		},
+	}
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{}, settings.FnRepository{}, cacheMod, &view.FnModule{})
+	worldMod.LoadChunk(chunk.ChunkCoordinate{X: 0, Y: 2, Z: 3})
+	worldMod.UnloadChunk(chunk.ChunkCoordinate{X: 0, Y: 2, Z: 3})
+}
+
+func TestWorldUnmodifiedNotSavedOnQuit(t *testing.T) {
 	t.Parallel()
 	cacheMod := &cache.FnModule{
 		FnSave: func(chunk.Chunk) {
@@ -359,10 +412,9 @@ func TestLoadChunkAddTree(t *testing.T) {
 	gen := world.FnGenerator{
 		FnGenerateChunk: func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.GetChunkSize())
-			l := list.New()
-			l.PushBackList(c.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeStone))
-			l.PushBackList(c.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}, chunk.BlockTypeStone))
-			return c, l
+			c.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeStone)
+			c.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}, chunk.BlockTypeStone)
+			return c, list.New()
 		},
 	}
 	worldMod := world.New(graphics.FnModule{}, &gen, settingsRepo, &cache.FnModule{}, &viewMod)
@@ -388,10 +440,9 @@ func TestUnloadChunkRemoveTree(t *testing.T) {
 	gen := world.FnGenerator{
 		FnGenerateChunk: func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 			c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.GetChunkSize())
-			l := list.New()
-			l.PushBackList(c.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeStone))
-			l.PushBackList(c.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}, chunk.BlockTypeStone))
-			return c, l
+			c.SetBlockType(chunk.VoxelCoordinate{X: 0, Y: 0, Z: 0}, chunk.BlockTypeStone)
+			c.SetBlockType(chunk.VoxelCoordinate{X: 1, Y: 1, Z: 1}, chunk.BlockTypeStone)
+			return c, list.New()
 		},
 	}
 	worldMod := world.New(graphics.FnModule{}, &gen, settingsRepo, &cache.FnModule{}, &viewMod)
@@ -495,7 +546,7 @@ func TestPendingActionsAlsoUpdatesGraphics(t *testing.T) {
 	}
 }
 
-func TestGraphicsExpectedLoadsAndUpdates(t *testing.T) {
+func TestGraphicsAdjacentChunksLoadAndUpdate(t *testing.T) {
 	t.Parallel()
 	expectedLoads := 1
 	expectedUpdates := 1
@@ -544,7 +595,7 @@ func TestGraphicsExpectedLoadsAndUpdates(t *testing.T) {
 	}
 }
 
-func TestWorldUnloadAllChunksOnQuit(t *testing.T) {
+func TestWorldSaveAllChunksOnQuit(t *testing.T) {
 	t.Parallel()
 	expectSaved := 18
 	actualSaved := 0
