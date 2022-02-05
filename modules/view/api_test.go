@@ -74,7 +74,11 @@ func TestGetSelectionValidEmptyTree(t *testing.T) {
 func TestGetSelectionValid(t *testing.T) {
 	t.Parallel()
 	expectedSelection := chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}
-	viewMod := view.New(graphics.FnModule{}, settings.FnRepository{})
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize:      func() uint32 { return 1 },
+		FnGetRenderDistance: func() uint32 { return 1 },
+	}
+	viewMod := view.New(graphics.FnModule{}, settingsRepo)
 	viewMod.UpdateView(view.ViewState{
 		Pos: [3]float64{0.5, 0.5, 0.5},
 		Dir: mgl.QuatIdent(),

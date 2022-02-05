@@ -4,7 +4,6 @@ import (
 	"math"
 
 	mgl "github.com/go-gl/mathgl/mgl64"
-	"github.com/kroppt/voxels/chunk"
 )
 
 // AABC represents an Axis Aligned Bounding Cube, where the
@@ -133,26 +132,4 @@ func Intersect(box AABC, pos, dir mgl.Vec3) (dist float64, hit bool) {
 	dist = min
 
 	return
-}
-
-// GetClosest returns the closest voxel in the list to the eye pos
-func GetClosest(eye mgl.Vec3, positions []*chunk.VoxelCoordinate) (*chunk.VoxelCoordinate, float64) {
-	var closestDist float64
-	var found bool
-	var closestVoxel *chunk.VoxelCoordinate
-	for i := 0; i < len(positions); i++ {
-		v := positions[i]
-		diff := mgl.Vec3{
-			float64(positions[i].X) - eye.X(),
-			float64(positions[i].Y) - eye.Y(),
-			float64(positions[i].Z) - eye.Z(),
-		}
-		dist := diff.Len()
-		if !found || dist < closestDist {
-			found = true
-			closestDist = dist
-			closestVoxel = v
-		}
-	}
-	return closestVoxel, closestDist
 }

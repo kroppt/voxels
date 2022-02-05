@@ -5,9 +5,11 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/cache"
 	"github.com/kroppt/voxels/modules/graphics"
+	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/view"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -630,5 +632,34 @@ func BenchmarkWorldLoadUnload(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		worldMod.LoadChunk(chPos)
 		worldMod.UnloadChunk(chPos)
+	}
+}
+
+func BenchmarkViewGetSelection(b *testing.B) {
+	chunkSize := uint32(15)
+	settingsMod := settings.FnRepository{
+		FnGetChunkSize:      func() uint32 { return chunkSize },
+		FnGetRenderDistance: func() uint32 { return 7 },
+	}
+	actions := list.New()
+	viewMod := view.New(&graphics.FnModule{}, settingsMod)
+	worldMod := world.New(&graphics.FnModule{}, &world.FnGenerator{
+		FnGenerateChunk: func(coord chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			ch := chunk.NewChunkEmpty(coord, settingsMod.FnGetChunkSize())
+			ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+				ch.SetBlockType(vc, chunk.BlockTypeCorrupted)
+			})
+			return ch, actions
+		},
+	}, settings.FnRepository{}, &cache.FnModule{}, viewMod)
+	playerMod := player.New(worldMod, settingsMod, viewMod)
+	playerMod.UpdatePlayerPosition(player.PositionEvent{})
+	playerMod.UpdatePlayerDirection(player.DirectionEvent{
+		Rotation: mgl64.QuatIdent(),
+	})
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		viewMod.UpdateSelection()
 	}
 }

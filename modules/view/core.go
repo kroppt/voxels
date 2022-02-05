@@ -27,11 +27,6 @@ func (c *core) getSelection() (chunk.VoxelCoordinate, bool) {
 	var lowestDist float64
 	var closestVox chunk.VoxelCoordinate
 	for _, root := range c.trees {
-		// chunks out of viewing frustum cannot be intersected
-		// TODO optimization here
-		// if _, ok := viewableChunks[chPos]; !ok {
-		// 	continue
-		// }
 		vc, dist, ok := root.FindClosestIntersect(eye, dir)
 		if ok && (dist < lowestDist || !found) {
 			lowestDist = dist
