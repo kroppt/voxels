@@ -389,3 +389,20 @@ func TestGetChildAABCCases(t *testing.T) {
 		})
 	}
 }
+
+var Dist float64
+var Hit bool
+
+func BenchmarkIntersect(b *testing.B) {
+	aabc := view.AABC{
+		Origin: [3]float64{0, 0, 0},
+		Size:   1,
+	}
+	pos := mgl.Vec3{-0.5, 0.5, 1.5}
+	dir := mgl.Vec3{1, 0, -1}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		Dist, Hit = view.Intersect(aabc, pos, dir)
+	}
+}
