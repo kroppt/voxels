@@ -70,7 +70,7 @@ func (c *core) createWindow(title string) error {
 	if _, err = window.GLCreateContext(); err != nil {
 		return err
 	}
-	if err = sdl.GLSetSwapInterval(1); err != nil {
+	if err = sdl.GLSetSwapInterval(0); err != nil {
 		return err
 	}
 
