@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"os"
+	"time"
 
 	"github.com/kroppt/voxels/log"
 	"github.com/kroppt/voxels/modules/cache"
@@ -35,7 +37,15 @@ func main() {
 		settingsRepo.SetFromReader(readCloser)
 		readCloser.Close()
 	}
-	graphicsMod := graphics.New(settingsRepo)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	graphicsMod := graphics.NewParallel(settingsRepo)
+	done := make(chan struct{})
+	go func() {
+		graphicsMod.Run(ctx)
+		close(done)
+	}()
+
 	err := graphicsMod.CreateWindow("voxels")
 	if err != nil {
 		log.Fatal(err)
@@ -53,14 +63,21 @@ func main() {
 	graphicsMod.ShowWindow()
 
 	keepRunning := true
+	before := time.Now()
+	frames := 0
 	for keepRunning {
 		if tickMod.IsNextTickReady() {
 			tickMod.AdvanceTick()
 		}
 		graphicsMod.Render()
+		frames++
 		keepRunning = inputMod.RouteEvents()
 	}
+	duration := time.Since(before)
+	log.Perff("frames: %v, duration: %v, fps: %v", frames, duration, float64(frames)/duration.Seconds())
 	worldMod.Quit()
 	graphicsMod.DestroyWindow()
+	cancel()
+	<-done
 	util.LogMetrics()
 }

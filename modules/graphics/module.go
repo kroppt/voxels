@@ -1,6 +1,8 @@
 package graphics
 
 import (
+	"context"
+
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/repositories/settings"
 )
@@ -19,5 +21,33 @@ func New(settingsRepo settings.Interface) *Module {
 			loadedChunks:   map[chunk.ChunkCoordinate]*glObject{},
 			viewableChunks: map[chunk.ChunkCoordinate]struct{}{},
 		},
+	}
+}
+
+type ParallelModule struct {
+	do chan func()
+	c  core
+}
+
+func NewParallel(settingsRepo settings.Interface) *ParallelModule {
+	return &ParallelModule{
+		do: make(chan func()),
+		c: core{
+			window:         nil,
+			settingsRepo:   settingsRepo,
+			loadedChunks:   map[chunk.ChunkCoordinate]*glObject{},
+			viewableChunks: map[chunk.ChunkCoordinate]struct{}{},
+		},
+	}
+}
+
+func (m *ParallelModule) Run(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case f := <-m.do:
+			f()
+		}
 	}
 }
