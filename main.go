@@ -57,13 +57,7 @@ func main() {
 	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
 	viewMod := view.New(graphicsMod, settingsRepo)
 	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod, viewMod)
-	playerMod := player.NewParallel(worldMod, settingsRepo, viewMod)
-	wg.Add(1)
-	go func() {
-		playerMod.Run(ctx)
-		wg.Done()
-	}()
-
+	playerMod := player.New(worldMod, settingsRepo, viewMod)
 	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 20, Z: 0.5})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo, playerMod)
 	tickRateNano := int64(100 * 1e6)
