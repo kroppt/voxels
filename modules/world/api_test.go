@@ -13,6 +13,7 @@ import (
 	"github.com/kroppt/voxels/modules/view"
 	"github.com/kroppt/voxels/modules/world"
 	"github.com/kroppt/voxels/repositories/settings"
+	"github.com/spf13/afero"
 )
 
 func TestWorldLoadedChunkCount(t *testing.T) {
@@ -854,5 +855,81 @@ func BenchmarkViewGetSelection(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		Vc, Hit = viewMod.GetSelection()
+	}
+}
+
+func BenchmarkWorldLoadChunkOverhead(b *testing.B) {
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.FnGetChunkSize())
+	l := list.New()
+	c.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+		l.PushBackList(c.SetBlockType(vc, chunk.BlockTypeStone))
+	})
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			return c, l
+		},
+	}
+	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		worldMod.LoadChunk(chunk.ChunkCoordinate{})
+		worldMod.UnloadChunk(chunk.ChunkCoordinate{})
+	}
+}
+
+func BenchmarkWorldLoadChunkGeneration(b *testing.B) {
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.FnGetChunkSize())
+			l := list.New()
+			c.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+				l.PushBackList(c.SetBlockType(vc, chunk.BlockTypeStone))
+			})
+			return c, l
+		},
+	}
+	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		worldMod.LoadChunk(chunk.ChunkCoordinate{})
+		worldMod.UnloadChunk(chunk.ChunkCoordinate{})
+	}
+}
+
+func BenchmarkWorldLoadChunkCache(b *testing.B) {
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+	}
+	cacheMod := cache.New(&afero.MemMapFs{}, settingsRepo)
+	c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, settingsRepo.FnGetChunkSize())
+	l := list.New()
+	c.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+		l.PushBackList(c.SetBlockType(vc, chunk.BlockTypeStone))
+	})
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			return c, l
+		},
+	}
+	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, cacheMod, &view.FnModule{})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		worldMod.LoadChunk(chunk.ChunkCoordinate{})
+		worldMod.UnloadChunk(chunk.ChunkCoordinate{})
 	}
 }
