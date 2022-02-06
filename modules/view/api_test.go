@@ -78,6 +78,31 @@ func TestGetSelectionValid(t *testing.T) {
 		t.Fatalf("expected to select %v but got %v\n", expectedSelection, actualSelection)
 	}
 }
+
+func TestGetPlacement(t *testing.T) {
+	t.Parallel()
+	initialBlock := chunk.VoxelCoordinate{X: 0, Y: 0, Z: -5}
+	expectedPlacement := chunk.VoxelCoordinate{X: 0, Y: 0, Z: -4}
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize:      func() uint32 { return 1 },
+		FnGetRenderDistance: func() uint32 { return 1 },
+	}
+	viewMod := view.New(graphics.FnModule{}, settingsRepo)
+	viewMod.UpdateView(view.ViewState{
+		Pos: [3]float64{0.5, 0.5, 0.5},
+		Dir: mgl.QuatIdent(),
+	})
+	var tree *view.Octree
+	viewMod.AddTree(chunk.ChunkCoordinate{X: 0, Y: 0, Z: -1}, tree.AddLeaf(&initialBlock))
+	actualPlacement, ok := viewMod.GetPlacement()
+	if !ok {
+		t.Fatal("expected to get a true selection, but got a false one")
+	}
+	if actualPlacement != expectedPlacement {
+		t.Fatalf("expected to select %v but got %v\n", expectedPlacement, actualPlacement)
+	}
+}
+
 func TestUpdateViewCallsGraphics(t *testing.T) {
 	t.Parallel()
 	expected := true

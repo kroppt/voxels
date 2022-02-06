@@ -390,6 +390,105 @@ func TestGetChildAABCCases(t *testing.T) {
 	}
 }
 
+func TestGetSideAABC(t *testing.T) {
+	t.Parallel()
+	testCases := []struct {
+		pos        mgl.Vec3
+		dir        mgl.Vec3
+		expectAabc view.AABC
+		expectHit  bool
+	}{
+		{
+			pos: mgl.Vec3{-0.5, 0.5, 0.5},
+			dir: mgl.Vec3{1, 0, 0},
+			expectAabc: view.AABC{
+				Origin: [3]float64{-1, 0, 0},
+				Size:   1,
+			},
+			expectHit: true,
+		},
+		{
+			pos: mgl.Vec3{1.5, 0.5, 0.5},
+			dir: mgl.Vec3{-1, 0, 0},
+			expectAabc: view.AABC{
+				Origin: [3]float64{1, 0, 0},
+				Size:   1,
+			},
+			expectHit: true,
+		},
+		{
+			pos: mgl.Vec3{0.5, 1.5, 0.5},
+			dir: mgl.Vec3{0, -1, 0},
+			expectAabc: view.AABC{
+				Origin: [3]float64{0, 1, 0},
+				Size:   1,
+			},
+			expectHit: true,
+		},
+		{
+			pos: mgl.Vec3{0.5, -0.5, 0.5},
+			dir: mgl.Vec3{0, 1, 0},
+			expectAabc: view.AABC{
+				Origin: [3]float64{0, -1, 0},
+				Size:   1,
+			},
+			expectHit: true,
+		},
+		{
+			pos: mgl.Vec3{0.5, 0.5, 1.5},
+			dir: mgl.Vec3{0, 0, -1},
+			expectAabc: view.AABC{
+				Origin: [3]float64{0, 0, 1},
+				Size:   1,
+			},
+			expectHit: true,
+		},
+		{
+			pos: mgl.Vec3{0.5, 0.5, -0.5},
+			dir: mgl.Vec3{0, 0, 1},
+			expectAabc: view.AABC{
+				Origin: [3]float64{0, 0, -1},
+				Size:   1,
+			},
+			expectHit: true,
+		},
+		{
+			pos:        mgl.Vec3{1.5, 0.5, 1.5},
+			dir:        mgl.Vec3{0, 0, -1},
+			expectAabc: view.AABC{},
+			expectHit:  false,
+		},
+		{
+			pos: mgl.Vec3{1.5, 0.5, 1.5},
+			dir: mgl.Vec3{-0.5, 0, -1},
+			expectAabc: view.AABC{
+				Origin: [3]float64{1, 0, 0},
+				Size:   1,
+			},
+			expectHit: true,
+		},
+		{
+			pos:        mgl.Vec3{0.5, 0.5, 0.5},
+			dir:        mgl.Vec3{-0.5, 0, -1},
+			expectAabc: view.AABC{},
+			expectHit:  false,
+		},
+	}
+	for _, tC := range testCases {
+		aabc := view.AABC{
+			Origin: [3]float64{0, 0, 0},
+			Size:   1,
+		}
+		actual, ok := view.GetSideAABC(aabc, tC.pos, tC.dir)
+		if ok != tC.expectHit {
+			t.Fatalf("expected hit to be %v but got %v", tC.expectHit, ok)
+		}
+		if actual != tC.expectAabc {
+			t.Fatalf("expected to get side aabc %v but got %v", tC.expectAabc, actual)
+		}
+	}
+}
+
 var Dist float64
 var Hit bool
 

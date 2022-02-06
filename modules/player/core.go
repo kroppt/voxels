@@ -147,5 +147,10 @@ func (c *core) updateAction(actEvent ActionEvent) {
 		if selected {
 			c.worldMod.RemoveBlock(vc)
 		}
+	} else if actEvent.Scroll == ScrollUp {
+		vc, ok := c.viewMod.GetPlacement()
+		if ok {
+			c.worldMod.AddBlock(vc, chunk.BlockTypeSnowSides)
+		}
 	}
 }

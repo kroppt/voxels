@@ -33,6 +33,24 @@ func (c *core) getSelection() (chunk.VoxelCoordinate, bool) {
 	return closestVox, found
 }
 
+func (c *core) getPlacement() (chunk.VoxelCoordinate, bool) {
+	eye := c.viewState.Pos
+	dir := c.viewState.Dir.Rotate(mgl.Vec3{0.0, 0.0, -1.0})
+	selection, ok := c.getSelection()
+	if !ok {
+		return chunk.VoxelCoordinate{}, false
+	}
+	placement, ok := GetSideAABC(AABC{
+		Origin: [3]float64{float64(selection.X), float64(selection.Y), float64(selection.Z)},
+		Size:   1,
+	}, eye, dir)
+	return chunk.VoxelCoordinate{
+		X: int32(placement.Origin.X()),
+		Y: int32(placement.Origin.Y()),
+		Z: int32(placement.Origin.Z()),
+	}, ok
+}
+
 func (c *core) updateView(vs ViewState) {
 	c.viewState = vs
 	viewableChunks := c.getViewableChunks()

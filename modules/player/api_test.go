@@ -381,15 +381,16 @@ func TestViewUpdateAfterUnloadingChunks(t *testing.T) {
 
 func TestPlayerScrollDown(t *testing.T) {
 	t.Parallel()
-	blockRemoved := false
+	expectRemoved := chunk.VoxelCoordinate{X: 1, Y: 2, Z: 3}
+	var actualRemoved chunk.VoxelCoordinate
 	worldMod := world.FnModule{
-		FnRemoveBlock: func(chunk.VoxelCoordinate) {
-			blockRemoved = true
+		FnRemoveBlock: func(vc chunk.VoxelCoordinate) {
+			actualRemoved = vc
 		},
 	}
 	viewMod := view.FnModule{
 		FnGetSelection: func() (chunk.VoxelCoordinate, bool) {
-			return chunk.VoxelCoordinate{}, true
+			return expectRemoved, true
 		},
 	}
 
@@ -397,24 +398,65 @@ func TestPlayerScrollDown(t *testing.T) {
 	playerMod.UpdatePlayerAction(player.ActionEvent{
 		Scroll: player.ScrollDown,
 	})
-	if !blockRemoved {
-		t.Fatal("failed to remove block, node, or update selection")
+	if actualRemoved != expectRemoved {
+		t.Fatalf("expected %v to be removed but %v was removed", expectRemoved, actualRemoved)
 	}
+}
+
+func TestPlayerScrollDownInvalid(t *testing.T) {
+	t.Parallel()
+	worldMod := world.FnModule{
+		FnRemoveBlock: func(vc chunk.VoxelCoordinate) {
+			t.Fatal("expected no block to be removed, but one was removed")
+		},
+	}
+	viewMod := view.FnModule{
+		FnGetSelection: func() (chunk.VoxelCoordinate, bool) {
+			return chunk.VoxelCoordinate{}, false
+		},
+	}
+
+	playerMod := player.New(worldMod, settings.FnRepository{}, &viewMod)
+	playerMod.UpdatePlayerAction(player.ActionEvent{
+		Scroll: player.ScrollDown,
+	})
 }
 
 func TestPlayerScrollUp(t *testing.T) {
 	t.Parallel()
+	var actualPlacement chunk.VoxelCoordinate
 	worldMod := world.FnModule{
-		FnRemoveBlock: func(chunk.VoxelCoordinate) {
-			t.Fatal("called remove block on scroll up")
+		FnAddBlock: func(vc chunk.VoxelCoordinate, btype chunk.BlockType) {
+			actualPlacement = vc
+		},
+	}
+	expectedPlacement := chunk.VoxelCoordinate{X: 1, Y: 2, Z: 3}
+	viewMod := view.FnModule{
+		FnGetPlacement: func() (chunk.VoxelCoordinate, bool) {
+			return expectedPlacement, true
+		},
+	}
+	playerMod := player.New(worldMod, settings.FnRepository{}, &viewMod)
+	playerMod.UpdatePlayerAction(player.ActionEvent{
+		Scroll: player.ScrollUp,
+	})
+	if actualPlacement != expectedPlacement {
+		t.Fatalf("expected player to place block at %v but got %v", expectedPlacement, actualPlacement)
+	}
+}
+
+func TestPlayerScrollUpInvalid(t *testing.T) {
+	t.Parallel()
+	worldMod := world.FnModule{
+		FnAddBlock: func(vc chunk.VoxelCoordinate, btype chunk.BlockType) {
+			t.Fatal("added a block but did not expect to")
 		},
 	}
 	viewMod := view.FnModule{
-		FnRemoveNode: func(chunk.VoxelCoordinate) {
-			t.Fatal("called remove node on scroll up")
+		FnGetPlacement: func() (chunk.VoxelCoordinate, bool) {
+			return chunk.VoxelCoordinate{}, false
 		},
 	}
-
 	playerMod := player.New(worldMod, settings.FnRepository{}, &viewMod)
 	playerMod.UpdatePlayerAction(player.ActionEvent{
 		Scroll: player.ScrollUp,

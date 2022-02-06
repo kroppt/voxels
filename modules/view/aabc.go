@@ -133,3 +133,56 @@ func Intersect(box AABC, pos, dir mgl.Vec3) (dist float64, hit bool) {
 
 	return
 }
+
+// GetSideAABC returns the AABC that is in front of the side of the aabc that you are looking at.
+// If your view does not intersect the provided AABC, then false will be returned to indicate that.
+func GetSideAABC(box AABC, eye, dir mgl.Vec3) (AABC, bool) {
+	dist, hit := Intersect(box, eye, dir)
+	if !hit || dist < 0 {
+		return AABC{}, false
+	}
+	size := float64(box.Size)
+	ghostBoxes := []AABC{
+		{
+			Origin: [3]float64{box.Origin.X() + size, box.Origin.Y(), box.Origin.Z()},
+			Size:   box.Size,
+		},
+		{
+			Origin: [3]float64{box.Origin.X() - size, box.Origin.Y(), box.Origin.Z()},
+			Size:   box.Size,
+		},
+		{
+			Origin: [3]float64{box.Origin.X(), box.Origin.Y() + size, box.Origin.Z()},
+			Size:   box.Size,
+		},
+		{
+			Origin: [3]float64{box.Origin.X(), box.Origin.Y() - size, box.Origin.Z()},
+			Size:   box.Size,
+		},
+		{
+			Origin: [3]float64{box.Origin.X(), box.Origin.Y(), box.Origin.Z() + size},
+			Size:   box.Size,
+		},
+		{
+			Origin: [3]float64{box.Origin.X(), box.Origin.Y(), box.Origin.Z() - size},
+			Size:   box.Size,
+		},
+	}
+	var assigned bool
+	var closestDist float64
+	var winningIdx int
+	for idx, ghost := range ghostBoxes {
+		dist, hit := Intersect(ghost, eye, dir)
+		if hit {
+			if dist < closestDist || !assigned {
+				closestDist = dist
+				winningIdx = idx
+			}
+			assigned = true
+		}
+	}
+	if assigned {
+		return ghostBoxes[winningIdx], true
+	}
+	return AABC{}, false
+}

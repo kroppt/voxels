@@ -43,8 +43,11 @@ const (
 	BlockTypeSnow
 	BlockTypeSnowSides
 	BlockTypeSand
+	BlockTypeLog
+	BlockTypeLogDark
+	BlockTypeClay
 )
-const LargestVbits = uint32(BlockTypeSand)<<6 | uint32(AdjacentAll)
+const LargestVbits = uint32(BlockTypeClay)<<6 | uint32(AdjacentAll)
 
 const VertSize = 5
 const BytesPerElement = 4

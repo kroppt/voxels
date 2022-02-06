@@ -13,6 +13,7 @@ type Interface interface {
 	RemoveNode(chunk.VoxelCoordinate)
 	UpdateView(ViewState)
 	GetSelection() (chunk.VoxelCoordinate, bool)
+	GetPlacement() (chunk.VoxelCoordinate, bool)
 }
 
 // AddTree adds an entire tree to the map of trees by chunk coord.
@@ -47,6 +48,13 @@ func (m *Module) GetSelection() (chunk.VoxelCoordinate, bool) {
 	return m.c.getSelection()
 }
 
+// GetPlacement re-calculates the current placement voxel and returns it. The return
+// value should only be considered if it is paired with a true boolean return.
+// i.e. this is where you would place a block if you were to place one
+func (m *Module) GetPlacement() (chunk.VoxelCoordinate, bool) {
+	return m.c.getPlacement()
+}
+
 // ViewState represents the way the view is positioned and oriented.
 type ViewState struct {
 	Pos mgl.Vec3
@@ -60,6 +68,7 @@ type FnModule struct {
 	FnRemoveNode   func(chunk.VoxelCoordinate)
 	FnUpdateView   func(ViewState)
 	FnGetSelection func() (chunk.VoxelCoordinate, bool)
+	FnGetPlacement func() (chunk.VoxelCoordinate, bool)
 }
 
 func (fn *FnModule) AddNode(vc chunk.VoxelCoordinate) {
@@ -83,6 +92,13 @@ func (fn *FnModule) UpdateView(vs ViewState) {
 func (fn *FnModule) GetSelection() (chunk.VoxelCoordinate, bool) {
 	if fn.FnGetSelection != nil {
 		return fn.FnGetSelection()
+	}
+	return chunk.VoxelCoordinate{}, false
+}
+
+func (fn *FnModule) GetPlacement() (chunk.VoxelCoordinate, bool) {
+	if fn.FnGetPlacement != nil {
+		return fn.FnGetPlacement()
 	}
 	return chunk.VoxelCoordinate{}, false
 }
