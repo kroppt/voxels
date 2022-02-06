@@ -113,12 +113,10 @@ func (c *core) quit() {
 		ch.ApplyActions(actions)
 		c.cacheMod.Save(ch)
 	}
-
-	for pos, cs := range c.loadedChunks {
+	for _, cs := range c.loadedChunks {
 		if cs.modified {
 			c.cacheMod.Save(cs.ch)
 		}
-		c.graphicsMod.UnloadChunk(pos)
 	}
 	c.cacheMod.Close()
 }

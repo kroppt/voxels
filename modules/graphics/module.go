@@ -31,7 +31,7 @@ type ParallelModule struct {
 
 func NewParallel(settingsRepo settings.Interface) *ParallelModule {
 	return &ParallelModule{
-		do: make(chan func()),
+		do: make(chan func(), 10),
 		c: core{
 			window:         nil,
 			settingsRepo:   settingsRepo,
@@ -45,6 +45,7 @@ func (m *ParallelModule) Run(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
+			m.DestroyWindow()
 			return
 		case f := <-m.do:
 			f()

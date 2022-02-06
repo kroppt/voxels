@@ -146,6 +146,9 @@ func (c *core) destroyWindow() error {
 	c.textureMap.Destroy()
 	c.crosshair.destroy()
 	c.selectionFrame.destroy()
+	for _, obj := range c.loadedChunks {
+		obj.destroy()
+	}
 	sdl.Quit()
 	return err
 }
@@ -230,7 +233,15 @@ func (c *core) render() {
 
 	c.textureMap.Bind()
 	for key := range c.viewableChunks {
-		c.loadedChunks[key].render()
+		// TODO talk with tyler about this
+		// this is a change to core.go because viewableChunks and
+		// loadedChunks are communicated independently at diff times
+
+		// this change was solely made because of the parallel module
+		//  - is this right to do?
+		if _, ok := c.loadedChunks[key]; ok {
+			c.loadedChunks[key].render()
+		}
 	}
 	c.textureMap.Unbind()
 

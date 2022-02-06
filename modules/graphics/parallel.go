@@ -83,11 +83,7 @@ func (m *ParallelModule) UpdateSelection(selectedVoxel chunk.VoxelCoordinate, se
 }
 
 func (m *ParallelModule) DestroyWindow() error {
-	done := make(chan error)
-	m.do <- func() {
-		done <- m.c.destroyWindow()
-	}
-	return <-done
+	return m.c.destroyWindow()
 }
 
 func (m *ParallelModule) Render() {

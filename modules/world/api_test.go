@@ -2,12 +2,15 @@ package world_test
 
 import (
 	"container/list"
+	"context"
+	"math"
 	"reflect"
 	"testing"
 
 	"github.com/go-gl/mathgl/mgl64"
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/cache"
+	"github.com/kroppt/voxels/modules/camera"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/modules/player"
 	"github.com/kroppt/voxels/modules/view"
@@ -932,4 +935,88 @@ func BenchmarkWorldLoadChunkCache(b *testing.B) {
 		worldMod.LoadChunk(chunk.ChunkCoordinate{})
 		worldMod.UnloadChunk(chunk.ChunkCoordinate{})
 	}
+}
+
+func BenchmarkTravelingInWorldSequential(b *testing.B) {
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+		FnGetRenderDistance: func() uint32 {
+			return 5
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(cc chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			c := chunk.NewChunkEmpty(cc, settingsRepo.FnGetChunkSize())
+			l := list.New()
+			c.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+				l.PushBackList(c.SetBlockType(vc, chunk.BlockTypeStone))
+			})
+			return c, l
+		},
+	}
+	worldMod := world.New(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
+	viewMod := view.New(graphics.FnModule{}, settingsRepo)
+	playerMod := player.New(worldMod, settingsRepo, viewMod)
+	cameraMod := camera.New(playerMod, player.PositionEvent{})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cameraMod.HandleLookEvent(camera.LookEvent{
+			Right: 2 * math.Pi,
+			Down:  2 * math.Pi,
+		})
+		cameraMod.HandleMovementEvent(camera.MovementEvent{
+			Direction: camera.MoveForwards,
+			Pressed:   true,
+		})
+		cameraMod.Tick()
+	}
+}
+
+func BenchmarkTravelingInWorldParallel(b *testing.B) {
+	settingsRepo := settings.FnRepository{
+		FnGetChunkSize: func() uint32 {
+			return 5
+		},
+		FnGetRenderDistance: func() uint32 {
+			return 5
+		},
+	}
+	testGen := &world.FnGenerator{
+		FnGenerateChunk: func(cc chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+			c := chunk.NewChunkEmpty(cc, settingsRepo.FnGetChunkSize())
+			l := list.New()
+			c.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+				l.PushBackList(c.SetBlockType(vc, chunk.BlockTypeStone))
+			})
+			return c, l
+		},
+	}
+	worldMod := world.NewParallel(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
+	done := make(chan struct{})
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		worldMod.Run(ctx)
+		close(done)
+	}()
+	viewMod := view.New(graphics.FnModule{}, settingsRepo)
+	playerMod := player.New(worldMod, settingsRepo, viewMod)
+	cameraMod := camera.New(playerMod, player.PositionEvent{})
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		cameraMod.HandleLookEvent(camera.LookEvent{
+			Right: 2 * math.Pi,
+			Down:  2 * math.Pi,
+		})
+		cameraMod.HandleMovementEvent(camera.MovementEvent{
+			Direction: camera.MoveForwards,
+			Pressed:   true,
+		})
+		cameraMod.Tick()
+	}
+	cancel()
+	<-done
 }
