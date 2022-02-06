@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/kroppt/voxels/log"
@@ -40,10 +41,11 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	graphicsMod := graphics.NewParallel(settingsRepo)
-	done := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
 		graphicsMod.Run(ctx)
-		close(done)
+		wg.Done()
 	}()
 
 	err := graphicsMod.CreateWindow("voxels")
@@ -55,7 +57,13 @@ func main() {
 	cacheMod := cache.New(afero.NewOsFs(), settingsRepo)
 	viewMod := view.New(graphicsMod, settingsRepo)
 	worldMod := world.New(graphicsMod, generator, settingsRepo, cacheMod, viewMod)
-	playerMod := player.New(worldMod, settingsRepo, viewMod)
+	playerMod := player.NewParallel(worldMod, settingsRepo, viewMod)
+	wg.Add(1)
+	go func() {
+		playerMod.Run(ctx)
+		wg.Done()
+	}()
+
 	cameraMod := camera.New(playerMod, player.PositionEvent{X: 0.5, Y: 20, Z: 0.5})
 	inputMod := input.New(graphicsMod, cameraMod, settingsRepo, playerMod)
 	tickRateNano := int64(100 * 1e6)
@@ -78,6 +86,6 @@ func main() {
 	worldMod.Quit()
 	graphicsMod.DestroyWindow()
 	cancel()
-	<-done
+	wg.Wait()
 	util.LogMetrics()
 }
