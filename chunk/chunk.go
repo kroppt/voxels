@@ -46,8 +46,9 @@ const (
 	BlockTypeLog
 	BlockTypeLogDark
 	BlockTypeClay
+	BlockTypeLeaf
 )
-const LargestVbits = uint32(BlockTypeClay)<<6 | uint32(AdjacentAll)
+const LargestVbits = uint32(BlockTypeLeaf)<<6 | uint32(AdjacentAll)
 
 const VertSize = 5
 const BytesPerElement = 4
