@@ -91,22 +91,15 @@ func (c *core) handlePendingActions(actions *list.List) {
 }
 
 func (c *core) performPendingActions(cc chunk.ChunkCoordinate) {
-	if _, ok := c.loadedChunks[cc]; !ok {
-		panic("attempted to perform pending actions on a chunk that isn't loaded")
-	}
-	if _, ok := c.pendingActions[cc]; !ok {
+	actions, ok := c.pendingActions[cc]
+	if !ok {
 		panic("attempted to perform pending actions on a chunk that doesn't have any")
 	}
-	actions := c.pendingActions[cc]
-	for action := actions.Front(); action != nil; action = action.Next() {
-		pa := action.Value.(chunk.PendingAction)
-		ch := c.loadedChunks[pa.ChPos]
-		if pa.HideFace {
-			ch.ch.AddAdjacency(pa.VoxPos, pa.Face)
-		} else {
-			ch.ch.RemoveAdjacency(pa.VoxPos, pa.Face)
-		}
+	cs, ok := c.loadedChunks[cc]
+	if !ok {
+		panic("attempted to perform pending actions on a chunk that isn't loaded")
 	}
+	cs.ch.ApplyActions(actions)
 	c.loadedChunks[cc].modified = true
 	delete(c.pendingActions, cc)
 }
@@ -117,14 +110,7 @@ func (c *core) quit() {
 		if !ok {
 			ch, _ = c.generator.GenerateChunk(key)
 		}
-		for action := actions.Front(); action != nil; action = action.Next() {
-			pa := action.Value.(chunk.PendingAction)
-			if pa.HideFace {
-				ch.AddAdjacency(pa.VoxPos, pa.Face)
-			} else {
-				ch.RemoveAdjacency(pa.VoxPos, pa.Face)
-			}
-		}
+		ch.ApplyActions(actions)
 		c.cacheMod.Save(ch)
 	}
 

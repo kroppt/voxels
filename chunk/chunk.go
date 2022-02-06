@@ -250,6 +250,23 @@ func (c Chunk) SetBlockType(vpos VoxelCoordinate, btype BlockType) *list.List {
 	return pending
 }
 
+func (c Chunk) ApplyActions(actions *list.List) {
+	for action := actions.Front(); action != nil; action = action.Next() {
+		a, ok := action.Value.(PendingAction)
+		if !ok {
+			panic("cannot apply an action that isn't a PendingAction")
+		}
+		if a.ChPos != c.Position() {
+			panic("tried to apply an action on the wrong chunk!")
+		}
+		if a.HideFace {
+			c.AddAdjacency(a.VoxPos, a.Face)
+		} else {
+			c.RemoveAdjacency(a.VoxPos, a.Face)
+		}
+	}
+}
+
 func (c Chunk) BlockType(vpos VoxelCoordinate) BlockType {
 	off := c.voxelPosToDataOffset(vpos)
 	vbits := uint32(c.flatData[off+3])

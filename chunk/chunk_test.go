@@ -770,3 +770,32 @@ func TestRemoveBlockAtChunkBoundaries(t *testing.T) {
 		}
 	})
 }
+
+func TestChunkAppliesActions(t *testing.T) {
+	c := chunk.NewChunkEmpty(chunk.ChunkCoordinate{}, 2)
+	actions := list.New()
+	expect1 := chunk.AdjacentAll
+	expect2 := chunk.AdjacentX
+	actions.PushBack(chunk.PendingAction{
+		ChPos:    chunk.ChunkCoordinate{},
+		VoxPos:   chunk.VoxelCoordinate{0, 0, 0},
+		HideFace: true,
+		Face:     chunk.AdjacentAll,
+	})
+	actions.PushBack(chunk.PendingAction{
+		ChPos:    chunk.ChunkCoordinate{},
+		VoxPos:   chunk.VoxelCoordinate{1, 1, 1},
+		HideFace: true,
+		Face:     chunk.AdjacentX,
+	})
+	c.ApplyActions(actions)
+	actual1 := c.Adjacency(chunk.VoxelCoordinate{0, 0, 0})
+	actual2 := c.Adjacency(chunk.VoxelCoordinate{1, 1, 1})
+
+	if actual1 != expect1 {
+		t.Fatalf("(1) expected adjacency %v but got %v", expect1, actual1)
+	}
+	if actual2 != expect2 {
+		t.Fatalf("(2) expected adjacency %v but got %v", expect2, actual2)
+	}
+}
