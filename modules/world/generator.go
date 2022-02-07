@@ -29,7 +29,7 @@ type TrentWorldGenerator struct {
 
 func NewTrentWorldGenerator(settingsRepo settings.Interface) *TrentWorldGenerator {
 	if settingsRepo == nil {
-		panic("flat world generator missing settings repo")
+		panic("trent world generator missing settings repo")
 	}
 	return &TrentWorldGenerator{
 		settingsRepo: settingsRepo,
