@@ -23,6 +23,33 @@ func (fn *FnGenerator) GenerateChunk(pos chunk.ChunkCoordinate) (chunk.Chunk, *l
 	return chunk.NewChunkEmpty(pos, 1), list.New()
 }
 
+type TrentWorldGenerator struct {
+	settingsRepo settings.Interface
+}
+
+func NewTrentWorldGenerator(settingsRepo settings.Interface) *TrentWorldGenerator {
+	if settingsRepo == nil {
+		panic("flat world generator missing settings repo")
+	}
+	return &TrentWorldGenerator{
+		settingsRepo: settingsRepo,
+	}
+}
+
+func (gen *TrentWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
+	size := int32(gen.settingsRepo.GetChunkSize())
+	ch := chunk.NewChunkEmpty(chPos, uint32(size))
+	pending := list.New()
+	ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+		pending.PushBackList(ch.SetBlockType(vc, gen.generateAt(vc.X, vc.Y, vc.Z)))
+	})
+	return ch, pending
+}
+
+func (gen *TrentWorldGenerator) generateAt(x, y, z int32) chunk.BlockType {
+	return chunk.BlockTypeAir
+}
+
 type FlatWorldGenerator struct {
 	settingsRepo settings.Interface
 }
