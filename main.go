@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"os"
 	"sync"
 	"time"
@@ -39,12 +38,11 @@ func main() {
 		readCloser.Close()
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
 	graphicsMod := graphics.NewParallel(settingsRepo)
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go func() {
-		graphicsMod.Run(ctx)
+		graphicsMod.Run()
 		wg.Done()
 	}()
 
@@ -58,13 +56,13 @@ func main() {
 	viewMod := view.NewParallel(graphicsMod, settingsRepo)
 	wg.Add(1)
 	go func() {
-		viewMod.Run(ctx)
+		viewMod.Run()
 		wg.Done()
 	}()
 	worldMod := world.NewParallel(graphicsMod, generator, settingsRepo, cacheMod, viewMod)
 	wg.Add(1)
 	go func() {
-		worldMod.Run(ctx)
+		worldMod.Run()
 		wg.Done()
 	}()
 	playerMod := player.New(worldMod, settingsRepo, viewMod)
@@ -87,7 +85,7 @@ func main() {
 	}
 	duration := time.Since(before)
 	log.Perff("frames: %v, duration: %v, fps: %v", frames, duration, float64(frames)/duration.Seconds())
-	cancel()
+	worldMod.Close()
 	wg.Wait()
 	util.LogMetrics()
 }

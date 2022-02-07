@@ -2,7 +2,6 @@ package world
 
 import (
 	"container/list"
-	"context"
 
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/cache"
@@ -85,14 +84,17 @@ func NewParallel(
 	}
 }
 
-func (m *ParallelModule) Run(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			m.Quit()
-			return
-		case f := <-m.do:
-			f()
-		}
+func (m *ParallelModule) Run() {
+	for f := range m.do {
+		f()
 	}
+	m.Quit()
+	m.c.viewMod.Close()
+}
+
+// Close stops the parallel execution.
+//
+// Close should be called when no more API calls will be used.
+func (m *ParallelModule) Close() {
+	close(m.do)
 }

@@ -14,6 +14,7 @@ type Interface interface {
 	UpdateView(ViewState)
 	GetSelection() (chunk.VoxelCoordinate, bool)
 	GetPlacement() (chunk.VoxelCoordinate, bool)
+	Close()
 }
 
 // AddTree adds an entire tree to the map of trees by chunk coord.
@@ -55,6 +56,10 @@ func (m *Module) GetPlacement() (chunk.VoxelCoordinate, bool) {
 	return m.c.getPlacement()
 }
 
+// Close does nothing.
+func (m *Module) Close() {
+}
+
 // ViewState represents the way the view is positioned and oriented.
 type ViewState struct {
 	Pos mgl.Vec3
@@ -69,6 +74,7 @@ type FnModule struct {
 	FnUpdateView   func(ViewState)
 	FnGetSelection func() (chunk.VoxelCoordinate, bool)
 	FnGetPlacement func() (chunk.VoxelCoordinate, bool)
+	FnClose        func()
 }
 
 func (fn *FnModule) AddNode(vc chunk.VoxelCoordinate) {
@@ -112,5 +118,11 @@ func (fn *FnModule) AddTree(cc chunk.ChunkCoordinate, root *Octree) {
 func (fn *FnModule) RemoveTree(cc chunk.ChunkCoordinate) {
 	if fn.FnRemoveTree != nil {
 		fn.FnRemoveTree(cc)
+	}
+}
+
+func (fn *FnModule) Close() {
+	if fn.FnClose != nil {
+		fn.FnClose()
 	}
 }

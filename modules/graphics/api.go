@@ -17,6 +17,7 @@ type Interface interface {
 	UpdateSelection(chunk.VoxelCoordinate, bool)
 	DestroyWindow() error
 	Render()
+	Close()
 }
 
 // CreateWindow creates an SDL window.
@@ -69,6 +70,10 @@ func (m *Module) Render() {
 	m.c.render()
 }
 
+// Close does nothing.
+func (m *Module) Close() {
+}
+
 type FnModule struct {
 	FnCreateWindow    func(string)
 	FnShowWindow      func()
@@ -80,6 +85,7 @@ type FnModule struct {
 	FnUpdateSelection func(chunk.VoxelCoordinate, bool)
 	FnDestroyWindow   func() error
 	FnRender          func()
+	FnClose           func()
 }
 
 func (fn FnModule) CreateWindow(title string) error {
@@ -142,5 +148,11 @@ func (fn FnModule) DestroyWindow() error {
 func (fn FnModule) Render() {
 	if fn.FnRender != nil {
 		fn.FnRender()
+	}
+}
+
+func (fn FnModule) Close() {
+	if fn.FnClose != nil {
+		fn.FnClose()
 	}
 }

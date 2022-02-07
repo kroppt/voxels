@@ -1,8 +1,6 @@
 package view
 
 import (
-	"context"
-
 	"github.com/kroppt/voxels/chunk"
 	"github.com/kroppt/voxels/modules/graphics"
 	"github.com/kroppt/voxels/repositories/settings"
@@ -50,13 +48,16 @@ func NewParallel(graphicsMod graphics.Interface, settingsRepo settings.Interface
 	}
 }
 
-func (m *ParallelModule) Run(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case f := <-m.do:
-			f()
-		}
+func (m *ParallelModule) Run() {
+	for f := range m.do {
+		f()
 	}
+	m.c.graphicsMod.Close()
+}
+
+// Close stops the parallel execution.
+//
+// Close should be called when no more API calls will be used.
+func (m *ParallelModule) Close() {
+	close(m.do)
 }

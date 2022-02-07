@@ -2,7 +2,6 @@ package world_test
 
 import (
 	"container/list"
-	"context"
 	"math"
 	"reflect"
 	"testing"
@@ -996,9 +995,8 @@ func BenchmarkTravelingInWorldParallel(b *testing.B) {
 	}
 	worldMod := world.NewParallel(graphics.FnModule{}, testGen, settingsRepo, &cache.FnModule{}, &view.FnModule{})
 	done := make(chan struct{})
-	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
-		worldMod.Run(ctx)
+		worldMod.Run()
 		close(done)
 	}()
 	viewMod := view.New(graphics.FnModule{}, settingsRepo)
@@ -1017,6 +1015,6 @@ func BenchmarkTravelingInWorldParallel(b *testing.B) {
 		})
 		cameraMod.Tick()
 	}
-	cancel()
+	worldMod.Close()
 	<-done
 }
