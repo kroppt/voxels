@@ -23,33 +23,6 @@ func (fn *FnGenerator) GenerateChunk(pos chunk.ChunkCoordinate) (chunk.Chunk, *l
 	return chunk.NewChunkEmpty(pos, 1), list.New()
 }
 
-type TestGenerator struct {
-	settingsRepo settings.Interface
-}
-
-func NewTestGenerator(settingsRepo settings.Interface) *TestGenerator {
-	if settingsRepo == nil {
-		panic("test world generator missing settings repo")
-	}
-	return &TestGenerator{
-		settingsRepo: settingsRepo,
-	}
-}
-
-func (gen *TestGenerator) GenerateChunk(key chunk.ChunkCoordinate) (chunk.Chunk, list.List) {
-	newChunk := chunk.NewChunkEmpty(key, gen.settingsRepo.GetChunkSize())
-	pending := list.New()
-	if key == (chunk.ChunkCoordinate{X: 0, Y: 0, Z: 0}) {
-		list := newChunk.SetBlockType(chunk.VoxelCoordinate{
-			X: 0,
-			Y: 0,
-			Z: 0,
-		}, chunk.BlockTypeLabeled)
-		pending.PushBackList(list)
-	}
-	return newChunk, *pending
-}
-
 type FlatWorldGenerator struct {
 	settingsRepo settings.Interface
 }
@@ -63,67 +36,35 @@ func NewFlatWorldGenerator(settingsRepo settings.Interface) *FlatWorldGenerator 
 	}
 }
 
-type genVoxel struct {
-	adjMask chunk.AdjacentMask
-	bType   chunk.BlockType
-}
-
 func (gen *FlatWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) (chunk.Chunk, *list.List) {
 	size := int32(gen.settingsRepo.GetChunkSize())
 	ch := chunk.NewChunkEmpty(chPos, uint32(size))
 	pending := list.New()
-	for x := chPos.X * size; x < chPos.X*size+size; x++ {
-		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
-			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
-				voxInfo := gen.generateAt(x, y, z)
-				ch.SetAdjacency(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.adjMask)
-				list := ch.SetBlockType(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.bType)
-				pending.PushBackList(list)
-			}
-		}
-	}
+	ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+		pending.PushBackList(ch.SetBlockType(vc, gen.generateAt(vc.X, vc.Y, vc.Z)))
+	})
 	return ch, pending
 }
 
-func (gen *FlatWorldGenerator) generateAt(x, y, z int32) *genVoxel {
+func (gen *FlatWorldGenerator) generateAt(x, y, z int32) chunk.BlockType {
 	if y < 0 || y > 6 {
-		return &genVoxel{
-			adjMask: chunk.AdjacentNone,
-			bType:   chunk.BlockTypeAir,
-		}
+		return chunk.BlockTypeAir
 	}
 	if y == 0 {
-		return &genVoxel{
-			adjMask: chunk.AdjacentAll & ^chunk.AdjacentBottom,
-			bType:   chunk.BlockTypeLabeled,
-		}
+		return chunk.BlockTypeLabeled
 	} else if y == 6 {
 		if x == 3 && z == 3 {
-			return &genVoxel{
-				adjMask: chunk.AdjacentAll & ^chunk.AdjacentTop,
-				bType:   chunk.BlockTypeLight,
-			}
+			return chunk.BlockTypeLight
 		} else {
-			return &genVoxel{
-				adjMask: chunk.AdjacentAll & ^chunk.AdjacentTop,
-				bType:   chunk.BlockTypeGrass,
-			}
+			return chunk.BlockTypeGrass
 		}
 	} else if y == 1 || y == 2 {
-		return &genVoxel{
-			adjMask: chunk.AdjacentAll,
-			bType:   chunk.BlockTypeCorrupted,
-		}
+		return chunk.BlockTypeCorrupted
+
 	} else if y == 3 || y == 4 {
-		return &genVoxel{
-			adjMask: chunk.AdjacentAll,
-			bType:   chunk.BlockTypeStone,
-		}
+		return chunk.BlockTypeStone
 	} else {
-		return &genVoxel{
-			adjMask: chunk.AdjacentAll,
-			bType:   chunk.BlockTypeDirt,
-		}
+		return chunk.BlockTypeDirt
 	}
 }
 
@@ -144,52 +85,10 @@ func (gen *AlexWorldGenerator) GenerateChunk(chPos chunk.ChunkCoordinate) (chunk
 	size := int32(gen.settingsRepo.GetChunkSize())
 	ch := chunk.NewChunkEmpty(chPos, uint32(size))
 	pending := list.New()
-	for x := chPos.X * size; x < chPos.X*size+size; x++ {
-		for y := chPos.Y * size; y < chPos.Y*size+size; y++ {
-			for z := chPos.Z * size; z < chPos.Z*size+size; z++ {
-				voxInfo := gen.generateAt(x, y, z)
-				ch.SetAdjacency(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.adjMask)
-				list := ch.SetBlockType(chunk.VoxelCoordinate{X: x, Y: y, Z: z}, voxInfo.bType)
-				pending.PushBackList(list)
-			}
-		}
-	}
+	ch.ForEachVoxel(func(vc chunk.VoxelCoordinate) {
+		pending.PushBackList(ch.SetBlockType(vc, alexHelper(vc)))
+	})
 	return ch, pending
-}
-
-func (gen *AlexWorldGenerator) generateAt(x, y, z int32) *genVoxel {
-	vp := chunk.VoxelCoordinate{
-		X: x,
-		Y: y,
-		Z: z,
-	}
-	var faceMods = [6]struct {
-		off     chunk.VoxelCoordinate
-		adjFace chunk.AdjacentMask
-	}{
-		{chunk.VoxelCoordinate{X: -1, Y: 0, Z: 0}, chunk.AdjacentLeft},
-		{chunk.VoxelCoordinate{X: 1, Y: 0, Z: 0}, chunk.AdjacentRight},
-		{chunk.VoxelCoordinate{X: 0, Y: -1, Z: 0}, chunk.AdjacentBottom},
-		{chunk.VoxelCoordinate{X: 0, Y: 1, Z: 0}, chunk.AdjacentTop},
-		{chunk.VoxelCoordinate{X: 0, Y: 0, Z: -1}, chunk.AdjacentFront},
-		{chunk.VoxelCoordinate{X: 0, Y: 0, Z: 1}, chunk.AdjacentBack},
-	}
-	var mask chunk.AdjacentMask
-	for _, mod := range faceMods {
-		offP := chunk.VoxelCoordinate{
-			X: vp.X + mod.off.X,
-			Y: vp.Y + mod.off.Y,
-			Z: vp.Z + mod.off.Z,
-		}
-		offV := alexHelper(offP)
-		if offV != chunk.BlockTypeAir {
-			mask |= mod.adjFace
-		}
-	}
-	return &genVoxel{
-		adjMask: mask,
-		bType:   alexHelper(vp),
-	}
 }
 
 func alexHelper(pos chunk.VoxelCoordinate) chunk.BlockType {
