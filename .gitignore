@@ -1,7 +1,5 @@
 voxels
-voxel.data
-chunk.data
-region.data
+/data
 
 .vscode/
 
